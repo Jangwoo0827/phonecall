@@ -37,6 +37,7 @@
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 - JDK 17 이상 필요 (`JAVA_HOME` 설정), Android SDK는 `local.properties`의 `sdk.dir` 또는 `ANDROID_HOME`로 지정 (`local.properties`는 gitignore)
+- 이 PC: JDK는 `C:Program FilesMicrosoftjdk-17.0.20.101-hotspot`, SDK는 `%LOCALAPPDATA%AndroidSdk` (`local.properties`에 `sdk.dir=C:/Users/LENOVO/AppData/Local/Android/Sdk`). 첫 빌드는 의존성 다운로드로 ~7분 소요
 - 폰에서 설치할 때는 개발자 옵션 > USB 디버깅 또는 APK 직접 설치(출처를 알 수 없는 앱 허용)
 - 기본 전화 앱 설정: 설정 > 앱 > 기본 앱 > 전화 앱
 
