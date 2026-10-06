@@ -23,12 +23,12 @@
 - `navigation/` 하단 탭 네비게이션 (키패드/최근기록/연락처/브라우저/게임)
 - `ui/theme/` 테마
 
-현재 상태: 하단 탭 뼈대만 구현됨. 각 탭 화면은 빈 화면.
+현재 상태: 키패드 탭 구현됨(1단계). 나머지 탭(최근기록/연락처/브라우저/게임)은 빈 화면.
 
 ## 기본 전화 앱 요건 (매니페스트에 이미 반영)
 - `MainActivity`에 `DIAL`(tel/없음), `VIEW tel` intent-filter
 - `InCallService` (`BIND_INCALL_SERVICE` 권한, `IN_CALL_SERVICE_UI` 메타데이터)
-- 런타임 권한 요청 및 `RoleManager.ROLE_DIALER` 요청 코드는 아직 없음
+- `CALL_PHONE` 런타임 권한 요청은 키패드 통화 버튼에 구현됨. `RoleManager.ROLE_DIALER` 요청 코드는 아직 없음
 
 ## 빌드 / 설치
 ```bash
@@ -52,3 +52,11 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 규칙
 - 각 탭 기능은 해당 패키지 안에서 구현하고 `navigation/`은 라우팅만 담당
 - 한글 문자열은 현재 코드 내 상수 사용 (추후 필요시 strings.xml로 이동)
+
+## 키패드 (dialer/)
+- `DialerViewModel`: 번호 상태(raw: 숫자/*/#/선행 +) + 외부 `tel:` 인텐트 처리. `MainActivity`(singleTask)가 onCreate/onNewIntent에서 `handleIntent` 호출 → 키패드 탭으로 이동 + 번호 채움
+- `PhoneNumberFormatter`: 한국 번호 표시용 포맷 (010-1234-5678, 02-1234-5678, 031-123-4567, 1588-1234, +82 10-...). 단위 테스트 `PhoneNumberFormatterTest` (`./gradlew testDebugUnitTest`)
+- `DtmfPlayer`: 키 누르는 동안 DTMF 톤. 끄려면 `DtmfPlayer.enabled = false` 또는 `DialerScreen(dtmfEnabled = ...)` — 기본값은 `DialerDefaults.DTMF_ENABLED`, 설정 화면 생기면 여기에 연결
+- `CallPlacer`: `TelecomManager.placeCall()`. 권한 없으면 안내 문구 + 설정 열기 버튼
+- 지우기 길게 누르기 = 전체 삭제, 0 길게 누르기 = `+`
+- 기본 전화 앱이 아닐 때는 통화 화면을 시스템 전화 앱이 띄움 (`incall/`은 아직 스텁)
