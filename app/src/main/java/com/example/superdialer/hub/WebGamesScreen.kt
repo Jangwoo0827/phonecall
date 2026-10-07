@@ -7,12 +7,14 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.example.superdialer.browser.BrowserScreen
+import com.example.superdialer.browser.BrowserViewModel
 import com.example.superdialer.games.GamesScreen
 
 private val sections = listOf("브라우저", "게임")
@@ -20,8 +22,12 @@ private val sections = listOf("브라우저", "게임")
 /** One bottom tab that hosts the built-in browser and the built-in games behind a top switcher. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WebGamesScreen(modifier: Modifier = Modifier) {
+fun WebGamesScreen(browserViewModel: BrowserViewModel, modifier: Modifier = Modifier) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
+    // A link opened from another app always lands in the browser section.
+    LaunchedEffect(browserViewModel.externalUrl) {
+        if (browserViewModel.externalUrl != null) selected = 0
+    }
     Column(modifier = modifier.fillMaxSize()) {
         PrimaryTabRow(selectedTabIndex = selected) {
             sections.forEachIndexed { index, title ->
@@ -29,7 +35,7 @@ fun WebGamesScreen(modifier: Modifier = Modifier) {
             }
         }
         when (selected) {
-            0 -> BrowserScreen()
+            0 -> BrowserScreen(browserViewModel)
             else -> GamesScreen()
         }
     }

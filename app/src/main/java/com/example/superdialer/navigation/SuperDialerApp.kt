@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.superdialer.browser.BrowserViewModel
 import com.example.superdialer.calllog.CallHistoryScreen
 import com.example.superdialer.calllog.CallLogScreen
 import com.example.superdialer.calllog.CallLogViewModel
@@ -55,6 +56,7 @@ fun SuperDialerApp(
     val callLogViewModel: CallLogViewModel = viewModel()
     val contactsViewModel: ContactsViewModel = viewModel()
     val blockedViewModel: BlockedNumbersViewModel = viewModel()
+    val browserViewModel: BrowserViewModel = viewModel()
 
     val context = LocalContext.current
     // Keypad autocomplete: contacts first, then recent unsaved callers.
@@ -179,7 +181,7 @@ fun SuperDialerApp(
                     onBack = { navController.popBackStack() },
                 )
             }
-            composable(TopLevelDestination.Hub.route) { WebGamesScreen() }
+            composable(TopLevelDestination.Hub.route) { WebGamesScreen(browserViewModel) }
         }
     }
 }

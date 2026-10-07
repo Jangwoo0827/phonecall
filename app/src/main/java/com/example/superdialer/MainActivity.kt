@@ -14,6 +14,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.superdialer.browser.BrowserViewModel
+import com.example.superdialer.browser.UrlResolver
 import com.example.superdialer.dialer.DialerViewModel
 import com.example.superdialer.navigation.SuperDialerApp
 import com.example.superdialer.navigation.TopLevelDestination
@@ -25,6 +27,7 @@ import com.example.superdialer.ui.theme.SuperDialerTheme
 
 class MainActivity : ComponentActivity() {
     private val dialerViewModel: DialerViewModel by viewModels()
+    private val browserViewModel: BrowserViewModel by viewModels()
 
     /** Tab requested by an external trigger (e.g. tapping a missed-call notification). */
     private var requestedRoute by mutableStateOf<String?>(null)
@@ -67,6 +70,13 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIntent(intent: Intent) {
         if (dialerViewModel.handleIntent(intent)) return
+        // http(s) links, only offered by the optional ExternalLinkAlias (see Settings).
+        val link = intent.data
+        if (intent.action == Intent.ACTION_VIEW && link != null && UrlResolver.isWebScheme(link.scheme)) {
+            browserViewModel.openExternal(link.toString())
+            requestedRoute = TopLevelDestination.Hub.route
+            return
+        }
         val wantsCallLog = intent.getBooleanExtra(EXTRA_OPEN_CALL_LOG, false) ||
             (intent.action == Intent.ACTION_VIEW && intent.type == CallLog.Calls.CONTENT_TYPE)
         if (wantsCallLog) {

@@ -23,12 +23,14 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@style/Theme.SuperDialer"
         tools:targetApi="36">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden"
             android:launchMode="singleTask"
             android:theme="@style/Theme.SuperDialer">
             <intent-filter>
@@ -70,6 +72,25 @@
                 <data android:mimeType="vnd.android.cursor.dir/calls" />
             </intent-filter>
         </activity>
+
+        <!--
+            Optional: lets SuperDialer show up in "Open with" for http/https links. Disabled by default;
+            the Settings tab switches it on and off (see settings/ExternalLinks.kt).
+        -->
+        <activity-alias
+            android:name=".ExternalLinkAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+            </intent-filter>
+        </activity-alias>
 
         <activity
             android:name=".incall.InCallActivity"

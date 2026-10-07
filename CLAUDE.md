@@ -25,7 +25,7 @@
 - `navigation/` 하단 탭 네비게이션 (키패드/최근기록/연락처/웹·게임/설정)
 - `ui/theme/` 테마
 
-현재 상태: 키패드(자동완성), 최근기록, 연락처(즐겨찾기 토글), 통화 화면, 설정 탭(차단/거절 메시지) 구현됨. 웹·게임 탭(브라우저/게임 전환 바)은 두 화면 모두 빈 화면.
+현재 상태: 키패드(자동완성), 최근기록, 연락처(즐겨찾기 토글), 통화 화면, 설정 탭(차단/거절 메시지) 구현됨. 웹·게임 탭의 브라우저(5단계) 구현됨, 게임은 빈 화면.
 
 ## 기본 전화 앱 요건 (매니페스트에 이미 반영)
 - `MainActivity`에 `DIAL`(tel/없음), `VIEW tel` intent-filter
@@ -114,3 +114,14 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 매니페스트 점검 결과: `DIAL`(번호 없음/tel/voicemail), `VIEW tel:`, `CALL_BUTTON`, `VIEW vnd.android.cursor.dir/calls`, `InCallService`(BIND_INCALL_SERVICE + IN_CALL_SERVICE_UI), 전체화면 인텐트·알림 권한 모두 선언
 - 다중 통화: 보류 중 통화 전환(`swapTo`), 병합(`merge`, 다자간 통화는 부모 콜만 표시)
 - S23 설치 후 테스트 체크리스트: `docs/S23_TEST_CHECKLIST.md`
+
+## 내장 브라우저 (browser/, 5단계)
+- `BrowserViewModel`(activity 스코프)이 탭별 `WebView`를 보관 → 탭/화면 전환·회전에도 페이지 상태 유지. `MutableContextWrapper`로 화면에 붙을 때만 Activity 컨텍스트를 물려 누수 방지(`WebViewHost`). MainActivity는 `configChanges`로 회전 시 재생성하지 않음
+- 주소창: `UrlResolver`가 입력 해석 (URL/호스트면 https://, localhost·IPv4는 http://, 그 외는 구글 검색). `javascript:`/`file:` 등은 URL로 취급하지 않음
+- 하단 툴바 뒤로/앞으로/새로고침(로딩 중엔 중지)/홈/탭(개수), 상단 로딩 진행바, ⋮ 메뉴(새 탭, 북마크, 방문 기록)
+- 북마크·방문 기록: Room(`browser/data/BrowserDatabase`, KSP). 방문 기록은 페이지 로드 완료 시 저장, 개별/전체 삭제
+- 다운로드: `DownloadListener` → 확인 다이얼로그 → `DownloadManager`(다운로드 폴더). 풀스크린 동영상: `onShowCustomView`를 시스템 바 위 전체 화면 Dialog로 표시
+- 보안: file/content 접근 차단, 혼합 콘텐츠 차단, 팝업 창 차단, 서드파티 쿠키 차단, Safe Browsing on, JS 브릿지(addJavascriptInterface) 없음, 웹 페이지가 여는 file:/content:/intent: 링크는 무시(tel:/mailto:/sms:만 외부 앱으로). 카메라·마이크·위치 권한 요청은 거부(기본 동작)
+- 앱 전체 `usesCleartextTraffic=true`: 브라우저가 http:// 사이트를 열 수 있게 하려는 것 (이 앱의 네트워크 사용은 브라우저뿐)
+- **외부 링크 옵션**: 매니페스트의 `ExternalLinkAlias`(http/https VIEW 필터)는 기본 비활성. 설정 탭 "외부 링크를 이 브라우저로 열기"로 켜고 끔(`settings/ExternalLinks`, `PackageManager.setComponentEnabledSetting`). 켜면 다른 앱 링크가 `BrowserViewModel.openExternal` → 새 탭으로 열림. 기본을 꺼 둔 이유: 켜는 순간 폰의 모든 웹 링크 "다음으로 열기" 선택지에 이 앱이 나타나 기본 브라우저가 될 수 있는데, 이 브라우저는 파일 업로드(<input type=file>)·인증서 오류 화면·비밀번호 저장 같은 일반 브라우저 기능이 없는 가벼운 인앱 브라우저라서
+- 미구현: 파일 업로드(`onShowFileChooser`), 탭 상태 영구 저장(앱 재시작 시 새 탭 1개로 시작), 비공개 모드

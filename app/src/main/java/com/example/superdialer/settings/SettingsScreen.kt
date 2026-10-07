@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -95,6 +96,21 @@ fun SettingsScreen(
             supportingContent = { Text("번호를 누를 때 DTMF 소리를 재생합니다") },
             trailingContent = {
                 Switch(checked = AppSettings.dtmfEnabled, onCheckedChange = AppSettings::updateDtmfEnabled)
+            },
+        )
+
+        Section("브라우저")
+        var externalLinks by remember { mutableStateOf(ExternalLinks.isEnabled(context)) }
+        ListItem(
+            headlineContent = { Text("외부 링크를 이 브라우저로 열기") },
+            supportingContent = {
+                Text("켜면 다른 앱의 웹 링크를 열 때 SuperDialer가 선택지에 나옵니다. 기본값은 꺼짐입니다.")
+            },
+            trailingContent = {
+                Switch(checked = externalLinks, onCheckedChange = {
+                    ExternalLinks.setEnabled(context, it)
+                    externalLinks = it
+                })
             },
         )
 
