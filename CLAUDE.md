@@ -172,3 +172,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - `games/GameSession`: 열린 게임 id(`playingId`)와 게임 WebView 보관. 게임 목록으로 돌아가면(`close()`) 그 게임은 종료
 - 프로세스가 죽은 경우 대비: 나갈 때 탭 주소·선택 탭·웹/게임 섹션·열린 게임 id를 SharedPreferences(`browser_session`)에 저장, 3분 이내에 다시 열면 복원(페이지는 다시 로드, 스크롤·게임 판은 초기화)
 - 브라우저 상단 바: 사이트 진입/화면 맨 위 터치 때만 나타나고 2초(`BAR_AUTO_HIDE_MS`) 무터치면 사라짐. 주소 입력 중·메뉴 열림 중엔 유지. 스크롤 올림으로는 안 뜸
+
+## 키패드 레이아웃 (고정 높이)
+- 자동완성은 `SuggestionStrip`(가로 한 줄, 높이 68dp 고정 슬롯)로 표시해서 제안 유무와 상관없이 키패드 크기가 변하지 않음 (예전엔 제안이 늘면 키가 줄어 글자/영문이 잘렸음). 키 안의 숫자/영문 크기는 키 지름에 비례해 조정
+- 번호 표시는 한 줄에 다 들어올 때까지 글자 크기를 42sp부터 2sp씩 줄임(최소 16sp), `...`로 자르지 않음
+- 좁은 화면 테스트: 에뮬레이터에서 `adb -s emulator-5554 shell wm size 1080x1700` + `settings put system font_scale 1.3`, 끝나면 `wm size reset`, font_scale 1.0

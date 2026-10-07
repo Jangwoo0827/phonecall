@@ -1,5 +1,8 @@
 package com.example.superdialer.dialer
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -126,11 +129,13 @@ fun DialerScreen(
             onClear = viewModel::clear,
         )
 
-        SuggestionList(
+        // Always the same height, so the keypad below keeps its size whether or not anything matches.
+        SuggestionStrip(
             suggestions = suggestions,
             onPick = { viewModel.replaceNumber(it.number) },
             showAddContact = number.length >= 3 && suggestions.none { it.fromContact },
             onAddContact = { context.addContact(number) },
+            modifier = Modifier.fillMaxWidth().height(SUGGESTION_SLOT_HEIGHT),
         )
 
         if (permissionDenied) {
@@ -205,18 +210,24 @@ private fun NumberDisplay(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(96.dp),
+            .height(72.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(modifier = Modifier.size(48.dp))
+        // Starts big and steps down until the whole number fits on one line (never cut off).
+        var fontSize by remember(formatted) { mutableStateOf(42.sp) }
         Text(
             text = formatted,
             modifier = Modifier.weight(1f),
-            fontSize = if (formatted.length > 14) 28.sp else 42.sp,
+            fontSize = fontSize,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            softWrap = false,
+            overflow = TextOverflow.Clip,
+            onTextLayout = { result ->
+                if (result.didOverflowWidth && fontSize.value > 16f) fontSize = (fontSize.value - 2f).sp
+            },
             color = MaterialTheme.colorScheme.onSurface,
         )
         Box(
@@ -277,18 +288,24 @@ private fun DialKey(
                 },
             contentAlignment = Alignment.Center,
         ) {
+            val digitSize = (diameter.value * 0.42f).coerceIn(20f, 32f)
+            val subSize = (diameter.value * 0.15f).coerceIn(8f, 11f)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = key.char.toString(),
-                    fontSize = 32.sp,
+                    fontSize = digitSize.sp,
+                    lineHeight = (digitSize * 1.1f).sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 if (key.sub.isNotEmpty()) {
                     Text(
                         text = key.sub,
-                        fontSize = 10.sp,
+                        fontSize = subSize.sp,
+                        lineHeight = (subSize * 1.2f).sp,
                         letterSpacing = 1.sp,
+                        maxLines = 1,
+                        softWrap = false,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -297,37 +314,57 @@ private fun DialKey(
     }
 }
 
+private val SUGGESTION_SLOT_HEIGHT = 68.dp
+
+/** One horizontally scrolling line of matches (saved contacts, then recent numbers), or "add contact". */
 @Composable
-private fun SuggestionList(
+private fun SuggestionStrip(
     suggestions: List<Suggestion>,
     onPick: (Suggestion) -> Unit,
     showAddContact: Boolean,
     onAddContact: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    suggestions.forEach { suggestion ->
-        val formatted = PhoneNumberFormatter.formatLoose(suggestion.number)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onPick(suggestion) }
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            InitialAvatar(suggestion.name ?: formatted, size = 32.dp, fontSize = 14.sp)
-            Column(modifier = Modifier.padding(start = 12.dp)) {
-                Text(suggestion.name ?: formatted, fontSize = 15.sp, maxLines = 1)
-                if (suggestion.name != null) {
+    LazyRow(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(suggestions) { suggestion ->
+            val formatted = PhoneNumberFormatter.formatLoose(suggestion.number)
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .clickable { onPick(suggestion) }
+                    .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                InitialAvatar(suggestion.name ?: formatted, size = 32.dp, fontSize = 14.sp)
+                Column(modifier = Modifier.padding(start = 10.dp)) {
                     Text(
-                        formatted,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        suggestion.name ?: formatted,
+                        fontSize = 14.sp,
+                        lineHeight = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                     )
+                    if (suggestion.name != null) {
+                        Text(
+                            formatted,
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
         }
-    }
-    if (showAddContact) {
-        TextButton(onClick = onAddContact) { Text("연락처에 추가") }
+        if (showAddContact) {
+            item {
+                TextButton(onClick = onAddContact) { Text("연락처에 추가") }
+            }
+        }
     }
 }
