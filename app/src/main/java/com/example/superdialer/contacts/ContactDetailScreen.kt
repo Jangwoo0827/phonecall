@@ -41,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +59,8 @@ import com.example.superdialer.calllog.formatDuration
 import com.example.superdialer.calllog.icon
 import com.example.superdialer.calllog.numberKey
 import com.example.superdialer.dialer.PhoneNumberFormatter
+import com.example.superdialer.messages.ActivityChips
+import com.example.superdialer.messages.MessagesPane
 import com.example.superdialer.ui.InitialAvatar
 import com.example.superdialer.ui.ScreenHeader
 import com.example.superdialer.ui.hasPermission
@@ -139,6 +142,7 @@ fun ContactDetailScreen(
             callLogViewModel.entries.filter { numberKey(it.number) in keys }.take(MAX_HISTORY)
         }
 
+        var showMessages by rememberSaveable { mutableStateOf(false) }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             item {
                 Column(
@@ -188,15 +192,21 @@ fun ContactDetailScreen(
                     },
                 )
             }
-            if (history.isNotEmpty()) {
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
-                    Text(
-                        "통화 기록",
-                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+            item {
+                HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+                ActivityChips(showMessages = showMessages, callCount = history.size, onSelect = { showMessages = it })
+            }
+            if (showMessages) {
+                item { MessagesPane(numbers = detail.numbers.map { it.number }) }
+            } else {
+                if (history.isEmpty()) {
+                    item {
+                        Text(
+                            "통화 기록이 없습니다.",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 items(history, key = { "h-${it.id}" }) { call ->
                     val missed = call.type == CallType.Missed

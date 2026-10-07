@@ -120,6 +120,7 @@ fun SettingsScreen(
         PermissionRow(context, "통화 기록 삭제", Manifest.permission.WRITE_CALL_LOG)
         PermissionRow(context, "연락처", Manifest.permission.READ_CONTACTS)
         PermissionRow(context, "연락처 수정 (즐겨찾기)", Manifest.permission.WRITE_CONTACTS)
+        PermissionRow(context, "문자 읽기 (연락처·기록의 메시지 보기)", Manifest.permission.READ_SMS)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             PermissionRow(context, "알림", Manifest.permission.POST_NOTIFICATIONS)
         }

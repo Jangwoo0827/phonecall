@@ -127,3 +127,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 앱 전체 `usesCleartextTraffic=true`: 브라우저가 http:// 사이트를 열 수 있게 하려는 것 (이 앱의 네트워크 사용은 브라우저뿐)
 - **외부 링크 옵션**: 매니페스트의 `ExternalLinkAlias`(http/https VIEW 필터)는 기본 비활성. 설정 탭 "외부 링크를 이 브라우저로 열기"로 켜고 끔(`settings/ExternalLinks`, `PackageManager.setComponentEnabledSetting`). 켜면 다른 앱 링크가 `BrowserViewModel.openExternal` → 새 탭으로 열림. 기본을 꺼 둔 이유: 켜는 순간 폰의 모든 웹 링크 "다음으로 열기" 선택지에 이 앱이 나타나 기본 브라우저가 될 수 있는데, 이 브라우저는 파일 업로드(<input type=file>)·인증서 오류 화면·비밀번호 저장 같은 일반 브라우저 기능이 없는 가벼운 인앱 브라우저라서
 - 미구현: 파일 업로드(`onShowFileChooser`), 탭 상태 영구 저장(앱 재시작 시 새 탭 1개로 시작), 비공개 모드
+
+## 문자 내용 보기 (messages/)
+- 연락처 상세와 통화 내역 화면에 "통화 기록 / 메시지" 전환 칩. 메시지는 말풍선(받은 문자 왼쪽, 보낸 문자 오른쪽)으로 최근 30건, 오래된 것부터 표시. 아래 "문자 앱에서 이어서 보기"는 시스템 문자 앱을 `smsto:`로 엶
+- `SmsRepository`: `Telephony.Sms` 프로바이더(READ_SMS 필요)에서 최근 5000건을 훑어 `numberKey`가 같은 번호(010… = +82 10…)만 골라냄. 화면을 열 때만 읽고 저장하지 않음. `MessagesPane`이 권한 요청(허용/설정 열기)까지 처리
+- 한계: 일반 SMS만 보임. MMS, RCS(채팅+), 카카오톡 같은 채팅 메시지는 SMS 프로바이더에 없어 표시되지 않음
+- READ_SMS는 통화기록처럼 제한된 권한이라, adb로 설치하면 허용 팝업이 뜨지만 파일 관리자 등으로 직접 설치한 APK는 막힐 수 있음(막히면 기본 전화 앱 설정 후에도 안 되면 설정 > 앱 > SuperDialer > 권한 확인)
+- 에뮬레이터 테스트: 받은 문자 `adb emu sms send 번호 "내용"`

@@ -25,7 +25,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.superdialer.dialer.PhoneNumberFormatter
+import com.example.superdialer.messages.ActivityChips
+import com.example.superdialer.messages.MessagesPane
 import com.example.superdialer.ui.InitialAvatar
 import com.example.superdialer.ui.addContact
 import com.example.superdialer.ui.rememberDialAction
@@ -115,8 +121,15 @@ fun CallHistoryScreen(
         }
         HorizontalDivider()
 
+        var showMessages by rememberSaveable { mutableStateOf(false) }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(history, key = { it.id }) { item ->
+            if (entry.number.isNotEmpty()) {
+                item {
+                    ActivityChips(showMessages = showMessages, callCount = history.size, onSelect = { showMessages = it })
+                }
+            }
+            if (showMessages) item { MessagesPane(numbers = listOf(entry.number)) }
+            items(if (showMessages) emptyList() else history, key = { it.id }) { item ->
                 val missed = item.type == CallType.Missed
                 val tint = if (missed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                 Row(
