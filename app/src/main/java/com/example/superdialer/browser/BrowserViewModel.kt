@@ -28,6 +28,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.superdialer.browser.data.Bookmark
 import com.example.superdialer.browser.data.BrowserDatabase
 import com.example.superdialer.browser.data.HistoryItem
+import com.example.superdialer.browser.data.SpeedDial
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -42,6 +43,9 @@ class BrowserTab(val id: Int) {
     var loading by mutableStateOf(false)
     var canGoBack by mutableStateOf(false)
     var canGoForward by mutableStateOf(false)
+
+    /** True while the tab shows the speed-dial start page instead of a website. */
+    var isStart by mutableStateOf(true)
     internal var lastRecordedUrl: String? = null
 }
 
@@ -54,6 +58,12 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     var selectedId by mutableIntStateOf(-1)
         private set
     val selected: BrowserTab? get() = tabs.firstOrNull { it.id == selectedId }
+
+    /** Which section of the web/games tab is showing: 0 browser, 1 games. */
+    var hubSection by mutableIntStateOf(0)
+
+    /** A website is open full screen: the app hides its own tab bars so the page gets the whole screen. */
+    val immersive: Boolean get() = hubSection == 0 && selected?.isStart == false
 
     /** Non-null while a page's video is shown full screen. */
     var customView by mutableStateOf<View?>(null)
@@ -69,6 +79,8 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     val bookmarks: StateFlow<List<Bookmark>> = db.bookmarkDao().observeAll()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val speedDials: StateFlow<List<SpeedDial>> = db.speedDialDao().observeAll()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val history: StateFlow<List<HistoryItem>> = db.historyDao().observeRecent(HISTORY_LIMIT)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
@@ -79,7 +91,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     /** The browser always has at least one tab. Called when the browser screen first appears. */
     fun ensureTab() {
-        if (tabs.isEmpty()) newTab(UrlResolver.HOME_URL)
+        if (tabs.isEmpty()) newTab()
     }
 
     fun newTab(url: String? = null): BrowserTab {
@@ -90,7 +102,10 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         val tab = BrowserTab(nextId++)
         tabs += tab
         selectedId = tab.id
-        webViewFor(tab).loadUrl(url ?: UrlResolver.HOME_URL)
+        if (url != null) {
+            tab.isStart = false
+            webViewFor(tab).loadUrl(url)
+        }
         return tab
     }
 
@@ -104,7 +119,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         webViews.remove(id)?.let(::destroy)
         tabs.removeAt(index)
         when {
-            tabs.isEmpty() -> newTab(UrlResolver.HOME_URL)
+            tabs.isEmpty() -> newTab()
             selectedId == id -> selectedId = tabs[index.coerceAtMost(tabs.lastIndex)].id
         }
     }
@@ -115,11 +130,27 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     fun load(input: String) {
         val url = UrlResolver.resolve(input) ?: return
-        selected?.let { webViewFor(it).loadUrl(url) }
+        val tab = selected ?: return
+        tab.isStart = false
+        webViewFor(tab).loadUrl(url)
+    }
+
+    /** Leaves the website and returns to the start page (the X button / back at the first page). */
+    fun exitToStart() {
+        val tab = selected ?: return
+        webViews.remove(tab.id)?.let(::destroy)
+        tab.isStart = true
+        tab.url = ""
+        tab.title = ""
+        tab.loading = false
+        tab.progress = 0
+        tab.canGoBack = false
+        tab.canGoForward = false
+        tab.lastRecordedUrl = null
     }
 
     fun goBack(): Boolean {
-        val tab = selected ?: return false
+        val tab = selected?.takeUnless { it.isStart } ?: return false
         val view = webViewFor(tab)
         if (!view.canGoBack()) return false
         view.goBack()
@@ -127,16 +158,16 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun goForward() {
-        selected?.let { webViewFor(it).takeIf(WebView::canGoForward)?.goForward() }
+        selected?.takeUnless { it.isStart }?.let { webViewFor(it).takeIf(WebView::canGoForward)?.goForward() }
     }
 
     fun reloadOrStop() {
-        val tab = selected ?: return
+        val tab = selected?.takeUnless { it.isStart } ?: return
         val view = webViewFor(tab)
         if (tab.loading) view.stopLoading() else view.reload()
     }
 
-    fun goHome() = load(UrlResolver.HOME_URL)
+    fun goHome() = exitToStart()
 
     fun openExternal(url: String) {
         externalUrl = url
@@ -169,6 +200,23 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     fun clearHistory() {
         viewModelScope.launch(Dispatchers.IO) { db.historyDao().deleteAll() }
+    }
+
+    // --- Speed dial ---------------------------------------------------------------------------
+
+    fun addSpeedDial(title: String, url: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val dao = db.speedDialDao()
+            dao.insert(SpeedDial(title = title, url = url, position = dao.nextPosition()))
+        }
+    }
+
+    fun updateSpeedDial(item: SpeedDial, title: String, url: String) {
+        viewModelScope.launch(Dispatchers.IO) { db.speedDialDao().update(item.copy(title = title, url = url)) }
+    }
+
+    fun deleteSpeedDial(item: SpeedDial) {
+        viewModelScope.launch(Dispatchers.IO) { db.speedDialDao().deleteById(item.id) }
     }
 
     // --- Fullscreen video / downloads ---------------------------------------------------------

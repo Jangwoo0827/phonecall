@@ -1,8 +1,14 @@
 package com.example.superdialer.browser
 
+import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,12 +50,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,6 +67,12 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 
 private enum class Panel { None, Tabs, Bookmarks, History }
 
+/**
+ * The browser tab. A tab either shows the start page (editable link tiles) or a website. While a
+ * website is open it takes the whole screen: the app's own tab bars are hidden (see
+ * [BrowserViewModel.immersive]), the top bar slides away when scrolling down and returns on scroll up
+ * or a tap at the top edge, and the bottom navigation bar stays.
+ */
 @Composable
 fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
     LaunchedEffect(Unit) { viewModel.ensureTab() }
@@ -68,84 +82,66 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
     }
 
     var panel by rememberSaveable { mutableStateOf(Panel.None) }
-    val tab = viewModel.selected
+    val tab = viewModel.selected ?: return
     val bookmarks by viewModel.bookmarks.collectAsState()
-    val bookmarked = tab != null && bookmarks.any { it.url == tab.url }
+    val bookmarked = !tab.isStart && bookmarks.any { it.url == tab.url }
 
-    // Back: leave fullscreen video, close panels, then walk the page history.
-    BackHandler(enabled = viewModel.customView != null || panel != Panel.None || tab?.canGoBack == true) {
+    // Back: leave fullscreen video, close panels, walk the page history, then return to the start page.
+    BackHandler(enabled = viewModel.customView != null || panel != Panel.None || !tab.isStart) {
         when {
             viewModel.customView != null -> viewModel.exitFullscreen()
             panel != Panel.None -> panel = Panel.None
-            else -> viewModel.goBack()
+            tab.canGoBack -> viewModel.goBack()
+            else -> viewModel.exitToStart()
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        if (tab != null) {
-            AddressBar(
-                tab = tab,
-                bookmarked = bookmarked,
-                onSubmit = { input ->
-                    panel = Panel.None
-                    viewModel.load(input)
-                },
-                onNewTab = { viewModel.newTab() },
-                onToggleBookmark = viewModel::toggleBookmark,
+    Box(modifier = modifier.fillMaxSize()) {
+        if (tab.isStart) {
+            StartPage(
+                viewModel = viewModel,
+                tabCount = viewModel.tabs.size,
+                onOpenTabs = { panel = Panel.Tabs },
                 onOpenBookmarks = { panel = Panel.Bookmarks },
                 onOpenHistory = { panel = Panel.History },
             )
-            if (tab.loading) {
-                LinearProgressIndicator(
-                    progress = { tab.progress / 100f },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-
-        Box(modifier = Modifier.weight(1f)) {
-            if (tab != null) {
-                WebViewHost(viewModel, tab, Modifier.fillMaxSize())
-            }
-            when (panel) {
-                Panel.None -> Unit
-                Panel.Tabs -> TabsPanel(
-                    tabs = viewModel.tabs,
-                    selectedId = viewModel.selectedId,
-                    onSelect = { viewModel.selectTab(it); panel = Panel.None },
-                    onClose = viewModel::closeTab,
-                    onNewTab = { viewModel.newTab(); panel = Panel.None },
-                    onBack = { panel = Panel.None },
-                )
-                Panel.Bookmarks -> BookmarksPanel(
-                    bookmarks = bookmarks,
-                    onOpen = { viewModel.load(it.url); panel = Panel.None },
-                    onDelete = viewModel::deleteBookmark,
-                    onBack = { panel = Panel.None },
-                )
-                Panel.History -> {
-                    val history by viewModel.history.collectAsState()
-                    HistoryPanel(
-                        items = history,
-                        onOpen = { viewModel.load(it.url); panel = Panel.None },
-                        onDelete = viewModel::deleteHistory,
-                        onClear = viewModel::clearHistory,
-                        onBack = { panel = Panel.None },
-                    )
-                }
-            }
-        }
-
-        if (tab != null) {
-            BottomToolbar(
+        } else {
+            WebPage(
+                viewModel = viewModel,
                 tab = tab,
-                tabCount = viewModel.tabs.size,
-                onBack = { viewModel.goBack() },
-                onForward = viewModel::goForward,
-                onReloadOrStop = viewModel::reloadOrStop,
-                onHome = viewModel::goHome,
-                onTabs = { panel = if (panel == Panel.Tabs) Panel.None else Panel.Tabs },
+                bookmarked = bookmarked,
+                onOpenTabs = { panel = if (panel == Panel.Tabs) Panel.None else Panel.Tabs },
+                onOpenBookmarks = { panel = Panel.Bookmarks },
+                onOpenHistory = { panel = Panel.History },
             )
+        }
+
+        when (panel) {
+            Panel.None -> Unit
+            Panel.Tabs -> TabsPanel(
+                tabs = viewModel.tabs,
+                selectedId = viewModel.selectedId,
+                onSelect = { viewModel.selectTab(it); panel = Panel.None },
+                onClose = viewModel::closeTab,
+                onNewTab = { viewModel.newTab(); panel = Panel.None },
+                onBack = { panel = Panel.None },
+            )
+            Panel.Bookmarks -> BookmarksPanel(
+                bookmarks = bookmarks,
+                onOpen = { viewModel.load(it.url); panel = Panel.None },
+                onDelete = viewModel::deleteBookmark,
+                onBack = { panel = Panel.None },
+            )
+            Panel.History -> {
+                val history by viewModel.history.collectAsState()
+                HistoryPanel(
+                    items = history,
+                    onOpen = { viewModel.load(it.url); panel = Panel.None },
+                    onDelete = viewModel::deleteHistory,
+                    onClear = viewModel::clearHistory,
+                    onBack = { panel = Panel.None },
+                )
+            }
         }
     }
 
@@ -162,76 +158,233 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
     }
 }
 
+// --- Start page ---------------------------------------------------------------------------------
+
 @Composable
-private fun AddressBar(
-    tab: BrowserTab,
-    bookmarked: Boolean,
-    onSubmit: (String) -> Unit,
-    onNewTab: () -> Unit,
-    onToggleBookmark: () -> Unit,
+private fun StartPage(
+    viewModel: BrowserViewModel,
+    tabCount: Int,
+    onOpenTabs: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenHistory: () -> Unit,
 ) {
-    val focus = LocalFocusManager.current
-    var menuOpen by remember { mutableStateOf(false) }
-    // Shows the page URL; resets whenever the tab or its URL changes, keeps what you type otherwise.
-    var text by remember(tab.id, tab.url) { mutableStateOf(tab.url) }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextField(
-            value = text,
-            onValueChange = { text = it },
-            modifier = Modifier.weight(1f),
-            singleLine = true,
-            placeholder = { Text("주소 또는 검색어") },
-            trailingIcon = {
-                if (text.isNotEmpty()) {
-                    IconButton(onClick = { text = "" }) { Icon(Icons.Filled.Close, contentDescription = "지우기") }
-                }
-            },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
-            keyboardActions = KeyboardActions(onGo = {
-                focus.clearFocus()
-                onSubmit(text)
-            }),
-            shape = RoundedCornerShape(24.dp),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-            ),
+    val dials by viewModel.speedDials.collectAsState()
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AddressField(
+                initial = "",
+                onSubmit = viewModel::load,
+                modifier = Modifier.weight(1f),
+            )
+            TabCountButton(tabCount, onOpenTabs)
+            OverflowMenu(viewModel::newTab, onOpenBookmarks, onOpenHistory)
+        }
+        SpeedDialGrid(
+            dials = dials,
+            onOpen = { viewModel.load(it.url) },
+            onAdd = viewModel::addSpeedDial,
+            onUpdate = viewModel::updateSpeedDial,
+            onDelete = viewModel::deleteSpeedDial,
         )
-        IconButton(onClick = onToggleBookmark) {
-            Icon(
-                if (bookmarked) Icons.Filled.Star else Icons.Filled.StarBorder,
-                contentDescription = if (bookmarked) "북마크 해제" else "북마크 추가",
-                tint = if (bookmarked) Color(0xFFF9A825) else MaterialTheme.colorScheme.onSurfaceVariant,
+    }
+}
+
+// --- Website -------------------------------------------------------------------------------------
+
+@Composable
+private fun WebPage(
+    viewModel: BrowserViewModel,
+    tab: BrowserTab,
+    bookmarked: Boolean,
+    onOpenTabs: () -> Unit,
+    onOpenBookmarks: () -> Unit,
+    onOpenHistory: () -> Unit,
+) {
+    var topBarVisible by remember(tab.id) { mutableStateOf(true) }
+    // Navigating always brings the bar back so the new address is visible.
+    LaunchedEffect(tab.id, tab.url) { topBarVisible = true }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        WebArea(
+            viewModel = viewModel,
+            tab = tab,
+            bookmarked = bookmarked,
+            topBarVisible = topBarVisible,
+            onTopBarVisible = { topBarVisible = it },
+            onOpenBookmarks = onOpenBookmarks,
+            onOpenHistory = onOpenHistory,
+            modifier = Modifier.weight(1f),
+        )
+        BottomToolbar(
+            tab = tab,
+            tabCount = viewModel.tabs.size,
+            onBack = { if (!viewModel.goBack()) viewModel.exitToStart() },
+            onForward = viewModel::goForward,
+            onReloadOrStop = viewModel::reloadOrStop,
+            onHome = viewModel::exitToStart,
+            onTabs = onOpenTabs,
+        )
+    }
+}
+
+/** The page itself with the sliding top bar and the loading line on top of it. */
+@Composable
+private fun WebArea(
+    viewModel: BrowserViewModel,
+    tab: BrowserTab,
+    bookmarked: Boolean,
+    topBarVisible: Boolean,
+    onTopBarVisible: (Boolean) -> Unit,
+    onOpenBookmarks: () -> Unit,
+    onOpenHistory: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier) {
+        WebViewHost(
+            viewModel = viewModel,
+            tab = tab,
+            modifier = Modifier.fillMaxSize(),
+            onScrollDown = { onTopBarVisible(false) },
+            onScrollUp = { onTopBarVisible(true) },
+            onTouchTop = { onTopBarVisible(true) },
+        )
+        AnimatedVisibility(
+            visible = topBarVisible,
+            modifier = Modifier.align(Alignment.TopCenter),
+            enter = slideInVertically { -it } + fadeIn(),
+            exit = slideOutVertically { -it } + fadeOut(),
+        ) {
+            WebTopBar(
+                tab = tab,
+                bookmarked = bookmarked,
+                onExit = viewModel::exitToStart,
+                onSubmit = viewModel::load,
+                onToggleBookmark = viewModel::toggleBookmark,
+                onNewTab = { viewModel.newTab() },
+                onOpenBookmarks = onOpenBookmarks,
+                onOpenHistory = onOpenHistory,
             )
         }
-        Box {
-            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "더보기") }
-            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuItem(
-                    text = { Text("새 탭") },
-                    leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                    onClick = { menuOpen = false; onNewTab() },
-                )
-                DropdownMenuItem(
-                    text = { Text("북마크") },
-                    leadingIcon = { Icon(Icons.Filled.Bookmarks, contentDescription = null) },
-                    onClick = { menuOpen = false; onOpenBookmarks() },
-                )
-                DropdownMenuItem(
-                    text = { Text("방문 기록") },
-                    leadingIcon = { Icon(Icons.Filled.History, contentDescription = null) },
-                    onClick = { menuOpen = false; onOpenHistory() },
+        if (tab.loading) {
+            LinearProgressIndicator(
+                progress = { tab.progress / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter),
+            )
+        }
+    }
+}
+
+@Composable
+private fun WebTopBar(
+    tab: BrowserTab,
+    bookmarked: Boolean,
+    onExit: () -> Unit,
+    onSubmit: (String) -> Unit,
+    onToggleBookmark: () -> Unit,
+    onNewTab: () -> Unit,
+    onOpenBookmarks: () -> Unit,
+    onOpenHistory: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 4.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onExit) { Icon(Icons.Filled.Close, contentDescription = "나가기") }
+            AddressField(initial = tab.url, resetKey = tab.id, onSubmit = onSubmit, modifier = Modifier.weight(1f))
+            IconButton(onClick = onToggleBookmark) {
+                Icon(
+                    if (bookmarked) Icons.Filled.Star else Icons.Filled.StarBorder,
+                    contentDescription = if (bookmarked) "북마크 해제" else "북마크 추가",
+                    tint = if (bookmarked) Color(0xFFF9A825) else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            OverflowMenu(onNewTab, onOpenBookmarks, onOpenHistory)
         }
+    }
+}
+
+// --- Shared pieces -------------------------------------------------------------------------------
+
+/** Address / search field. Shows [initial] and resets when it changes; keeps what you type otherwise. */
+@Composable
+private fun AddressField(
+    initial: String,
+    onSubmit: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    resetKey: Any? = null,
+) {
+    val focus = LocalFocusManager.current
+    var text by remember(initial, resetKey) { mutableStateOf(initial) }
+    TextField(
+        value = text,
+        onValueChange = { text = it },
+        modifier = modifier,
+        singleLine = true,
+        placeholder = { Text("주소 또는 검색어") },
+        trailingIcon = {
+            if (text.isNotEmpty()) {
+                IconButton(onClick = { text = "" }) { Icon(Icons.Filled.Close, contentDescription = "지우기") }
+            }
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
+        keyboardActions = KeyboardActions(onGo = {
+            focus.clearFocus()
+            onSubmit(text)
+        }),
+        shape = RoundedCornerShape(24.dp),
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+        ),
+    )
+}
+
+@Composable
+private fun OverflowMenu(onNewTab: () -> Unit, onOpenBookmarks: () -> Unit, onOpenHistory: () -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "더보기") }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text("새 탭") },
+                leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                onClick = { open = false; onNewTab() },
+            )
+            DropdownMenuItem(
+                text = { Text("북마크") },
+                leadingIcon = { Icon(Icons.Filled.Bookmarks, contentDescription = null) },
+                onClick = { open = false; onOpenBookmarks() },
+            )
+            DropdownMenuItem(
+                text = { Text("방문 기록") },
+                leadingIcon = { Icon(Icons.Filled.History, contentDescription = null) },
+                onClick = { open = false; onOpenHistory() },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TabCountButton(count: Int, onClick: () -> Unit) {
+    IconButton(onClick = onClick) {
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .border(2.dp, MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(5.dp)),
+            contentAlignment = Alignment.Center,
+        ) { Text(count.toString(), style = MaterialTheme.typography.labelSmall) }
     }
 }
 
@@ -250,49 +403,51 @@ private fun BottomToolbar(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ToolbarButton(Modifier.weight(1f), enabled = tab.canGoBack, onClick = onBack) {
+            IconButton(onClick = onBack, modifier = Modifier.weight(1f)) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
             }
-            ToolbarButton(Modifier.weight(1f), enabled = tab.canGoForward, onClick = onForward) {
+            IconButton(onClick = onForward, enabled = tab.canGoForward, modifier = Modifier.weight(1f)) {
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "앞으로")
             }
-            ToolbarButton(Modifier.weight(1f), onClick = onReloadOrStop) {
+            IconButton(onClick = onReloadOrStop, modifier = Modifier.weight(1f)) {
                 if (tab.loading) {
                     Icon(Icons.Filled.Close, contentDescription = "중지")
                 } else {
                     Icon(Icons.Filled.Refresh, contentDescription = "새로고침")
                 }
             }
-            ToolbarButton(Modifier.weight(1f), onClick = onHome) {
-                Icon(Icons.Filled.Home, contentDescription = "홈")
+            IconButton(onClick = onHome, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Filled.Home, contentDescription = "시작 페이지")
             }
-            ToolbarButton(Modifier.weight(1f), onClick = onTabs) {
-                Box(
-                    modifier = Modifier
-                        .size(22.dp)
-                        .border(2.dp, MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(5.dp)),
-                    contentAlignment = Alignment.Center,
-                ) { Text(tabCount.toString(), style = MaterialTheme.typography.labelSmall) }
-            }
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) { TabCountButton(tabCount, onTabs) }
         }
     }
 }
 
+/**
+ * Hosts the selected tab's WebView; the view itself is owned by the ViewModel so tabs keep their state.
+ * Finger movement is reported (without consuming it) so the top bar can hide on scroll down and show on
+ * scroll up or a touch near the top edge.
+ */
 @Composable
-private fun ToolbarButton(
-    modifier: Modifier,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-    content: @Composable () -> Unit,
+private fun WebViewHost(
+    viewModel: BrowserViewModel,
+    tab: BrowserTab,
+    modifier: Modifier = Modifier,
+    onScrollDown: () -> Unit,
+    onScrollUp: () -> Unit,
+    onTouchTop: () -> Unit,
 ) {
-    IconButton(onClick = onClick, enabled = enabled, modifier = modifier) { content() }
-}
-
-/** Hosts the selected tab's WebView; the view itself is owned by the ViewModel so tabs keep their state. */
-@Composable
-private fun WebViewHost(viewModel: BrowserViewModel, tab: BrowserTab, modifier: Modifier = Modifier) {
     val activity = LocalContext.current
+    val density = LocalDensity.current
+    val topZonePx = with(density) { 56.dp.toPx() }
+    val thresholdPx = with(density) { 24.dp.toPx() }
     val webView = viewModel.webViewFor(tab)
+
+    val latestDown by rememberUpdatedState(onScrollDown)
+    val latestUp by rememberUpdatedState(onScrollUp)
+    val latestTop by rememberUpdatedState(onTouchTop)
+    val drag = remember { DragTracker() }
 
     LifecycleResumeEffect(webView) {
         webView.onResume()
@@ -312,10 +467,42 @@ private fun WebViewHost(viewModel: BrowserViewModel, tab: BrowserTab, modifier: 
                     FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
                 )
             }
+            webView.setOnTouchListener { _, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        drag.lastY = event.y
+                        drag.accumulated = 0f
+                        if (event.y < topZonePx) latestTop()
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        val dy = event.y - drag.lastY
+                        drag.lastY = event.y
+                        // A change of direction starts counting again.
+                        if (dy * drag.accumulated < 0) drag.accumulated = 0f
+                        drag.accumulated += dy
+                        if (drag.accumulated < -thresholdPx) {
+                            latestDown()
+                            drag.accumulated = 0f
+                        } else if (drag.accumulated > thresholdPx) {
+                            latestUp()
+                            drag.accumulated = 0f
+                        }
+                    }
+                }
+                false // never consume: the page still scrolls and handles taps itself
+            }
         },
         onRelease = { frame ->
-            (frame.getChildAt(0) as? android.webkit.WebView)?.detachFromActivity()
+            (frame.getChildAt(0) as? android.webkit.WebView)?.apply {
+                setOnTouchListener(null)
+                detachFromActivity()
+            }
             frame.removeAllViews()
         },
     )
+}
+
+private class DragTracker {
+    var lastY = 0f
+    var accumulated = 0f
 }

@@ -92,9 +92,12 @@ fun SuperDialerApp(
         }
     }
 
+    // A website open in the browser takes the whole screen, so the app's own tab bar steps aside.
+    val hideBottomBar = currentRoute == TopLevelDestination.Hub.route && browserViewModel.immersive
+
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            if (!hideBottomBar) NavigationBar {
                 TopLevelDestination.entries.forEach { destination ->
                     // Sub-screens such as "contacts/{id}" keep their tab highlighted.
                     val selected = currentRoute == destination.route ||

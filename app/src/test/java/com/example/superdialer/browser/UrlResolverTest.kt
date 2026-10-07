@@ -43,6 +43,13 @@ class UrlResolverTest {
         assertTrue(file.startsWith("https://www.google.com/search?q="))
     }
 
+    @Test fun resolveAddressRejectsPlainSearchText() {
+        assertEquals("https://naver.com", UrlResolver.resolveAddress("naver.com"))
+        assertEquals("https://www.google.com/search?q=a", UrlResolver.resolveAddress("https://www.google.com/search?q=a"))
+        assertNull(UrlResolver.resolveAddress("그냥 글자"))
+        assertNull(UrlResolver.resolveAddress("   "))
+    }
+
     @Test fun webSchemeCheck() {
         assertTrue(UrlResolver.isWebScheme("https"))
         assertTrue(UrlResolver.isWebScheme("HTTP"))

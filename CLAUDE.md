@@ -118,7 +118,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 내장 브라우저 (browser/, 5단계)
 - `BrowserViewModel`(activity 스코프)이 탭별 `WebView`를 보관 → 탭/화면 전환·회전에도 페이지 상태 유지. `MutableContextWrapper`로 화면에 붙을 때만 Activity 컨텍스트를 물려 누수 방지(`WebViewHost`). MainActivity는 `configChanges`로 회전 시 재생성하지 않음
 - 주소창: `UrlResolver`가 입력 해석 (URL/호스트면 https://, localhost·IPv4는 http://, 그 외는 구글 검색). `javascript:`/`file:` 등은 URL로 취급하지 않음
-- 하단 툴바 뒤로/앞으로/새로고침(로딩 중엔 중지)/홈/탭(개수), 상단 로딩 진행바, ⋮ 메뉴(새 탭, 북마크, 방문 기록)
+- **시작 화면(스피드 다이얼)**: 새 탭/나가기/홈은 시작 화면. 링크 타일 격자(4열), 탭하면 열기, 길게 누르면 수정/삭제, "+"로 추가(최대 24개). Room `speed_dials`(DB v2, 마이그레이션 1→2가 기본 타일 6개 시딩: 네이버/구글/유튜브/다음/쿠팡/위키백과)
+- **웹 화면(몰입형)**: 사이트가 열려 있으면(`BrowserViewModel.immersive`) 위쪽 "브라우저/게임" 전환 바와 앱 하단 탭 바를 숨겨 페이지가 전체 화면을 씀. 상단 바(왼쪽 나가기 X · 주소 · 북마크 · ⋮)는 아래로 스크롤하면 숨고 위로 스크롤하거나 화면 위쪽 56dp를 터치하면 나타남(터치 이동량만 감지, 이벤트는 소비하지 않음). 로딩 진행선은 항상 맨 위. 하단 사이트 이동 바(뒤로/앞으로/새로고침/시작 페이지/탭)는 항상 표시. 뒤로가기는 페이지 기록 → 더 갈 곳이 없으면 시작 화면
+- `hubSection`(0 브라우저, 1 게임)은 `BrowserViewModel`에 있어 앱이 하단 바 숨김 여부를 판단할 수 있음
 - 북마크·방문 기록: Room(`browser/data/BrowserDatabase`, KSP). 방문 기록은 페이지 로드 완료 시 저장, 개별/전체 삭제
 - 다운로드: `DownloadListener` → 확인 다이얼로그 → `DownloadManager`(다운로드 폴더). 풀스크린 동영상: `onShowCustomView`를 시스템 바 위 전체 화면 Dialog로 표시
 - 보안: file/content 접근 차단, 혼합 콘텐츠 차단, 팝업 창 차단, 서드파티 쿠키 차단, Safe Browsing on, JS 브릿지(addJavascriptInterface) 없음, 웹 페이지가 여는 file:/content:/intent: 링크는 무시(tel:/mailto:/sms:만 외부 앱으로). 카메라·마이크·위치 권한 요청은 거부(기본 동작)

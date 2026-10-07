@@ -33,6 +33,13 @@ object UrlResolver {
         return SEARCH_URL + URLEncoder.encode(text, "UTF-8")
     }
 
+    /** Like [resolve], but null when the text is not an address (it would only turn into a search). */
+    fun resolveAddress(input: String): String? {
+        val url = resolve(input) ?: return null
+        val typedUrl = input.trim().startsWith("http", ignoreCase = true)
+        return if (url.startsWith(SEARCH_URL) && !typedUrl) null else url
+    }
+
     /** Schemes the in-app browser loads itself. Everything else is handed off or blocked. */
     fun isWebScheme(scheme: String?): Boolean =
         scheme.equals("http", ignoreCase = true) || scheme.equals("https", ignoreCase = true)
