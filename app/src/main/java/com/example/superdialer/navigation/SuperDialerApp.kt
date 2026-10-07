@@ -24,7 +24,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.superdialer.browser.BrowserScreen
 import com.example.superdialer.calllog.CallHistoryScreen
 import com.example.superdialer.calllog.CallLogScreen
 import com.example.superdialer.calllog.CallLogViewModel
@@ -33,7 +32,7 @@ import com.example.superdialer.contacts.ContactsScreen
 import com.example.superdialer.contacts.ContactsViewModel
 import com.example.superdialer.dialer.DialerScreen
 import com.example.superdialer.dialer.DialerViewModel
-import com.example.superdialer.games.GamesScreen
+import com.example.superdialer.hub.WebGamesScreen
 import com.example.superdialer.settings.BlockedNumbersScreen
 import com.example.superdialer.settings.BlockedNumbersViewModel
 import com.example.superdialer.settings.RejectMessagesScreen
@@ -41,7 +40,6 @@ import com.example.superdialer.settings.SettingsScreen
 
 private const val ENTRY_ID_ARG = "entryId"
 private const val CALL_HISTORY_ROUTE = "calllog/{$ENTRY_ID_ARG}"
-private const val SETTINGS_ROUTE = "settings"
 private const val BLOCKED_ROUTE = "settings/blocked"
 private const val REJECT_ROUTE = "settings/reject"
 private const val CONTACT_ID_ARG = "contactId"
@@ -98,8 +96,7 @@ fun SuperDialerApp(
                 TopLevelDestination.entries.forEach { destination ->
                     // Sub-screens such as "contacts/{id}" keep their tab highlighted.
                     val selected = currentRoute == destination.route ||
-                        currentRoute?.startsWith(destination.route + "/") == true ||
-                        (destination == TopLevelDestination.CallLog && currentRoute?.startsWith(SETTINGS_ROUTE) == true)
+                        currentRoute?.startsWith(destination.route + "/") == true
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
@@ -139,12 +136,10 @@ fun SuperDialerApp(
                     onOpenHistory = { id -> navController.navigate("calllog/$id") },
                     onOpenContact = { id -> navController.navigate("contacts/$id") },
                     onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
-                    onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                 )
             }
-            composable(SETTINGS_ROUTE) {
+            composable(TopLevelDestination.Settings.route) {
                 SettingsScreen(
-                    onBack = { navController.popBackStack() },
                     onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
                     onOpenRejectMessages = { navController.navigate(REJECT_ROUTE) },
                 )
@@ -171,7 +166,6 @@ fun SuperDialerApp(
                     viewModel = contactsViewModel,
                     onOpenContact = { id -> navController.navigate("contacts/$id") },
                     onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
-                    onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                 )
             }
             composable(
@@ -185,8 +179,7 @@ fun SuperDialerApp(
                     onBack = { navController.popBackStack() },
                 )
             }
-            composable(TopLevelDestination.Browser.route) { BrowserScreen() }
-            composable(TopLevelDestination.Games.route) { GamesScreen() }
+            composable(TopLevelDestination.Hub.route) { WebGamesScreen() }
         }
     }
 }

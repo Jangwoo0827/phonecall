@@ -91,7 +91,6 @@ fun CallLogScreen(
     onOpenHistory: (entryId: Long) -> Unit,
     onOpenContact: (contactId: Long) -> Unit,
     onOpenBlocked: () -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     PermissionGate(
@@ -100,7 +99,7 @@ fun CallLogScreen(
         rationale = "최근 통화 기록을 보려면 통화 기록 권한이 필요합니다.\n연락처 권한을 허용하면 저장된 이름도 표시됩니다.",
         modifier = modifier,
     ) {
-        CallLogList(viewModel, onOpenHistory, onOpenContact, onOpenBlocked, onOpenSettings, modifier)
+        CallLogList(viewModel, onOpenHistory, onOpenContact, onOpenBlocked, modifier)
     }
 }
 
@@ -110,7 +109,6 @@ private fun CallLogList(
     onOpenHistory: (Long) -> Unit,
     onOpenContact: (Long) -> Unit,
     onOpenBlocked: () -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -181,7 +179,6 @@ private fun CallLogList(
                 onSelect = { groups.firstOrNull()?.let { viewModel.startSelecting(it.id) } },
                 onDeleteAll = { confirmDeleteAll = true },
                 onOpenBlocked = onOpenBlocked,
-                onOpenSettings = onOpenSettings,
             )
             FilterRow(selected = viewModel.filter, onSelect = viewModel::onFilterChange)
         }
@@ -250,7 +247,6 @@ private fun SearchBar(
     onSelect: () -> Unit,
     onDeleteAll: () -> Unit,
     onOpenBlocked: () -> Unit,
-    onOpenSettings: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     Row(
@@ -288,7 +284,6 @@ private fun SearchBar(
                 DropdownMenuItem(text = { Text("선택 삭제") }, onClick = { menuOpen = false; onSelect() })
                 DropdownMenuItem(text = { Text("전체 삭제") }, onClick = { menuOpen = false; onDeleteAll() })
                 DropdownMenuItem(text = { Text("차단 관리") }, onClick = { menuOpen = false; onOpenBlocked() })
-                DropdownMenuItem(text = { Text("설정") }, onClick = { menuOpen = false; onOpenSettings() })
             }
         }
     }

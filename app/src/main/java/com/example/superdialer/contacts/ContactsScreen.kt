@@ -54,7 +54,6 @@ fun ContactsScreen(
     viewModel: ContactsViewModel,
     onOpenContact: (Long) -> Unit,
     onOpenBlocked: () -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     PermissionGate(
@@ -62,7 +61,7 @@ fun ContactsScreen(
         rationale = "연락처를 보려면 연락처 권한이 필요합니다.",
         modifier = modifier,
     ) {
-        ContactsList(viewModel, onOpenContact, onOpenBlocked, onOpenSettings, modifier)
+        ContactsList(viewModel, onOpenContact, onOpenBlocked, modifier)
     }
 }
 
@@ -71,7 +70,6 @@ private fun ContactsList(
     viewModel: ContactsViewModel,
     onOpenContact: (Long) -> Unit,
     onOpenBlocked: () -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -112,7 +110,6 @@ private fun ContactsList(
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     DropdownMenuItem(text = { Text("차단 관리") }, onClick = { menuOpen = false; onOpenBlocked() })
-                    DropdownMenuItem(text = { Text("설정") }, onClick = { menuOpen = false; onOpenSettings() })
                 }
             }
         }

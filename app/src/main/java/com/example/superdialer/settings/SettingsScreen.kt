@@ -39,7 +39,6 @@ import com.example.superdialer.ui.rememberDefaultDialerStatus
 
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit,
     onOpenBlocked: () -> Unit,
     onOpenRejectMessages: () -> Unit,
     modifier: Modifier = Modifier,
@@ -57,7 +56,7 @@ fun SettingsScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        ScreenHeader("설정", onBack)
+        ScreenHeader("설정", onBack = null)
 
         Section("전화")
         ListItem(

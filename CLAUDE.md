@@ -20,10 +20,12 @@
 - `incall/` 수신·발신·통화 중 화면 (`SuperInCallService` → `CallManager` → `InCallScreen`), 알림(`CallNotifications`)
 - `browser/` 내장 웹브라우저
 - `games/` 내장 게임
-- `navigation/` 하단 탭 네비게이션 (키패드/최근기록/연락처/브라우저/게임)
+- `hub/` 브라우저와 게임을 한 탭으로 합친 화면 (`WebGamesScreen`, 상단 전환 바)
+- `settings/` 설정 탭과 하위 화면(차단 관리, 거절 메시지)
+- `navigation/` 하단 탭 네비게이션 (키패드/최근기록/연락처/웹·게임/설정)
 - `ui/theme/` 테마
 
-현재 상태: 키패드(자동완성), 최근기록, 연락처(즐겨찾기 토글), 통화 화면, 설정(차단/거절 메시지) 구현됨. 브라우저/게임 탭은 빈 화면.
+현재 상태: 키패드(자동완성), 최근기록, 연락처(즐겨찾기 토글), 통화 화면, 설정 탭(차단/거절 메시지) 구현됨. 웹·게임 탭(브라우저/게임 전환 바)은 두 화면 모두 빈 화면.
 
 ## 기본 전화 앱 요건 (매니페스트에 이미 반영)
 - `MainActivity`에 `DIAL`(tel/없음), `VIEW tel` intent-filter
@@ -87,16 +89,16 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 에뮬레이터 테스트: 기본 전화 앱 지정 `adb -s emulator-5554 shell cmd role add-role-holder --user 0 android.app.role.DIALER com.example.superdialer`, 가상 수신 `adb -s emulator-5554 emu gsm call 번호`, 끊기 `emu gsm cancel 번호`, 가상 발신 `am start -a android.intent.action.CALL -d tel:번호`. 에뮬레이터는 느려서 화면이 뜨기까지 ~4초
 
 ## 최근기록 추가 기능 / 설정
-- 최근기록 상단: 검색(이름/초성/번호) + ⋮(선택 삭제, 전체 삭제(확인 다이얼로그), 차단 관리, 설정) + 필터 칩(전체/부재중/수신/발신)
+- 최근기록 상단: 검색(이름/초성/번호) + ⋮(선택 삭제, 전체 삭제(확인 다이얼로그), 차단 관리) + 필터 칩(전체/부재중/수신/발신)
 - 같은 날 연속된 같은 번호 통화는 한 행으로 묶고 "(n)" 표시 (`groupCalls`, 삭제도 묶음 단위). 길게 누르면 선택 모드(체크박스) 진입
 - 삭제는 WRITE_CALL_LOG 필요 — 없으면 요청 후 대기 중이던 삭제를 이어서 실행
 - 설정(`settings/`): 기본 전화 앱, 차단 관리(`BlockedNumberContract`, 기본 전화 앱일 때만 목록/추가/해제 가능), 거절 메시지 편집(`RejectMessageStore`), 착신전환·부가서비스(시스템 통화 설정 열기 `ACTION_SHOW_CALL_SETTINGS`), 키패드음 스위치(`AppSettings`), 권한 상태, 전체 화면 알림, 앱 버전
-- 설정/차단/거절 메시지 화면은 최근기록 탭 소속으로 하단 탭 강조 유지 (route `settings`, `settings/blocked`, `settings/reject`)
+- 설정은 독립 하단 탭 (route `settings`), 차단 관리·거절 메시지는 그 하위 (`settings/blocked`, `settings/reject`)라 하단 탭은 설정이 강조됨. 하위 경로(`x/...`)는 상위 탭 강조를 유지하고, 선택된 탭을 다시 누르면 탭 루트로 복귀
 - 에뮬레이터에서 adb로 한글/숫자 입력 시 Gboard "스타일러스 체험" 팝업이 가로챌 수 있음(앱 문제 아님)
 
 ## 키패드 자동완성 / 연락처 보강
 - 키패드: 2자리 이상 입력하면 번호에 포함되는 연락처 → 최근 통화(미저장 번호) 순으로 최대 3개 제안(`findSuggestions`, 번호 키 `numberKey`로 +82/010 동일 취급). 탭하면 번호가 채워짐. 연락처에 없는 번호면 "연락처에 추가"(시스템 연락처 추가 화면)
-- 연락처 목록: 상단 + (시스템 연락처 추가), ⋮(차단 관리, 설정)
+- 연락처 목록: 상단 + (시스템 연락처 추가), ⋮(차단 관리)
 - 연락처 상세: 즐겨찾기 토글(WRITE_CONTACTS 요청 후 `Contacts.STARRED` 갱신), 공유, 편집(시스템 편집 화면), 이 연락처의 통화 기록 최대 20건
 - 최근기록 길게 누르기 메뉴에 "번호 공유" 추가
 
