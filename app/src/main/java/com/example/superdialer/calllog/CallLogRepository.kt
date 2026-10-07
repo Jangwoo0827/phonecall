@@ -62,6 +62,28 @@ class CallLogRepository(private val context: Context) {
         false
     }
 
+    /** Needs WRITE_CALL_LOG. Returns how many rows were removed. */
+    fun deleteMany(ids: List<Long>): Int = try {
+        // SQLite caps bound variables, so delete in chunks.
+        ids.chunked(400).sumOf { chunk ->
+            val placeholders = chunk.joinToString(",") { "?" }
+            resolver.delete(
+                CallLog.Calls.CONTENT_URI,
+                "${CallLog.Calls._ID} IN ($placeholders)",
+                chunk.map(Long::toString).toTypedArray(),
+            )
+        }
+    } catch (e: SecurityException) {
+        0
+    }
+
+    /** Needs WRITE_CALL_LOG. Removes the whole call log. */
+    fun deleteAll(): Int = try {
+        resolver.delete(CallLog.Calls.CONTENT_URI, null, null)
+    } catch (e: SecurityException) {
+        0
+    }
+
     /** Only the default dialer / carrier app may write to the block list. */
     fun block(number: String): BlockResult {
         if (!BlockedNumberContract.canCurrentUserBlockNumbers(context)) return BlockResult.NotAllowed

@@ -28,9 +28,16 @@ import com.example.superdialer.contacts.ContactsViewModel
 import com.example.superdialer.dialer.DialerScreen
 import com.example.superdialer.dialer.DialerViewModel
 import com.example.superdialer.games.GamesScreen
+import com.example.superdialer.settings.BlockedNumbersScreen
+import com.example.superdialer.settings.BlockedNumbersViewModel
+import com.example.superdialer.settings.RejectMessagesScreen
+import com.example.superdialer.settings.SettingsScreen
 
 private const val ENTRY_ID_ARG = "entryId"
 private const val CALL_HISTORY_ROUTE = "calllog/{$ENTRY_ID_ARG}"
+private const val SETTINGS_ROUTE = "settings"
+private const val BLOCKED_ROUTE = "settings/blocked"
+private const val REJECT_ROUTE = "settings/reject"
 private const val CONTACT_ID_ARG = "contactId"
 private const val CONTACT_DETAIL_ROUTE = "contacts/{$CONTACT_ID_ARG}"
 
@@ -43,6 +50,7 @@ fun SuperDialerApp(
     // Created here (activity scope) so list state survives tab switches and is shared with detail screens.
     val callLogViewModel: CallLogViewModel = viewModel()
     val contactsViewModel: ContactsViewModel = viewModel()
+    val blockedViewModel: BlockedNumbersViewModel = viewModel()
 
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -76,12 +84,15 @@ fun SuperDialerApp(
                 TopLevelDestination.entries.forEach { destination ->
                     // Sub-screens such as "contacts/{id}" keep their tab highlighted.
                     val selected = currentRoute == destination.route ||
-                        currentRoute?.startsWith(destination.route + "/") == true
+                        currentRoute?.startsWith(destination.route + "/") == true ||
+                        (destination == TopLevelDestination.CallLog && currentRoute?.startsWith(SETTINGS_ROUTE) == true)
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
                             if (selected && currentRoute != destination.route) {
-                                navController.popBackStack(destination.route, inclusive = false)
+                                if (!navController.popBackStack(destination.route, inclusive = false)) {
+                                    navigateToTab(destination.route)
+                                }
                             } else {
                                 navigateToTab(destination.route)
                             }
@@ -104,7 +115,22 @@ fun SuperDialerApp(
                     viewModel = callLogViewModel,
                     onOpenHistory = { id -> navController.navigate("calllog/$id") },
                     onOpenContact = { id -> navController.navigate("contacts/$id") },
+                    onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
+                    onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                 )
+            }
+            composable(SETTINGS_ROUTE) {
+                SettingsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
+                    onOpenRejectMessages = { navController.navigate(REJECT_ROUTE) },
+                )
+            }
+            composable(BLOCKED_ROUTE) {
+                BlockedNumbersScreen(blockedViewModel, onBack = { navController.popBackStack() })
+            }
+            composable(REJECT_ROUTE) {
+                RejectMessagesScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 route = CALL_HISTORY_ROUTE,
