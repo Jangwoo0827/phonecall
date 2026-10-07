@@ -103,3 +103,12 @@ Actions 탭에서 진행 상황을 볼 수 있고, 끝나면 Releases에 `SuperD
 - 릴리스 APK는 **디버그 빌드와 서명이 달라** 서로 덮어 설치되지 않습니다. 폰에 `adb install`로 올린 디버그 빌드가 있으면 지우고(앱 데이터 삭제) 릴리스를 설치해야 합니다. 한 번 릴리스 키로 설치한 뒤에는 이후 릴리스가 계속 업데이트로 설치됩니다.
 - Secrets가 없으면 워크플로가 "KEYSTORE_BASE64 secret is not set" 오류로 바로 멈춥니다.
 - 로컬에서 서명 없이 `./gradlew assembleRelease`를 실행하면 서명되지 않은 `app-release-unsigned.apk`가 만들어집니다. 로컬에서 서명하려면 `KEYSTORE_FILE`(파일 경로), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` 환경변수를 지정하세요.
+
+### Actions가 실패했을 때
+
+1. 저장소의 **Actions** 탭 > 실패한 실행 > 왼쪽 `release` 작업을 열면 단계별 결과가 보입니다. 빨간 ✗ 표시가 붙은 단계를 펼치면 원인이 나옵니다.
+2. `Decode and check signing keystore` 단계의 오류 문구와 원인:
+   - `Secret ... is empty or not set`: 해당 Secret이 없거나 이름이 다릅니다. **Variables**가 아니라 **Secrets** 탭에 정확한 이름으로 만들어야 합니다.
+   - `KEYSTORE_BASE64 is not valid base64`: 값이 깨졌거나 일부만 붙었습니다. 2번의 PowerShell 명령을 다시 실행해 전체를 새로 붙여넣으세요.
+   - `keystore password was incorrect` / 별칭 오류: `KEYSTORE_PASSWORD` 또는 `KEY_ALIAS`가 keystore를 만들 때 정한 값과 다릅니다.
+3. Secret을 고쳤다면 **같은 실행에서 "Re-run all jobs"** 를 눌러 다시 돌릴 수 있습니다. 워크플로 파일(`release.yml`)을 고친 경우에는 태그가 가리키는 옛 버전이 쓰이므로, **새 태그**(예: `v0.2.1`)를 푸시해야 새 워크플로가 적용됩니다.
