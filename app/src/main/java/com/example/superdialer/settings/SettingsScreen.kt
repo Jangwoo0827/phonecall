@@ -1,5 +1,12 @@
 package com.example.superdialer.settings
 
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.background
 import android.Manifest
 import android.app.NotificationManager
 import android.content.ActivityNotFoundException
@@ -66,104 +73,138 @@ fun SettingsScreen(
     ) {
         ScreenHeader("설정", onBack = null)
 
-        Section("전화")
-        ListItem(
-            headlineContent = { Text("기본 전화 앱") },
-            supportingContent = {
-                Text(
-                    if (defaultDialer.isDefault) {
-                        "SuperDialer가 기본 전화 앱입니다 (되돌리기: 휴대폰 설정 > 앱 > 기본 앱 > 전화 앱)"
-                    } else {
-                        "수신·통화 화면과 번호 차단에 필요합니다"
-                    }
-                )
-            },
-            trailingContent = {
-                if (defaultDialer.isDefault) {
-                    TextButton(onClick = defaultDialer.request) { Text("다시 요청") }
-                } else {
-                    Button(onClick = defaultDialer.request) { Text("설정") }
-                }
-            },
-        )
-        Clickable("차단 관리", "차단한 번호 보기·추가·해제", onOpenBlocked)
-        Clickable("거절 메시지", "수신 거절 시 보낼 문구 관리", onOpenRejectMessages)
-        Clickable("착신전환·통화 부가서비스", "통신사 통화 설정 열기 (착신전환 등)") { openCallSettings(context) }
-
-        Section("키패드")
-        ListItem(
-            headlineContent = { Text("키패드음") },
-            supportingContent = { Text("번호를 누를 때 DTMF 소리를 재생합니다") },
-            trailingContent = {
-                Switch(checked = AppSettings.dtmfEnabled, onCheckedChange = AppSettings::updateDtmfEnabled)
-            },
-        )
-
-        Section("브라우저")
-        var externalLinks by remember { mutableStateOf(ExternalLinks.isEnabled(context)) }
-        ListItem(
-            headlineContent = { Text("외부 링크를 이 브라우저로 열기") },
-            supportingContent = {
-                Text("켜면 다른 앱의 웹 링크를 열 때 SuperDialer가 선택지에 나옵니다. 기본값은 꺼짐입니다.")
-            },
-            trailingContent = {
-                Switch(checked = externalLinks, onCheckedChange = {
-                    ExternalLinks.setEnabled(context, it)
-                    externalLinks = it
-                })
-            },
-        )
-
-        Section("권한")
-        PermissionRow(context, "전화", Manifest.permission.CALL_PHONE)
-        PermissionRow(context, "통화 기록", Manifest.permission.READ_CALL_LOG)
-        PermissionRow(context, "통화 기록 삭제", Manifest.permission.WRITE_CALL_LOG)
-        PermissionRow(context, "연락처", Manifest.permission.READ_CONTACTS)
-        PermissionRow(context, "연락처 수정 (즐겨찾기)", Manifest.permission.WRITE_CONTACTS)
-        PermissionRow(context, "문자 읽기 (연락처·기록의 메시지 보기)", Manifest.permission.READ_SMS)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            PermissionRow(context, "알림", Manifest.permission.POST_NOTIFICATIONS)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            val allowed = context.getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
+        SettingsGroup("전화") {
             ListItem(
-                modifier = Modifier.clickable {
-                    context.startActivity(
-                        Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.fromParts("package", context.packageName, null))
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                colors = transparentListItem(),
+                headlineContent = { Text("기본 전화 앱") },
+                supportingContent = {
+                    Text(
+                        if (defaultDialer.isDefault) {
+                            "SuperDialer가 기본 전화 앱입니다 (되돌리기: 휴대폰 설정 > 앱 > 기본 앱 > 전화 앱)"
+                        } else {
+                            "수신·통화 화면과 번호 차단에 필요합니다"
+                        }
                     )
                 },
-                headlineContent = { Text("전체 화면 알림") },
-                supportingContent = { Text("잠금 화면에서 수신 전화를 크게 표시합니다 · " + if (allowed) "허용됨" else "허용 안 됨") },
+                trailingContent = {
+                    if (defaultDialer.isDefault) {
+                        TextButton(onClick = defaultDialer.request) { Text("다시 요청") }
+                    } else {
+                        Button(onClick = defaultDialer.request) { Text("설정") }
+                    }
+                },
+            )
+            Clickable("차단 관리", "차단한 번호 보기·추가·해제", onOpenBlocked)
+            Clickable("거절 메시지", "수신 거절 시 보낼 문구 관리", onOpenRejectMessages)
+            Clickable("착신전환·통화 부가서비스", "통신사 통화 설정 열기 (착신전환 등)") { openCallSettings(context) }
+        }
+
+        SettingsGroup("화면") {
+            ListItem(
+                colors = transparentListItem(),
+                headlineContent = { Text("배경화면 색상 따라가기") },
+                supportingContent = { Text("켜면 폰 배경화면에서 뽑은 색을 씁니다. 기본값은 앱 고유 색상입니다") },
+                trailingContent = {
+                    Switch(checked = AppSettings.dynamicColor, onCheckedChange = AppSettings::updateDynamicColor)
+                },
             )
         }
 
-        Section("앱 정보")
-        ListItem(
-            headlineContent = { Text("버전") },
-            supportingContent = { Text(appVersion(context)) },
-        )
-        ListItem(
-            headlineContent = { Text("통화 녹음") },
-            supportingContent = { Text("안드로이드는 보안 정책상 일반 앱의 통화 녹음을 허용하지 않아 지원하지 않습니다") },
-        )
+        SettingsGroup("키패드") {
+            ListItem(
+                colors = transparentListItem(),
+                headlineContent = { Text("키패드음") },
+                supportingContent = { Text("번호를 누를 때 DTMF 소리를 재생합니다") },
+                trailingContent = {
+                    Switch(checked = AppSettings.dtmfEnabled, onCheckedChange = AppSettings::updateDtmfEnabled)
+                },
+            )
+        }
+
+        SettingsGroup("브라우저") {
+            var externalLinks by remember { mutableStateOf(ExternalLinks.isEnabled(context)) }
+            ListItem(
+                colors = transparentListItem(),
+                headlineContent = { Text("외부 링크를 이 브라우저로 열기") },
+                supportingContent = {
+                    Text("켜면 다른 앱의 웹 링크를 열 때 SuperDialer가 선택지에 나옵니다. 기본값은 꺼짐입니다.")
+                },
+                trailingContent = {
+                    Switch(checked = externalLinks, onCheckedChange = {
+                        ExternalLinks.setEnabled(context, it)
+                        externalLinks = it
+                    })
+                },
+            )
+        }
+
+        SettingsGroup("권한") {
+            PermissionRow(context, "전화", Manifest.permission.CALL_PHONE)
+            PermissionRow(context, "통화 기록", Manifest.permission.READ_CALL_LOG)
+            PermissionRow(context, "통화 기록 삭제", Manifest.permission.WRITE_CALL_LOG)
+            PermissionRow(context, "연락처", Manifest.permission.READ_CONTACTS)
+            PermissionRow(context, "연락처 수정 (즐겨찾기)", Manifest.permission.WRITE_CONTACTS)
+            PermissionRow(context, "문자 읽기 (연락처·기록의 메시지 보기)", Manifest.permission.READ_SMS)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                PermissionRow(context, "알림", Manifest.permission.POST_NOTIFICATIONS)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                val allowed = context.getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
+                ListItem(
+                    colors = transparentListItem(),
+                    modifier = Modifier.clickable {
+                        context.startActivity(
+                            Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.fromParts("package", context.packageName, null))
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    },
+                    headlineContent = { Text("전체 화면 알림") },
+                    supportingContent = { Text("잠금 화면에서 수신 전화를 크게 표시합니다 · " + if (allowed) "허용됨" else "허용 안 됨") },
+                )
+            }
+        }
+
+        SettingsGroup("앱 정보") {
+            ListItem(
+                colors = transparentListItem(),
+                headlineContent = { Text("버전") },
+                supportingContent = { Text(appVersion(context)) },
+            )
+            ListItem(
+                colors = transparentListItem(),
+                headlineContent = { Text("통화 녹음") },
+                supportingContent = { Text("안드로이드는 보안 정책상 일반 앱의 통화 녹음을 허용하지 않아 지원하지 않습니다") },
+            )
+        }
     }
 }
 
+/** A titled card holding one block of settings rows. */
 @Composable
-private fun Section(title: String) {
-    HorizontalDivider()
+private fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
     Text(
         text = title,
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 4.dp),
+        modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 20.dp, bottom = 8.dp),
         style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
+    )
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 12.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer),
+        content = content,
     )
 }
 
 @Composable
+private fun transparentListItem() = ListItemDefaults.colors(containerColor = Color.Transparent)
+
+@Composable
 private fun Clickable(title: String, subtitle: String, onClick: () -> Unit) {
     ListItem(
+        colors = transparentListItem(),
         modifier = Modifier.clickable(onClick = onClick),
         headlineContent = { Text(title) },
         supportingContent = { Text(subtitle) },
@@ -174,6 +215,7 @@ private fun Clickable(title: String, subtitle: String, onClick: () -> Unit) {
 private fun PermissionRow(context: Context, label: String, permission: String) {
     val granted = context.hasPermission(permission)
     ListItem(
+        colors = transparentListItem(),
         modifier = Modifier.clickable { context.openAppSettings() },
         headlineContent = { Text(label) },
         supportingContent = { Text(if (granted) "허용됨" else "허용 안 됨 · 눌러서 설정 열기") },

@@ -133,11 +133,19 @@ fun ActivityChips(
             selected = !showMessages,
             onClick = { onSelect(false) },
             label = { Text(if (callCount > 0) "통화 기록 $callCount" else "통화 기록") },
+            colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ),
         )
         androidx.compose.material3.FilterChip(
             selected = showMessages,
             onClick = { onSelect(true) },
             label = { Text("메시지") },
+            colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ),
         )
     }
 }

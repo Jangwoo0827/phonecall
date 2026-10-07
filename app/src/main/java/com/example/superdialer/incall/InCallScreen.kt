@@ -1,5 +1,8 @@
 package com.example.superdialer.incall
 
+import com.example.superdialer.ui.theme.EndCallRed
+import com.example.superdialer.ui.theme.CallButtonGreen
+import androidx.compose.ui.graphics.Brush
 import android.telecom.DisconnectCause
 import android.telecom.CallAudioState
 import android.widget.Toast
@@ -59,8 +62,6 @@ import com.example.superdialer.settings.RejectMessageStore
 import com.example.superdialer.ui.InitialAvatar
 import kotlinx.coroutines.delay
 
-private val AnswerGreen = Color(0xFF2E7D32)
-private val EndRed = Color(0xFFC62828)
 
 @Composable
 fun InCallScreen(onClose: () -> Unit, onAddCall: () -> Unit) {
@@ -84,7 +85,7 @@ fun InCallScreen(onClose: () -> Unit, onAddCall: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF101418)),
+            .background(Brush.verticalGradient(listOf(Color(0xFF0F2D22), Color(0xFF0B1210)))),
     ) {
         if (call == null) return@Box
         val others = calls.filter { it.id != call.id }
@@ -187,8 +188,8 @@ private fun RingingControls(call: CallSnapshot) {
         }
         Spacer(Modifier.height(24.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            RoundButton(Icons.Filled.CallEnd, "거절", EndRed) { CallManager.reject(call.id) }
-            RoundButton(Icons.Filled.Call, "받기", AnswerGreen) { CallManager.answer(call.id) }
+            RoundButton(Icons.Filled.CallEnd, "거절", EndCallRed) { CallManager.reject(call.id) }
+            RoundButton(Icons.Filled.Call, "받기", CallButtonGreen) { CallManager.answer(call.id) }
         }
     }
     if (showMessages) {
@@ -267,7 +268,7 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
             }
         }
         Spacer(Modifier.height(8.dp))
-        RoundButton(Icons.Filled.CallEnd, "종료", EndRed) { CallManager.disconnect(call.id) }
+        RoundButton(Icons.Filled.CallEnd, "종료", EndCallRed) { CallManager.disconnect(call.id) }
     }
 }
 
@@ -306,7 +307,7 @@ private fun InCallKeypad(callId: Int, onHide: () -> Unit) {
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(32.dp), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onHide) { Text("숨기기", color = Color.White) }
-            RoundButton(Icons.Filled.CallEnd, "종료", EndRed) { CallManager.disconnect(callId) }
+            RoundButton(Icons.Filled.CallEnd, "종료", EndCallRed) { CallManager.disconnect(callId) }
         }
     }
 }
@@ -316,7 +317,7 @@ private fun RoundButton(icon: ImageVector, label: String, color: Color, onClick:
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
-                .size(72.dp)
+                .size(80.dp)
                 .clip(CircleShape)
                 .background(color)
                 .clickable(onClick = onClick),

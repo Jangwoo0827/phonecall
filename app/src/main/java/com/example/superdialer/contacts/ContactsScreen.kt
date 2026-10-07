@@ -1,5 +1,12 @@
 package com.example.superdialer.contacts
 
+import com.example.superdialer.ui.theme.starColor
+import com.example.superdialer.ui.groupShape
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.foundation.lazy.itemsIndexed
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -46,8 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.example.superdialer.ui.InitialAvatar
 import com.example.superdialer.ui.PermissionGate
-
-private val StarColor = Color(0xFFF9A825)
 
 @Composable
 fun ContactsScreen(
@@ -128,14 +133,14 @@ private fun ContactsList(
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     if (favorites.isNotEmpty()) {
                         item(key = "header-favorites") { SectionHeader("즐겨찾기") }
-                        items(favorites, key = { "fav-${it.id}" }) { contact ->
-                            ContactRow(contact, onClick = { onOpenContact(contact.id) })
+                        itemsIndexed(favorites, key = { _, c -> "fav-${c.id}" }) { index, contact ->
+                            ContactRow(contact, groupShape(index, favorites.size), onClick = { onOpenContact(contact.id) })
                         }
                     }
                     sections.forEach { section ->
                         item(key = "header-${section.header}") { SectionHeader(section.header) }
-                        items(section.contacts, key = { "c-${it.id}" }) { contact ->
-                            ContactRow(contact, onClick = { onOpenContact(contact.id) })
+                        itemsIndexed(section.contacts, key = { _, c -> "c-${c.id}" }) { index, contact ->
+                            ContactRow(contact, groupShape(index, section.contacts.size), onClick = { onOpenContact(contact.id) })
                         }
                     }
                 }
@@ -169,31 +174,38 @@ private fun SearchField(
         colors = TextFieldDefaults.colors(
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
     )
 }
 
 @Composable
 private fun SectionHeader(title: String) {
-    Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
-        Text(
-            text = title,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-    }
+    Text(
+        text = title,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+    )
 }
 
 @Composable
-private fun ContactRow(contact: Contact, onClick: () -> Unit) {
+private fun ContactRow(contact: Contact, shape: Shape, onClick: () -> Unit) {
     ListItem(
-        modifier = Modifier.clickable(onClick = onClick),
-        leadingContent = { InitialAvatar(contact.name) },
-        headlineContent = { Text(contact.name, maxLines = 1) },
+        modifier = Modifier
+            .padding(start = 12.dp, end = 12.dp, bottom = 2.dp)
+            .clip(shape)
+            .clickable(onClick = onClick),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        leadingContent = { InitialAvatar(contact.name, size = 44.dp) },
+        headlineContent = { Text(contact.name, maxLines = 1, fontWeight = FontWeight.SemiBold) },
         trailingContent = {
             if (contact.starred) {
-                Icon(Icons.Filled.Star, contentDescription = "즐겨찾기", tint = StarColor)
+                Icon(Icons.Filled.Star, contentDescription = "즐겨찾기", tint = starColor())
             }
         },
     )

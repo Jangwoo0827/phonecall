@@ -151,3 +151,13 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - keystore 만들기·base64 변환·Secrets 등록·태그 푸시 절차는 README.md "릴리스 배포" 참고. **Secrets 등록과 태그 푸시는 사용자가 직접 함** (로컬에서는 임시 키로 서명 빌드·`apksigner verify`까지 검증함)
 - 릴리스 키와 디버그 키가 달라 폰에 디버그 빌드가 있으면 지우고(데이터 삭제) 릴리스를 설치해야 함
 - `.gitattributes`로 `gradlew`는 LF 고정, `gradlew`는 git에서 실행 권한(100755)으로 저장됨 (리눅스 러너용)
+
+## 디자인 시스템 (UI 개편)
+- **팔레트**(`ui/theme/Theme.kt`): 초록(primary) + 슬레이트 블루(secondary) + 앰버(tertiary, 즐겨찾기 별). 밝은 테마는 연한 회녹색 배경 위에 흰 카드, 어두운 테마는 거의 검정에 가까운 녹색 배경 위에 한 단계 밝은 카드. 폰 배경화면 색(Material You)은 기본 꺼짐이며 설정 탭 "배경화면 색상 따라가기"로 켤 수 있음(`AppSettings.dynamicColor`)
+- **색 도우미**: `CallButtonGreen`(채운 발신 버튼), `EndCallRed`(종료/거절), `callGreen()`(톤 바탕 위 통화 아이콘), `incomingColor()/outgoingColor()`(수신 초록·발신 파랑, 부재중은 error), `starColor()`. 하드코딩 색 대신 이것들을 쓸 것
+- **서체/모양**: 제목·이름은 SemiBold/Bold, 모서리 12/18/24/32dp. 목록은 `groupShape(index, count)`로 그룹의 바깥 모서리만 크게(24dp) 안쪽은 작게(6dp) 하고 행 사이 2dp 간격 → 날짜/글자 그룹별 둥근 카드 묶음(최근기록, 연락처, 번호 목록). 설정은 `SettingsGroup` 카드
+- **아바타**: `InitialAvatar`가 이름 해시로 8가지 색 쌍(밝은/어두운 테마별) 중 하나를 고름. 같은 사람은 항상 같은 색
+- **하단 탭 바**: 선택 표시(indicator)는 primaryContainer, 바 배경은 surfaceContainer
+- **키패드**: 키는 surfaceContainer 원(눌리면 primaryContainer), 숫자 32sp, 발신 버튼 80dp 초록 + 그림자
+- **통화 화면**: 어두운 초록 그라데이션 배경, 80dp 받기/거절 버튼
+- 참고한 벤치마크: 구글 전화 앱의 Material 3 Expressive 개편(단순한 탐색, 시간순 목록, 큰 둥근 모양), 에이닷 전화(어두운 카드형 행, 굵은 이름, 초록 원형 발신 버튼, 탭하면 펼쳐지는 액션)

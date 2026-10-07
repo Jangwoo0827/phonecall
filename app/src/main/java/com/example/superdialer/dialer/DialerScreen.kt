@@ -39,6 +39,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.font.FontWeight
+import com.example.superdialer.ui.theme.CallButtonGreen
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -62,8 +65,6 @@ private val keyRows = listOf(
     listOf(Key('7', "PQRS"), Key('8', "TUV"), Key('9', "WXYZ")),
     listOf(Key('*'), Key('0', "+"), Key('#')),
 )
-
-private val CallGreen = Color(0xFF2E7D32)
 
 @Composable
 fun DialerScreen(
@@ -176,10 +177,11 @@ fun DialerScreen(
         Box(
             modifier = Modifier
                 .padding(vertical = 12.dp)
-                .size(72.dp)
+                .size(80.dp)
                 .alpha(if (number.isEmpty()) 0.4f else 1f)
+                .shadow(if (number.isEmpty()) 0.dp else 8.dp, CircleShape)
                 .clip(CircleShape)
-                .background(CallGreen)
+                .background(CallButtonGreen)
                 .pointerInput(number) { detectTapGestures(onTap = { onCallClick() }) },
             contentAlignment = Alignment.Center,
         ) {
@@ -187,7 +189,7 @@ fun DialerScreen(
                 imageVector = Icons.Filled.Call,
                 contentDescription = "통화",
                 tint = Color.White,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(36.dp),
             )
         }
     }
@@ -210,7 +212,8 @@ private fun NumberDisplay(
         Text(
             text = formatted,
             modifier = Modifier.weight(1f),
-            fontSize = if (formatted.length > 14) 26.sp else 36.sp,
+            fontSize = if (formatted.length > 14) 28.sp else 42.sp,
+            fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -246,8 +249,8 @@ private fun DialKey(
     modifier: Modifier = Modifier,
 ) {
     var pressed by remember { mutableStateOf(false) }
-    val container = MaterialTheme.colorScheme.surfaceContainerHigh
-    val pressedContainer = MaterialTheme.colorScheme.surfaceContainerHighest
+    val container = MaterialTheme.colorScheme.surfaceContainer
+    val pressedContainer = MaterialTheme.colorScheme.primaryContainer
 
     BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         val diameter = min(maxWidth, maxHeight) - 8.dp
@@ -277,13 +280,15 @@ private fun DialKey(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = key.char.toString(),
-                    fontSize = 28.sp,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 if (key.sub.isNotEmpty()) {
                     Text(
                         text = key.sub,
                         fontSize = 10.sp,
+                        letterSpacing = 1.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

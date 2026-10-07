@@ -1,5 +1,12 @@
 package com.example.superdialer.contacts
 
+import com.example.superdialer.ui.theme.starColor
+import com.example.superdialer.ui.theme.callGreen
+import com.example.superdialer.ui.groupShape
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.itemsIndexed
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -67,8 +74,6 @@ import com.example.superdialer.ui.hasPermission
 import com.example.superdialer.ui.rememberDialAction
 import com.example.superdialer.ui.sendSms
 
-private val CallGreen = Color(0xFF2E7D32)
-private val StarColor = Color(0xFFF9A825)
 private const val MAX_HISTORY = 20
 
 @Composable
@@ -118,7 +123,7 @@ fun ContactDetailScreen(
                     Icon(
                         if (detail.starred) Icons.Filled.Star else Icons.Filled.StarBorder,
                         contentDescription = if (detail.starred) "즐겨찾기 해제" else "즐겨찾기 추가",
-                        tint = if (detail.starred) StarColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (detail.starred) starColor() else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 IconButton(onClick = { shareContact(context, detail) }) {
@@ -148,7 +153,12 @@ fun ContactDetailScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f), Color.Transparent)
+                            )
+                        )
+                        .padding(top = 12.dp, bottom = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     if (detail.photo != null) {
@@ -156,28 +166,32 @@ fun ContactDetailScreen(
                             bitmap = detail.photo.asImageBitmap(),
                             contentDescription = null,
                             modifier = Modifier
-                                .size(96.dp)
+                                .size(112.dp)
                                 .clip(CircleShape),
                             contentScale = ContentScale.Crop,
                         )
                     } else {
-                        InitialAvatar(detail.name, size = 96.dp, fontSize = 40.sp)
+                        InitialAvatar(detail.name, size = 112.dp, fontSize = 46.sp)
                     }
                     Row(
                         modifier = Modifier.padding(top = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text(detail.name, fontSize = 26.sp, style = MaterialTheme.typography.headlineSmall)
+                        Text(detail.name, fontSize = 28.sp, style = MaterialTheme.typography.headlineSmall)
                         if (detail.starred) {
-                            Icon(Icons.Filled.Star, contentDescription = "즐겨찾기", tint = StarColor)
+                            Icon(Icons.Filled.Star, contentDescription = "즐겨찾기", tint = starColor())
                         }
                     }
                 }
             }
-            items(detail.numbers, key = { it.number }) { entry ->
+            itemsIndexed(detail.numbers, key = { _, e -> e.number }) { index, entry ->
                 ListItem(
-                    modifier = Modifier.clickable { dial(entry.number) },
+                    modifier = Modifier
+                        .padding(start = 12.dp, end = 12.dp, bottom = 2.dp)
+                        .clip(groupShape(index, detail.numbers.size))
+                        .clickable { dial(entry.number) },
+                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                     headlineContent = { Text(PhoneNumberFormatter.formatLoose(entry.number)) },
                     supportingContent = { Text(entry.label) },
                     trailingContent = {
@@ -186,7 +200,7 @@ fun ContactDetailScreen(
                                 Icon(Icons.AutoMirrored.Filled.Message, contentDescription = "문자 보내기")
                             }
                             IconButton(onClick = { dial(entry.number) }) {
-                                Icon(Icons.Filled.Call, contentDescription = "발신", tint = CallGreen)
+                                Icon(Icons.Filled.Call, contentDescription = "발신", tint = callGreen())
                             }
                         }
                     },

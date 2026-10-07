@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -47,6 +47,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -75,6 +76,11 @@ import com.example.superdialer.dialer.PhoneNumberFormatter
 import com.example.superdialer.ui.InitialAvatar
 import com.example.superdialer.ui.PermissionGate
 import com.example.superdialer.ui.addContact
+import com.example.superdialer.ui.groupShape
+import com.example.superdialer.ui.theme.callGreen
+import com.example.superdialer.ui.theme.incomingColor
+import com.example.superdialer.ui.theme.outgoingColor
+import androidx.compose.ui.graphics.Shape
 import com.example.superdialer.ui.hasPermission
 import com.example.superdialer.ui.rememberDialAction
 import com.example.superdialer.ui.sendSms
@@ -82,7 +88,6 @@ import com.example.superdialer.ui.shareText
 import java.time.Instant
 import java.time.ZoneId
 
-internal val CallGreen = Color(0xFF2E7D32)
 internal const val UNKNOWN_NUMBER = "번호정보 없음"
 
 @Composable
@@ -190,8 +195,9 @@ private fun CallLogList(
                         item(key = "day-${dayGroups.first().id}") {
                             DayHeader(formatDayHeader(dayGroups.first().latest.dateMillis))
                         }
-                        items(dayGroups, key = { it.id }) { group ->
+                        itemsIndexed(dayGroups, key = { _, g -> g.id }) { index, group ->
                             CallLogRow(
+                                shape = groupShape(index, dayGroups.size),
                                 group = group,
                                 selecting = viewModel.selecting,
                                 checked = group.id in viewModel.selected,
@@ -274,6 +280,8 @@ private fun SearchBar(
             colors = TextFieldDefaults.colors(
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
             ),
         )
         Box {
@@ -302,6 +310,10 @@ private fun FilterRow(selected: CallFilter, onSelect: (CallFilter) -> Unit) {
                 selected = filter == selected,
                 onClick = { onSelect(filter) },
                 label = { Text(filter.label) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
             )
         }
     }
@@ -328,16 +340,17 @@ private fun DayHeader(text: String) {
         text = text,
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(start = 20.dp, end = 16.dp, top = 18.dp, bottom = 8.dp),
         style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
     )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CallLogRow(
+    shape: Shape,
     group: CallGroup,
     selecting: Boolean,
     checked: Boolean,
@@ -370,7 +383,9 @@ private fun CallLogRow(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(if (checked) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+                .padding(start = 12.dp, end = 12.dp, bottom = 2.dp)
+                .clip(shape)
+                .background(if (checked) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer)
                 .combinedClickable(onClick = onClick, onLongClick = { menuOpen = true }),
         ) {
             Row(
@@ -386,7 +401,7 @@ private fun CallLogRow(
                         imageVector = entry.type.icon(),
                         contentDescription = entry.type.label,
                         modifier = Modifier.size(20.dp),
-                        tint = if (missed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = entry.type.tint(),
                     )
                 }
                 Spacer(Modifier.width(10.dp))
@@ -451,9 +466,9 @@ internal fun CallButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
         modifier = modifier
             .size(48.dp)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            .background(MaterialTheme.colorScheme.primaryContainer),
     ) {
-        Icon(Icons.Filled.Call, contentDescription = "발신", tint = CallGreen)
+        Icon(Icons.Filled.Call, contentDescription = "발신", tint = callGreen())
     }
 }
 
@@ -476,13 +491,13 @@ internal fun ActionButton(
             modifier = Modifier
                 .size(48.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 icon,
                 contentDescription = label,
-                tint = if (enabled) CallGreen else MaterialTheme.colorScheme.outline,
+                tint = if (enabled) callGreen() else MaterialTheme.colorScheme.outline,
             )
         }
         Text(
@@ -510,4 +525,13 @@ private fun copyNumber(context: Context, number: String) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
         Toast.makeText(context, "번호를 복사했습니다.", Toast.LENGTH_SHORT).show()
     }
+}
+
+/** Icon color by call type: incoming green, outgoing blue, missed red. */
+@Composable
+internal fun CallType.tint(): Color = when (this) {
+    CallType.Incoming -> incomingColor()
+    CallType.Outgoing -> outgoingColor()
+    CallType.Missed -> MaterialTheme.colorScheme.error
+    else -> MaterialTheme.colorScheme.onSurfaceVariant
 }

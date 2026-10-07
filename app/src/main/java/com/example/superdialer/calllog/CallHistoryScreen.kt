@@ -131,7 +131,7 @@ fun CallHistoryScreen(
             if (showMessages) item { MessagesPane(numbers = listOf(entry.number)) }
             items(if (showMessages) emptyList() else history, key = { it.id }) { item ->
                 val missed = item.type == CallType.Missed
-                val tint = if (missed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                val tint = item.type.tint()
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
