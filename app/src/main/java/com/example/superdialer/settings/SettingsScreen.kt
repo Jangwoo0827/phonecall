@@ -21,6 +21,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,7 +45,13 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val defaultDialer = rememberDefaultDialerStatus()
+    val defaultDialer = rememberDefaultDialerStatus { granted ->
+        Toast.makeText(
+            context,
+            if (granted) "기본 전화 앱으로 설정되었습니다." else "기본 전화 앱으로 설정하지 않았습니다.",
+            Toast.LENGTH_SHORT,
+        ).show()
+    }
 
     // Permission state can change in system settings while this screen stays open.
     var refresh by remember { mutableIntStateOf(0) }
@@ -62,10 +69,20 @@ fun SettingsScreen(
         ListItem(
             headlineContent = { Text("기본 전화 앱") },
             supportingContent = {
-                Text(if (defaultDialer.isDefault) "SuperDialer가 기본 전화 앱입니다" else "수신·통화 화면과 번호 차단에 필요합니다")
+                Text(
+                    if (defaultDialer.isDefault) {
+                        "SuperDialer가 기본 전화 앱입니다 (되돌리기: 휴대폰 설정 > 앱 > 기본 앱 > 전화 앱)"
+                    } else {
+                        "수신·통화 화면과 번호 차단에 필요합니다"
+                    }
+                )
             },
             trailingContent = {
-                if (!defaultDialer.isDefault) Button(onClick = defaultDialer.request) { Text("설정") }
+                if (defaultDialer.isDefault) {
+                    TextButton(onClick = defaultDialer.request) { Text("다시 요청") }
+                } else {
+                    Button(onClick = defaultDialer.request) { Text("설정") }
+                }
             },
         )
         Clickable("차단 관리", "차단한 번호 보기·추가·해제", onOpenBlocked)

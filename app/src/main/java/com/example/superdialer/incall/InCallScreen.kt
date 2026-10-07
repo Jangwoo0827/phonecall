@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.CallMerge
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallEnd
@@ -111,7 +112,8 @@ fun InCallScreen(onClose: () -> Unit, onAddCall: () -> Unit) {
 
 @Composable
 private fun CallHeader(call: CallSnapshot, ended: Boolean) {
-    val title = call.name ?: PhoneNumberFormatter.formatLoose(call.number).ifEmpty { "번호정보 없음" }
+    val title = call.name
+        ?: if (call.isConference) "다자간 통화" else PhoneNumberFormatter.formatLoose(call.number).ifEmpty { "번호정보 없음" }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = statusText(call, ended),
@@ -162,7 +164,7 @@ private fun HeldBanner(held: CallSnapshot) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(Color(0xFF1E272E))
-            .clickable { CallManager.unhold(held.id) }
+            .clickable { CallManager.swapTo(held.id) }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -252,12 +254,16 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
                 active = call.isHolding,
                 enabled = call.canHold,
             ) { if (call.isHolding) CallManager.unhold(call.id) else CallManager.hold(call.id) }
-            ToggleAction(Icons.Filled.FiberManualRecord, "녹음", false) {
-                Toast.makeText(
-                    context,
-                    "안드로이드는 보안 정책상 일반 앱의 통화 녹음을 허용하지 않습니다.",
-                    Toast.LENGTH_LONG,
-                ).show()
+            if (call.canMerge) {
+                ToggleAction(Icons.AutoMirrored.Filled.CallMerge, "병합", false) { CallManager.merge(call.id) }
+            } else {
+                ToggleAction(Icons.Filled.FiberManualRecord, "녹음", false) {
+                    Toast.makeText(
+                        context,
+                        "안드로이드는 보안 정책상 일반 앱의 통화 녹음을 허용하지 않습니다.",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                }
             }
         }
         Spacer(Modifier.height(8.dp))

@@ -26,6 +26,10 @@ data class CallSnapshot(
     val connectTimeMillis: Long,
     val canHold: Boolean,
     val disconnectCode: Int,
+    /** Telecom can merge this call with the held one into a conference. */
+    val canMerge: Boolean = false,
+    /** This is a conference (several parties on one call). */
+    val isConference: Boolean = false,
 ) {
     val isRinging get() = state == Call.STATE_RINGING
     val isActive get() = state == Call.STATE_ACTIVE
@@ -104,6 +108,16 @@ object CallManager {
 
     fun unhold(id: Int) = calls[id]?.unhold()
 
+    /** Swaps to a held call; Telecom puts the active one on hold automatically. */
+    fun swapTo(id: Int) = calls[id]?.unhold()
+
+    /** Merges the call with another conferenceable call (or folds a held call into its conference). */
+    fun merge(id: Int) {
+        val call = calls[id] ?: return
+        val other = call.conferenceableCalls.firstOrNull()
+        if (other != null) call.conference(other) else call.mergeConference()
+    }
+
     fun playDtmf(id: Int, digit: Char) {
         calls[id]?.playDtmfTone(digit)
     }
@@ -141,11 +155,14 @@ object CallManager {
             connectTimeMillis = details.connectTimeMillis,
             canHold = details.can(Call.Details.CAPABILITY_HOLD),
             disconnectCode = details.disconnectCause?.code ?: DisconnectCause.UNKNOWN,
+            canMerge = details.can(Call.Details.CAPABILITY_MERGE_CONFERENCE) || conferenceableCalls.isNotEmpty(),
+            isConference = details.hasProperty(Call.Details.PROPERTY_CONFERENCE),
         )
     }
 
     private fun publish() {
-        val list = calls.values.map { it.toSnapshot() }
+        // Members of a conference are shown through their parent call only.
+        val list = calls.values.filter { it.parent == null }.map { it.toSnapshot() }
         _snapshots.value = list
         appContext?.let { CallNotifications.update(it, list) }
     }

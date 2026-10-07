@@ -2,6 +2,7 @@ package com.example.superdialer.ui
 
 import android.app.role.RoleManager
 import android.content.Context
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -31,12 +33,14 @@ class DefaultDialerStatus(val isDefault: Boolean, val request: () -> Unit)
 
 /** Tracks whether this app holds the Phone role and launches the system role-request dialog. */
 @Composable
-fun rememberDefaultDialerStatus(): DefaultDialerStatus {
+fun rememberDefaultDialerStatus(onResult: (granted: Boolean) -> Unit = {}): DefaultDialerStatus {
     val context = LocalContext.current
+    val latestOnResult by rememberUpdatedState(onResult)
     var isDefault by remember { mutableStateOf(context.isDefaultDialer()) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { isDefault = context.isDefaultDialer() }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         isDefault = context.isDefaultDialer()
+        latestOnResult(isDefault)
     }
     return remember(isDefault) {
         DefaultDialerStatus(isDefault) {
@@ -51,7 +55,14 @@ fun rememberDefaultDialerStatus(): DefaultDialerStatus {
 /** Shown while the app is not the default Phone app: incoming-call and in-call screens need the role. */
 @Composable
 fun DefaultDialerBanner(modifier: Modifier = Modifier) {
-    val status = rememberDefaultDialerStatus()
+    val context = LocalContext.current
+    val status = rememberDefaultDialerStatus { granted ->
+        Toast.makeText(
+            context,
+            if (granted) "기본 전화 앱으로 설정되었습니다." else "기본 전화 앱으로 설정하지 않았습니다.",
+            Toast.LENGTH_SHORT,
+        ).show()
+    }
     if (status.isDefault) return
     Surface(
         modifier = modifier.fillMaxWidth(),

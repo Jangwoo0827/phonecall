@@ -86,7 +86,7 @@ object CallNotifications {
     }
 
     private fun label(call: CallSnapshot) =
-        call.name ?: PhoneNumberFormatter.formatLoose(call.number).ifEmpty { "번호정보 없음" }
+        call.name ?: if (call.isConference) "다자간 통화" else PhoneNumberFormatter.formatLoose(call.number).ifEmpty { "번호정보 없음" }
 
     private fun incoming(context: Context, call: CallSnapshot) =
         NotificationCompat.Builder(context, CHANNEL_INCOMING)

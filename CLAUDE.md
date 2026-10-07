@@ -107,3 +107,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 착신전환: 통신사 기능이라 앱이 대신 설정하지 않고 시스템 통화 설정 화면으로 연결
 - 해외 baro/로밍 통화, 스팸·업체 번호 DB, 안심통화: 별도 인프라/데이터 필요
 - 통화 대기(통화 중 두 번째 전화): 코드는 있으나 에뮬레이터 모뎀이 두 번째 가상 전화에서 통화를 끊어 검증 못 함 — 실기기 확인 필요
+
+## 기본 전화 앱 / 첫 실행 (4단계)
+- 첫 실행 시 기본 전화 앱이 아니면 `onboarding/DefaultDialerOnboarding` 안내 화면 → `RoleManager.createRequestRoleIntent(ROLE_DIALER)`. 허용하면 메인으로, 거부하면 안내 문구 + 다시 시도/계속. 한 번 처리하면 `AppSettings.onboardingDone`
+- 설정 탭에 기본 전화 앱 상태(+되돌리는 방법), 다시 요청 버튼. 요청 결과는 토스트
+- 매니페스트 점검 결과: `DIAL`(번호 없음/tel/voicemail), `VIEW tel:`, `CALL_BUTTON`, `VIEW vnd.android.cursor.dir/calls`, `InCallService`(BIND_INCALL_SERVICE + IN_CALL_SERVICE_UI), 전체화면 인텐트·알림 권한 모두 선언
+- 다중 통화: 보류 중 통화 전환(`swapTo`), 병합(`merge`, 다자간 통화는 부모 콜만 표시)
+- S23 설치 후 테스트 체크리스트: `docs/S23_TEST_CHECKLIST.md`

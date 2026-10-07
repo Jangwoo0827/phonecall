@@ -43,12 +43,21 @@ class DialerViewModel : ViewModel() {
     /** Handles ACTION_DIAL / ACTION_VIEW with a tel: URI. Returns true if the intent was ours. */
     fun handleIntent(intent: Intent?): Boolean {
         if (intent == null) return false
-        if (intent.action != Intent.ACTION_DIAL && intent.action != Intent.ACTION_VIEW) return false
-        val data = intent.data ?: return if (intent.action == Intent.ACTION_DIAL) {
+        when (intent.action) {
+            // Hardware call button: just show the keypad.
+            Intent.ACTION_CALL_BUTTON -> {
+                dialRequest++
+                return true
+            }
+            Intent.ACTION_DIAL, Intent.ACTION_VIEW -> Unit
+            else -> return false
+        }
+        val data = intent.data
+        if (data == null || (data.scheme != "tel" && intent.action == Intent.ACTION_DIAL)) {
+            // DIAL without a number (or e.g. voicemail:) opens an empty keypad; other VIEW intents are not ours.
+            if (intent.action != Intent.ACTION_DIAL) return false
             dialRequest++
-            true
-        } else {
-            false
+            return true
         }
         if (data.scheme != "tel") return false
         number = sanitize(data.schemeSpecificPart.orEmpty())
