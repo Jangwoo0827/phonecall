@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.example.superdialer.settings.AppSettings
+import com.example.superdialer.ui.DefaultDialerBanner
 
 private data class Key(val char: Char, val sub: String = "")
 
@@ -63,7 +65,7 @@ private val CallGreen = Color(0xFF2E7D32)
 fun DialerScreen(
     viewModel: DialerViewModel,
     modifier: Modifier = Modifier,
-    dtmfEnabled: Boolean = DialerDefaults.DTMF_ENABLED,
+    dtmfEnabled: Boolean = AppSettings.dtmfEnabled,
 ) {
     val context = LocalContext.current
     val number = viewModel.number
@@ -103,6 +105,8 @@ fun DialerScreen(
             .padding(horizontal = 24.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        DefaultDialerBanner()
+
         NumberDisplay(
             number = number,
             onBackspace = viewModel::backspace,

@@ -17,13 +17,13 @@
 - `dialer/` 키패드
 - `calllog/` 최근 기록
 - `contacts/` 연락처
-- `incall/` 통화 중 화면 (현재는 `SuperInCallService` 스텁만 존재)
+- `incall/` 수신·발신·통화 중 화면 (`SuperInCallService` → `CallManager` → `InCallScreen`), 알림(`CallNotifications`)
 - `browser/` 내장 웹브라우저
 - `games/` 내장 게임
 - `navigation/` 하단 탭 네비게이션 (키패드/최근기록/연락처/브라우저/게임)
 - `ui/theme/` 테마
 
-현재 상태: 키패드(1단계), 최근기록·연락처(2단계) 탭 구현됨. 브라우저/게임 탭은 빈 화면.
+현재 상태: 키패드, 최근기록, 연락처, 통화 화면(기본 전화 앱 지정 시) 구현됨. 브라우저/게임 탭은 빈 화면.
 
 ## 기본 전화 앱 요건 (매니페스트에 이미 반영)
 - `MainActivity`에 `DIAL`(tel/없음), `VIEW tel` intent-filter
@@ -77,3 +77,11 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 테스트 주의 (중요)
 - **실기기(S23, `R3CWA0MFJVY`)에는 adb로 터치 입력(`input tap/swipe`)을 보내지 말 것.** 통화 기록/연락처에 실제 번호가 있고 탭 한 번에 실제 발신될 수 있음(실제로 한 번 발생). 인터랙션 테스트는 에뮬레이터에서만, 모든 adb 명령에 `-s emulator-5554` 지정
 - 에뮬레이터 테스트 데이터는 `adb shell content insert`로 연락처(raw_contacts → data)와 `content://call_log/calls`에 직접 삽입
+
+## 통화 화면 (incall/) — 기본 전화 앱이어야 동작
+- `SuperInCallService`가 Telecom 콜을 받아 `CallManager`(싱글톤, StateFlow)에 반영. 이름은 PhoneLookup으로 비동기 해석
+- 수신: 전체화면 알림(+거절/받기 액션) → `InCallActivity`. 링톤은 Telecom이 재생(우리 앱은 소리 안 냄). 발신: 서비스가 `InCallActivity`를 직접 띄움
+- 화면: 수신(받기/거절/메시지로 거절) · 연결 중 · 통화 중(타이머, 음소거, 키패드 DTMF, 스피커, 통화 추가, 보류, 종료) · 보류 중인 다른 통화 전환 배너 · "통화 종료" 1.2초 표시
+- 부재중 알림(탭하면 최근기록). 통화 녹음 버튼은 안내 토스트만(안드로이드가 일반 앱의 통화 녹음 불허)
+- `settings/AppSettings`(키패드음 등), `settings/RejectMessageStore`(거절 메시지 프리셋)
+- 에뮬레이터 테스트: 기본 전화 앱 지정 `adb -s emulator-5554 shell cmd role add-role-holder --user 0 android.app.role.DIALER com.example.superdialer`, 가상 수신 `adb -s emulator-5554 emu gsm call 번호`, 끊기 `emu gsm cancel 번호`, 가상 발신 `am start -a android.intent.action.CALL -d tel:번호`. 에뮬레이터는 느려서 화면이 뜨기까지 ~4초

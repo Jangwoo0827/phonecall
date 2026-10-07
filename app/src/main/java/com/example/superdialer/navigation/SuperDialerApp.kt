@@ -35,7 +35,11 @@ private const val CONTACT_ID_ARG = "contactId"
 private const val CONTACT_DETAIL_ROUTE = "contacts/{$CONTACT_ID_ARG}"
 
 @Composable
-fun SuperDialerApp(dialerViewModel: DialerViewModel) {
+fun SuperDialerApp(
+    dialerViewModel: DialerViewModel,
+    requestedRoute: String? = null,
+    onRouteHandled: () -> Unit = {},
+) {
     // Created here (activity scope) so list state survives tab switches and is shared with detail screens.
     val callLogViewModel: CallLogViewModel = viewModel()
     val contactsViewModel: ContactsViewModel = viewModel()
@@ -57,6 +61,13 @@ fun SuperDialerApp(dialerViewModel: DialerViewModel) {
     // An external tel:/DIAL intent brings the keypad to the front.
     LaunchedEffect(dialerViewModel.dialRequest) {
         if (dialerViewModel.dialRequest > 0) navigateToTab(TopLevelDestination.Dialer.route)
+    }
+
+    LaunchedEffect(requestedRoute) {
+        if (requestedRoute != null) {
+            navigateToTab(requestedRoute)
+            onRouteHandled()
+        }
     }
 
     Scaffold(

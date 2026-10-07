@@ -9,12 +9,15 @@
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
     <uses-permission android:name="android.permission.WRITE_CALL_LOG" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <uses-feature
         android:name="android.hardware.telephony"
         android:required="false" />
 
     <application
+        android:name=".SuperDialerApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -51,7 +54,21 @@
             </intent-filter>
         </activity>
 
-        <!-- Stub InCallService: needed for default-dialer eligibility. In-call UI comes in a later step. -->
+        <activity
+            android:name=".incall.InCallActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.SuperDialer" />
+
+        <receiver
+            android:name=".incall.CallActionReceiver"
+            android:exported="false" />
+
+        <!-- Receives calls from Telecom once the app holds the default Phone role. -->
         <service
             android:name=".incall.SuperInCallService"
             android:exported="true"
