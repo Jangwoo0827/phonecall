@@ -143,3 +143,11 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 보안: 게임은 `WebViewAssetLoader`로 가상 https 호스트(appassets.androidplatform.net)에서만 로드, 다른 호스트로의 이동은 차단, 파일/콘텐츠 접근 off. 점수 브릿지는 우리 파일에만 노출됨
 - **렌더링 주의(해결한 버그)**: `AndroidView(factory = { WebView(context) ... })`처럼 factory 안에서 WebView를 만들면 에뮬레이터에서 페이지 배경만 그려지고 내용이 안 보였음(DOM·JS는 정상). 브라우저처럼 **WebView를 `MutableContextWrapper(applicationContext)`로 따로 만들고 loadUrl → 화면에 붙일 때 `attachTo(activity)`** 하는 방식으로 바꾸자 해결 (`GamePlayer.createGameWebView`)
 - JS 오류 확인: logcat 태그 `GameConsole`
+
+## 릴리스 배포 (GitHub Actions, 7단계)
+- `v*` 태그를 푸시하면 `.github/workflows/release.yml`이 단위 테스트 → 서명된 `assembleRelease` → `apksigner verify` → GitHub Release에 `SuperDialer-<태그>.apk` 업로드
+- 서명 정보는 GitHub Secrets `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`에서 읽음 (환경변수로 `KEYSTORE_FILE` 등을 넘기는 방식은 `app/build.gradle.kts`의 `signingConfigs`). `KEYSTORE_FILE`이 없으면 서명 없이 `app-release-unsigned.apk` 생성(로컬 빌드용)
+- 버전: `VERSION_NAME`(태그에서 v 제거), `VERSION_CODE`(워크플로 실행 번호) 환경변수, 없으면 0.1.0 / 1
+- keystore 만들기·base64 변환·Secrets 등록·태그 푸시 절차는 README.md "릴리스 배포" 참고. **Secrets 등록과 태그 푸시는 사용자가 직접 함** (로컬에서는 임시 키로 서명 빌드·`apksigner verify`까지 검증함)
+- 릴리스 키와 디버그 키가 달라 폰에 디버그 빌드가 있으면 지우고(데이터 삭제) 릴리스를 설치해야 함
+- `.gitattributes`로 `gradlew`는 LF 고정, `gradlew`는 git에서 실행 권한(100755)으로 저장됨 (리눅스 러너용)
