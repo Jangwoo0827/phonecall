@@ -161,3 +161,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - **키패드**: 키는 surfaceContainer 원(눌리면 primaryContainer), 숫자 32sp, 발신 버튼 80dp 초록 + 그림자
 - **통화 화면**: 어두운 초록 그라데이션 배경, 80dp 받기/거절 버튼
 - 참고한 벤치마크: 구글 전화 앱의 Material 3 Expressive 개편(단순한 탐색, 시간순 목록, 큰 둥근 모양), 에이닷 전화(어두운 카드형 행, 굵은 이름, 초록 원형 발신 버튼, 탭하면 펼쳐지는 액션)
+
+## 아이콘
+- 앱 아이콘: `res/drawable/ic_launcher_{background,foreground,monochrome}.xml` (초록 그라데이션 + 흰 수화기 + 노란 스파클, Android 13 테마 아이콘 지원)
+- 브라우저 링크 아이콘: `browser/data/FaviconStore`가 사이트 자체의 `<link rel=icon>`/`/favicon.ico`를 받아 캐시(`cacheDir/favicons`), 제3자 서비스 미사용. `browser/SiteIcon`이 스피드 다이얼/탭/북마크/기록에 표시하고 아이콘이 없으면 글자 타일. 단위 테스트 `FaviconStoreTest`
+- 게임 카드 아이콘: `games/GameIcon`(Canvas로 직접 그림, id별). 새 게임 추가 시 여기에 케이스 추가(없으면 점 격자)

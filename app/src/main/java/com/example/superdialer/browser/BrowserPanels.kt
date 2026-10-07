@@ -67,6 +67,7 @@ internal fun TabsPanel(
                             Text(tab.title.ifBlank { tab.url.ifBlank { "새 탭" } }, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         },
                         supportingContent = { Text(tab.url, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        leadingContent = { SiteIcon(tab.url, tab.title, 40.dp) },
                         trailingContent = {
                             IconButton(onClick = { onClose(tab.id) }) {
                                 Icon(Icons.Filled.Close, contentDescription = "탭 닫기")
@@ -98,6 +99,7 @@ internal fun BookmarksPanel(
                         modifier = Modifier.clickable { onOpen(item) },
                         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         supportingContent = { Text(item.url, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        leadingContent = { SiteIcon(item.url, item.title, 40.dp) },
                         trailingContent = {
                             IconButton(onClick = { onDelete(item) }) {
                                 Icon(Icons.Filled.Delete, contentDescription = "북마크 삭제")
@@ -137,6 +139,7 @@ internal fun HistoryPanel(
                                 Text(formatDateTime(item.visitedAt), style = MaterialTheme.typography.bodySmall)
                             }
                         },
+                        leadingContent = { SiteIcon(item.url, item.title, 40.dp) },
                         trailingContent = {
                             IconButton(onClick = { onDelete(item) }) {
                                 Icon(Icons.Filled.Delete, contentDescription = "기록 삭제")

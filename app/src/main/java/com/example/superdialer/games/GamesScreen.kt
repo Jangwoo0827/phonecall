@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,7 +27,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -69,22 +73,34 @@ fun GamesScreen(modifier: Modifier = Modifier) {
 private fun GameCard(game: GameInfo, onClick: () -> Unit) {
     val accent = runCatching { Color(android.graphics.Color.parseColor(game.color)) }.getOrDefault(Color.Gray)
     val best = GameScores.best(game.id)
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(96.dp)
-                .background(accent),
+                .height(112.dp)
+                .background(Brush.linearGradient(listOf(accent, lerp(accent, Color.Black, 0.35f)))),
             contentAlignment = Alignment.Center,
         ) {
-            Text(game.title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            GameIcon(game.id, size = 72.dp)
         }
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(game.description, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+            Text(game.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                game.description,
+                modifier = Modifier.padding(top = 2.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+            )
             Text(
                 if (best > 0) "최고 점수 $best" else "아직 기록 없음",
-                modifier = Modifier.padding(top = 6.dp),
+                modifier = Modifier.padding(top = 8.dp),
                 style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
             )
         }

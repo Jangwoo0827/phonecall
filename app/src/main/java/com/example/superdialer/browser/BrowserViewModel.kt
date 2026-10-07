@@ -53,6 +53,7 @@ data class DownloadRequest(val url: String, val userAgent: String?, val mimeType
 
 class BrowserViewModel(application: Application) : AndroidViewModel(application) {
     private val db = BrowserDatabase.get(application)
+    private val faviconStore = com.example.superdialer.browser.data.FaviconStore.get(application)
 
     val tabs = mutableStateListOf<BrowserTab>()
     var selectedId by mutableIntStateOf(-1)
@@ -317,6 +318,11 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
             override fun onReceivedTitle(view: WebView, title: String?) {
                 tab.title = title.orEmpty()
+            }
+
+            override fun onReceivedIcon(view: WebView, icon: Bitmap?) {
+                val pageUrl = view.url ?: return
+                if (icon != null) faviconStore.put(pageUrl, icon)
             }
 
             override fun onShowCustomView(view: View, callback: CustomViewCallback) {

@@ -44,11 +44,6 @@ import com.example.superdialer.browser.data.SpeedDial
 
 private const val MAX_TILES = 24
 
-private val tileColors = listOf(
-    Color(0xFF1E88E5), Color(0xFF43A047), Color(0xFFE53935), Color(0xFF8E24AA),
-    Color(0xFFF4511E), Color(0xFF00897B), Color(0xFF3949AB), Color(0xFF7CB342),
-)
-
 /** What the edit dialog is working on: a new tile, or an existing one. */
 private sealed interface EditTarget {
     data object New : EditTarget
@@ -107,19 +102,15 @@ internal fun SpeedDialGrid(
 @Composable
 private fun SpeedDialTile(item: SpeedDial, onOpen: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
-    val color = tileColors[(item.title.hashCode() and Int.MAX_VALUE) % tileColors.size]
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(color)
-                    .combinedClickable(onClick = onOpen, onLongClick = { menuOpen = true }),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(item.title.trim().take(1).uppercase(), color = Color.White, fontSize = 26.sp)
-            }
+            SiteIcon(
+                url = item.url,
+                title = item.title,
+                size = 64.dp,
+                corner = 20.dp,
+                modifier = Modifier.combinedClickable(onClick = onOpen, onLongClick = { menuOpen = true }),
+            )
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(text = { Text("수정") }, onClick = { menuOpen = false; onEdit() })
                 DropdownMenuItem(text = { Text("삭제") }, onClick = { menuOpen = false; onDelete() })
