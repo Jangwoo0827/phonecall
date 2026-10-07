@@ -1,5 +1,10 @@
 package com.example.superdialer.browser
 
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.focus.onFocusChanged
+import kotlinx.coroutines.delay
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -244,18 +249,38 @@ private fun WebArea(
     onOpenHistory: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // The bar appears on navigation or a touch at the top edge (not on scroll, so feeds like Shorts stay clean)
+    // and goes away again after 2 s without a touch on it, unless the address is being edited or a menu is open.
+    var touchStamp by remember { mutableIntStateOf(0) }
+    var barFocused by remember { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(topBarVisible, touchStamp, barFocused, menuOpen, tab.url) {
+        if (topBarVisible && !barFocused && !menuOpen) {
+            delay(BAR_AUTO_HIDE_MS)
+            onTopBarVisible(false)
+        }
+    }
     Box(modifier = modifier) {
         WebViewHost(
             viewModel = viewModel,
             tab = tab,
             modifier = Modifier.fillMaxSize(),
             onScrollDown = { onTopBarVisible(false) },
-            onScrollUp = { onTopBarVisible(true) },
-            onTouchTop = { onTopBarVisible(true) },
+            onTouchTop = { touchStamp++; onTopBarVisible(true) },
         )
         AnimatedVisibility(
             visible = topBarVisible,
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .onFocusChanged { barFocused = it.hasFocus }
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent(PointerEventPass.Initial)
+                            touchStamp++
+                        }
+                    }
+                },
             enter = slideInVertically { -it } + fadeIn(),
             exit = slideOutVertically { -it } + fadeOut(),
         ) {
@@ -268,6 +293,7 @@ private fun WebArea(
                 onNewTab = { viewModel.newTab() },
                 onOpenBookmarks = onOpenBookmarks,
                 onOpenHistory = onOpenHistory,
+                onMenuOpenChange = { menuOpen = it },
             )
         }
         if (tab.loading) {
@@ -291,6 +317,7 @@ private fun WebTopBar(
     onNewTab: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenHistory: () -> Unit,
+    onMenuOpenChange: (Boolean) -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -310,7 +337,7 @@ private fun WebTopBar(
                     tint = if (bookmarked) Color(0xFFF9A825) else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            OverflowMenu(onNewTab, onOpenBookmarks, onOpenHistory)
+            OverflowMenu(onNewTab, onOpenBookmarks, onOpenHistory, onMenuOpenChange)
         }
     }
 }
@@ -354,8 +381,14 @@ private fun AddressField(
 }
 
 @Composable
-private fun OverflowMenu(onNewTab: () -> Unit, onOpenBookmarks: () -> Unit, onOpenHistory: () -> Unit) {
+private fun OverflowMenu(
+    onNewTab: () -> Unit,
+    onOpenBookmarks: () -> Unit,
+    onOpenHistory: () -> Unit,
+    onOpenChange: (Boolean) -> Unit = {},
+) {
     var open by remember { mutableStateOf(false) }
+    LaunchedEffect(open) { onOpenChange(open) }
     Box {
         IconButton(onClick = { open = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "더보기") }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
@@ -429,7 +462,7 @@ private fun BottomToolbar(
 /**
  * Hosts the selected tab's WebView; the view itself is owned by the ViewModel so tabs keep their state.
  * Finger movement is reported (without consuming it) so the top bar can hide on scroll down and show on
- * scroll up or a touch near the top edge.
+ * a touch near the top edge.
  */
 @Composable
 private fun WebViewHost(
@@ -437,7 +470,6 @@ private fun WebViewHost(
     tab: BrowserTab,
     modifier: Modifier = Modifier,
     onScrollDown: () -> Unit,
-    onScrollUp: () -> Unit,
     onTouchTop: () -> Unit,
 ) {
     val activity = LocalContext.current
@@ -447,7 +479,6 @@ private fun WebViewHost(
     val webView = viewModel.webViewFor(tab)
 
     val latestDown by rememberUpdatedState(onScrollDown)
-    val latestUp by rememberUpdatedState(onScrollUp)
     val latestTop by rememberUpdatedState(onTouchTop)
     val drag = remember { DragTracker() }
 
@@ -485,9 +516,6 @@ private fun WebViewHost(
                         if (drag.accumulated < -thresholdPx) {
                             latestDown()
                             drag.accumulated = 0f
-                        } else if (drag.accumulated > thresholdPx) {
-                            latestUp()
-                            drag.accumulated = 0f
                         }
                     }
                 }
@@ -503,6 +531,8 @@ private fun WebViewHost(
         },
     )
 }
+
+private const val BAR_AUTO_HIDE_MS = 2000L
 
 private class DragTracker {
     var lastY = 0f
