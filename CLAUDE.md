@@ -23,12 +23,12 @@
 - `navigation/` 하단 탭 네비게이션 (키패드/최근기록/연락처/브라우저/게임)
 - `ui/theme/` 테마
 
-현재 상태: 키패드 탭 구현됨(1단계). 나머지 탭(최근기록/연락처/브라우저/게임)은 빈 화면.
+현재 상태: 키패드(1단계), 최근기록·연락처(2단계) 탭 구현됨. 브라우저/게임 탭은 빈 화면.
 
 ## 기본 전화 앱 요건 (매니페스트에 이미 반영)
 - `MainActivity`에 `DIAL`(tel/없음), `VIEW tel` intent-filter
 - `InCallService` (`BIND_INCALL_SERVICE` 권한, `IN_CALL_SERVICE_UI` 메타데이터)
-- `CALL_PHONE` 런타임 권한 요청은 키패드 통화 버튼에 구현됨. `RoleManager.ROLE_DIALER` 요청 코드는 아직 없음
+- `CALL_PHONE`/`READ_CALL_LOG`/`WRITE_CALL_LOG`/`READ_CONTACTS` 런타임 권한 요청 구현됨(`ui/PermissionGate`, `ui/DialAction`). `RoleManager.ROLE_DIALER` 요청 코드는 아직 없음 — 번호 차단은 기본 전화 앱이어야 가능해서 지금은 안내 토스트만 뜸
 
 ## 빌드 / 설치
 ```bash
@@ -60,3 +60,20 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - `CallPlacer`: `TelecomManager.placeCall()`. 권한 없으면 안내 문구 + 설정 열기 버튼
 - 지우기 길게 누르기 = 전체 삭제, 0 길게 누르기 = `+`
 - 기본 전화 앱이 아닐 때는 통화 화면을 시스템 전화 앱이 띄움 (`incall/`은 아직 스텁)
+
+## 최근기록 (calllog/) — 에이닷 전화 스타일
+- 날짜 구분선(오늘/어제 + 날짜·요일), 행: 종류 아이콘 · 아바타 · 이름/번호 · 시각·종류·통화시간 · 초록 발신 버튼
+- **행을 탭하면 발신하지 않고 펼쳐짐**(기록/연락처/메시지). 발신은 초록 버튼만. 길게 누르기 = 삭제/번호 복사/차단
+- 기록 → `CallHistoryScreen`(같은 번호 통화 내역, `numberKey`로 +82/010 동일 취급). 연락처 → 저장된 번호면 연락처 상세, 아니면 시스템 연락처 추가 화면
+- `CallLogRepository`(CallLog.Calls + PhoneLookup), `CallLogViewModel`(코루틴 IO, 화면 resume 때 refresh). 삭제는 WRITE_CALL_LOG 필요
+- 이름 없는 번호 표기는 "번호정보 없음"
+
+## 연락처 (contacts/)
+- 번호가 있는 연락처만. `ContactSorting`: 한글(가나다) → 영문 → 숫자/기호, 초성 인덱스(ㄲ→ㄱ 등 병합), 검색은 이름/초성(ㅎㄱㄷ)/번호 숫자
+- 즐겨찾기(starred)는 상단 "즐겨찾기" 섹션에 고정 + 전체 목록에도 별 표시. 즐겨찾기 토글은 아직 없음(WRITE_CONTACTS 필요)
+- 상세: 사진/이니셜, 번호 목록(유형 라벨), 문자(`smsto:`), 발신
+- 단위 테스트: `ContactSortingTest`, `CallLogFormatTest`
+
+## 테스트 주의 (중요)
+- **실기기(S23, `R3CWA0MFJVY`)에는 adb로 터치 입력(`input tap/swipe`)을 보내지 말 것.** 통화 기록/연락처에 실제 번호가 있고 탭 한 번에 실제 발신될 수 있음(실제로 한 번 발생). 인터랙션 테스트는 에뮬레이터에서만, 모든 adb 명령에 `-s emulator-5554` 지정
+- 에뮬레이터 테스트 데이터는 `adb shell content insert`로 연락처(raw_contacts → data)와 `content://call_log/calls`에 직접 삽입

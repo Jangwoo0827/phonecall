@@ -17,6 +17,10 @@ object PhoneNumberFormatter {
         return formatDomestic(raw)
     }
 
+    /** For numbers coming from the call log / contacts, which may contain spaces, dashes or parentheses. */
+    fun formatLoose(raw: String): String =
+        format(raw.filter { it.isDigit() || it == '+' || it == '*' || it == '#' })
+
     private fun formatDomestic(d: String): String = when {
         d.startsWith("02") -> withPrefix("02", d.drop(2))
         d.length <= 3 -> d
