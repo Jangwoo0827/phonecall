@@ -17,6 +17,9 @@ class ContactsViewModel(application: Application) : AndroidViewModel(application
 
     private var all by mutableStateOf<List<Contact>>(emptyList())
 
+    /** Every contact with a number, 가나다순. Used by the keypad autocomplete. */
+    val contacts: List<Contact> get() = all
+
     var query by mutableStateOf("")
         private set
 
@@ -57,6 +60,17 @@ class ContactsViewModel(application: Application) : AndroidViewModel(application
                 emptyList()
             }
             loading = false
+        }
+    }
+
+    fun toggleStar(contactId: Long, starred: Boolean, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { repository.setStarred(contactId, starred) }
+            if (ok) {
+                all = all.map { if (it.id == contactId) it.copy(starred = starred) else it }
+                detail = detail?.takeIf { it.id == contactId }?.copy(starred = starred) ?: detail
+            }
+            onResult(ok)
         }
     }
 

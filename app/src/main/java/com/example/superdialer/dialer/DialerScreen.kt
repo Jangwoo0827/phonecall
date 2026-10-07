@@ -8,6 +8,7 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,7 +49,10 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.superdialer.settings.AppSettings
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.example.superdialer.ui.DefaultDialerBanner
+import com.example.superdialer.ui.InitialAvatar
+import com.example.superdialer.ui.addContact
 
 private data class Key(val char: Char, val sub: String = "")
 
@@ -65,10 +69,18 @@ private val CallGreen = Color(0xFF2E7D32)
 fun DialerScreen(
     viewModel: DialerViewModel,
     modifier: Modifier = Modifier,
+    suggestions: List<Suggestion> = emptyList(),
+    onRefreshSources: () -> Unit = {},
     dtmfEnabled: Boolean = AppSettings.dtmfEnabled,
 ) {
     val context = LocalContext.current
     val number = viewModel.number
+
+    // Contacts / recent calls feed the autocomplete; they may have become readable since last time.
+    LifecycleResumeEffect(Unit) {
+        onRefreshSources()
+        onPauseOrDispose { }
+    }
 
     val dtmf = remember { DtmfPlayer() }
     dtmf.enabled = dtmfEnabled
@@ -111,6 +123,13 @@ fun DialerScreen(
             number = number,
             onBackspace = viewModel::backspace,
             onClear = viewModel::clear,
+        )
+
+        SuggestionList(
+            suggestions = suggestions,
+            onPick = { viewModel.replaceNumber(it.number) },
+            showAddContact = number.length >= 3 && suggestions.none { it.fromContact },
+            onAddContact = { context.addContact(number) },
         )
 
         if (permissionDenied) {
@@ -270,5 +289,40 @@ private fun DialKey(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SuggestionList(
+    suggestions: List<Suggestion>,
+    onPick: (Suggestion) -> Unit,
+    showAddContact: Boolean,
+    onAddContact: () -> Unit,
+) {
+    suggestions.forEach { suggestion ->
+        val formatted = PhoneNumberFormatter.formatLoose(suggestion.number)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onPick(suggestion) }
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            InitialAvatar(suggestion.name ?: formatted, size = 32.dp, fontSize = 14.sp)
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(suggestion.name ?: formatted, fontSize = 15.sp, maxLines = 1)
+                if (suggestion.name != null) {
+                    Text(
+                        formatted,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
+    if (showAddContact) {
+        TextButton(onClick = onAddContact) { Text("연락처에 추가") }
     }
 }

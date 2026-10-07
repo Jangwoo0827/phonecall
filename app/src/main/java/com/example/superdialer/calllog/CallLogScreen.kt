@@ -78,6 +78,7 @@ import com.example.superdialer.ui.addContact
 import com.example.superdialer.ui.hasPermission
 import com.example.superdialer.ui.rememberDialAction
 import com.example.superdialer.ui.sendSms
+import com.example.superdialer.ui.shareText
 import java.time.Instant
 import java.time.ZoneId
 
@@ -212,6 +213,7 @@ private fun CallLogList(
                                 onSelect = { viewModel.startSelecting(group.id) },
                                 onDelete = { withWritePermission { viewModel.deleteGroup(group, ::onDeleted) } },
                                 onCopy = { copyNumber(context, group.latest.number) },
+                                onShare = { context.shareText(PhoneNumberFormatter.formatLoose(group.latest.number)) },
                                 onBlock = { block(group.latest) },
                             )
                         }
@@ -353,6 +355,7 @@ private fun CallLogRow(
     onSelect: () -> Unit,
     onDelete: () -> Unit,
     onCopy: () -> Unit,
+    onShare: () -> Unit,
     onBlock: () -> Unit,
 ) {
     val entry = group.latest
@@ -439,6 +442,7 @@ private fun CallLogRow(
             DropdownMenuItem(text = { Text("삭제") }, onClick = { menuOpen = false; onDelete() })
             if (entry.number.isNotEmpty()) {
                 DropdownMenuItem(text = { Text("번호 복사") }, onClick = { menuOpen = false; onCopy() })
+                DropdownMenuItem(text = { Text("번호 공유") }, onClick = { menuOpen = false; onShare() })
                 DropdownMenuItem(text = { Text("차단") }, onClick = { menuOpen = false; onBlock() })
             }
         }

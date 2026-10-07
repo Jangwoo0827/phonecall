@@ -27,6 +27,11 @@ class DialerViewModel : ViewModel() {
         if (number.isEmpty()) number = "+"
     }
 
+    /** Replaces the typed number, e.g. when the user picks a suggestion. */
+    fun replaceNumber(raw: String) {
+        number = sanitize(raw)
+    }
+
     fun backspace() {
         number = number.dropLast(1)
     }

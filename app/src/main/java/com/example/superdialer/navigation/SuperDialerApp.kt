@@ -8,6 +8,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import android.Manifest
+import com.example.superdialer.dialer.findSuggestions
+import com.example.superdialer.ui.hasPermission
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -51,6 +57,14 @@ fun SuperDialerApp(
     val callLogViewModel: CallLogViewModel = viewModel()
     val contactsViewModel: ContactsViewModel = viewModel()
     val blockedViewModel: BlockedNumbersViewModel = viewModel()
+
+    val context = LocalContext.current
+    // Keypad autocomplete: contacts first, then recent unsaved callers.
+    val suggestions by remember {
+        derivedStateOf {
+            findSuggestions(dialerViewModel.number, contactsViewModel.contacts, callLogViewModel.entries)
+        }
+    }
 
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -109,7 +123,16 @@ fun SuperDialerApp(
             startDestination = TopLevelDestination.Dialer.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(TopLevelDestination.Dialer.route) { DialerScreen(dialerViewModel) }
+            composable(TopLevelDestination.Dialer.route) {
+                DialerScreen(
+                    viewModel = dialerViewModel,
+                    suggestions = suggestions,
+                    onRefreshSources = {
+                        if (context.hasPermission(Manifest.permission.READ_CONTACTS)) contactsViewModel.refresh()
+                        if (context.hasPermission(Manifest.permission.READ_CALL_LOG)) callLogViewModel.refresh()
+                    },
+                )
+            }
             composable(TopLevelDestination.CallLog.route) {
                 CallLogScreen(
                     viewModel = callLogViewModel,
@@ -147,6 +170,8 @@ fun SuperDialerApp(
                 ContactsScreen(
                     viewModel = contactsViewModel,
                     onOpenContact = { id -> navController.navigate("contacts/$id") },
+                    onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
+                    onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                 )
             }
             composable(
@@ -155,6 +180,7 @@ fun SuperDialerApp(
             ) { entry ->
                 ContactDetailScreen(
                     viewModel = contactsViewModel,
+                    callLogViewModel = callLogViewModel,
                     contactId = entry.arguments?.getLong(CONTACT_ID_ARG) ?: 0L,
                     onBack = { navController.popBackStack() },
                 )

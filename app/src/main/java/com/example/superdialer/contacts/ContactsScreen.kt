@@ -1,7 +1,21 @@
 package com.example.superdialer.contacts
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.provider.ContactsContract
+import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +53,8 @@ private val StarColor = Color(0xFFF9A825)
 fun ContactsScreen(
     viewModel: ContactsViewModel,
     onOpenContact: (Long) -> Unit,
+    onOpenBlocked: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     PermissionGate(
@@ -46,7 +62,7 @@ fun ContactsScreen(
         rationale = "연락처를 보려면 연락처 권한이 필요합니다.",
         modifier = modifier,
     ) {
-        ContactsList(viewModel, onOpenContact, modifier)
+        ContactsList(viewModel, onOpenContact, onOpenBlocked, onOpenSettings, modifier)
     }
 }
 
@@ -54,8 +70,12 @@ fun ContactsScreen(
 private fun ContactsList(
     viewModel: ContactsViewModel,
     onOpenContact: (Long) -> Unit,
+    onOpenBlocked: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    var menuOpen by remember { mutableStateOf(false) }
     LifecycleResumeEffect(Unit) {
         viewModel.refresh()
         onPauseOrDispose { }
@@ -65,13 +85,37 @@ private fun ContactsList(
     val sections = viewModel.sections
 
     androidx.compose.foundation.layout.Column(modifier = modifier.fillMaxSize()) {
-        SearchField(
-            query = viewModel.query,
-            onQueryChange = viewModel::onQueryChange,
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+                .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SearchField(
+                query = viewModel.query,
+                onQueryChange = viewModel::onQueryChange,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = {
+                try {
+                    context.startActivity(
+                        Intent(Intent.ACTION_INSERT, ContactsContract.Contacts.CONTENT_URI)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                } catch (e: ActivityNotFoundException) {
+                    Toast.makeText(context, "연락처 앱을 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
+                }
+            }) { Icon(Icons.Filled.Add, contentDescription = "연락처 추가") }
+            Box {
+                IconButton(onClick = { menuOpen = true }) {
+                    Icon(Icons.Filled.MoreVert, contentDescription = "더보기")
+                }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    DropdownMenuItem(text = { Text("차단 관리") }, onClick = { menuOpen = false; onOpenBlocked() })
+                    DropdownMenuItem(text = { Text("설정") }, onClick = { menuOpen = false; onOpenSettings() })
+                }
+            }
+        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             if (viewModel.isEmpty) {

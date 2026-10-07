@@ -14,6 +14,11 @@ fun Context.sendSms(number: String) {
     )
 }
 
+fun Context.shareText(text: String) {
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+    startActivityOrToast(Intent.createChooser(send, "공유"), "공유할 앱이 없습니다.")
+}
+
 /** Opens the system "add to contacts" screen with [number] filled in. */
 fun Context.addContact(number: String) {
     startActivityOrToast(

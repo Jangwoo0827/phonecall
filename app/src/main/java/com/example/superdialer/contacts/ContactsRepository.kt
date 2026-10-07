@@ -87,6 +87,19 @@ class ContactsRepository(private val context: Context) {
         return ContactDetail(contactId, displayName, starred, numbers.values.toList(), loadPhoto(contactId))
     }
 
+    /** Needs WRITE_CONTACTS. */
+    fun setStarred(contactId: Long, starred: Boolean): Boolean = try {
+        val values = android.content.ContentValues().apply {
+            put(ContactsContract.Contacts.STARRED, if (starred) 1 else 0)
+        }
+        resolver.update(
+            Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, contactId.toString()),
+            values, null, null,
+        ) > 0
+    } catch (e: SecurityException) {
+        false
+    }
+
     private fun loadPhoto(contactId: Long): Bitmap? = try {
         val uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, contactId.toString())
         ContactsContract.Contacts.openContactPhotoInputStream(resolver, uri, false)
