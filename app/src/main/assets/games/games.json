@@ -1,0 +1,23 @@
+[
+  {
+    "id": "2048",
+    "title": "2048",
+    "description": "밀어서 같은 숫자를 합치세요",
+    "path": "2048/index.html",
+    "color": "#EDC22E"
+  },
+  {
+    "id": "snake",
+    "title": "스네이크",
+    "description": "먹이를 먹고 길어지세요",
+    "path": "snake/index.html",
+    "color": "#43A047"
+  },
+  {
+    "id": "breakout",
+    "title": "벽돌깨기",
+    "description": "공을 튕겨 벽돌을 부수세요",
+    "path": "breakout/index.html",
+    "color": "#E53935"
+  }
+]

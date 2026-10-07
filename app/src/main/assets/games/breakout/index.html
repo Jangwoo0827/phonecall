@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>벽돌깨기</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: #1a1a2e; color: #eee; font-family: sans-serif; overflow: hidden; touch-action: none; }
+  #app { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px; }
+  .bar { width: 100%; max-width: 420px; display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; }
+  canvas { background: #16213e; border-radius: 8px; touch-action: none; }
+  .hint { font-size: 13px; opacity: .75; min-height: 18px; text-align: center; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="bar"><span>점수 <span id="score">0</span></span><span id="lives">♥♥♥</span><span>최고 <span id="best">0</span></span></div>
+  <canvas id="c" width="360" height="480"></canvas>
+  <div class="hint" id="hint">탭해서 시작 · 손가락을 좌우로 움직여 패들 조작</div>
+</div>
+<script>
+(function () {
+  var W = 360, H = 480;
+  var canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+  var scoreEl = document.getElementById('score'), bestEl = document.getElementById('best'), livesEl = document.getElementById('lives'), hint = document.getElementById('hint');
+  var COLORS = ['#ef5350', '#ff9800', '#ffeb3b', '#66bb6a', '#42a5f5', '#ab47bc'];
+  var ROWS = 6, COLS = 8, BW = 40, BH = 16, GAP = 5, TOP = 50;
+  var paddle, ball, bricks, score, best = 0, lives, level, state = 'ready'; // ready | playing | over
+
+  try { if (window.Native) best = Native.getBest() | 0; } catch (e) {}
+  bestEl.textContent = best;
+
+  function fit() {
+    var scale = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 110) / H);
+    canvas.style.width = Math.floor(W * scale) + 'px';
+    canvas.style.height = Math.floor(H * scale) + 'px';
+  }
+
+  function buildBricks() {
+    bricks = [];
+    var left = (W - (COLS * BW + (COLS - 1) * GAP)) / 2;
+    for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) {
+      bricks.push({ x: left + c * (BW + GAP), y: TOP + r * (BH + GAP), alive: true, color: COLORS[r] });
+    }
+  }
+
+  function resetBall() {
+    var speed = 4 + (level - 1) * 0.6;
+    ball = { x: paddle.x + paddle.w / 2, y: H - 50, r: 7, vx: speed * (Math.random() < .5 ? -.6 : .6), vy: -speed };
+  }
+
+  function newGame() {
+    paddle = { x: W / 2 - 40, y: H - 30, w: 80, h: 10 };
+    score = 0; lives = 3; level = 1; state = 'ready';
+    scoreEl.textContent = 0; updateLives(); buildBricks(); resetBall();
+    hint.textContent = '탭해서 시작 · 손가락을 좌우로 움직여 패들 조작';
+  }
+
+  function updateLives() { livesEl.textContent = new Array(lives + 1).join('♥') || '-'; }
+
+  function step() {
+    if (state !== 'playing') return;
+    ball.x += ball.vx; ball.y += ball.vy;
+    if (ball.x < ball.r) { ball.x = ball.r; ball.vx = Math.abs(ball.vx); }
+    if (ball.x > W - ball.r) { ball.x = W - ball.r; ball.vx = -Math.abs(ball.vx); }
+    if (ball.y < ball.r) { ball.y = ball.r; ball.vy = Math.abs(ball.vy); }
+
+    // Paddle: the hit position changes the bounce angle.
+    if (ball.vy > 0 && ball.y + ball.r >= paddle.y && ball.y - ball.r <= paddle.y + paddle.h &&
+        ball.x >= paddle.x - ball.r && ball.x <= paddle.x + paddle.w + ball.r) {
+      var hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+      var speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+      ball.vx = speed * hit * 0.9;
+      ball.vy = -Math.sqrt(Math.max(speed * speed - ball.vx * ball.vx, 1));
+      ball.y = paddle.y - ball.r;
+    }
+
+    var alive = 0;
+    for (var i = 0; i < bricks.length; i++) {
+      var b = bricks[i];
+      if (!b.alive) continue;
+      alive++;
+      if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + BW && ball.y + ball.r > b.y && ball.y - ball.r < b.y + BH) {
+        b.alive = false; alive--;
+        var overlapX = Math.min(ball.x + ball.r - b.x, b.x + BW - (ball.x - ball.r));
+        var overlapY = Math.min(ball.y + ball.r - b.y, b.y + BH - (ball.y - ball.r));
+        if (overlapX < overlapY) ball.vx = -ball.vx; else ball.vy = -ball.vy;
+        score += 10 * level; scoreEl.textContent = score;
+        if (score > best) { best = score; bestEl.textContent = best; }
+        break;
+      }
+    }
+
+    if (alive === 0) { level++; buildBricks(); resetBall(); state = 'ready'; hint.textContent = '레벨 ' + level + ' · 탭해서 시작'; }
+    if (ball.y > H + ball.r) {
+      lives--; updateLives();
+      if (lives <= 0) {
+        state = 'over'; hint.textContent = '게임 오버 · 점수 ' + score + ' · 탭해서 다시 시작';
+        try { if (window.Native) Native.submitScore(score); } catch (e) {}
+      } else { state = 'ready'; resetBall(); hint.textContent = '탭해서 계속'; }
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    bricks.forEach(function (b) { if (b.alive) { ctx.fillStyle = b.color; ctx.fillRect(b.x, b.y, BW, BH); } });
+    ctx.fillStyle = '#e0e0e0'; ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function loop() {
+    if (state === 'ready') { ball.x = paddle.x + paddle.w / 2; ball.y = paddle.y - ball.r; }
+    step(); draw(); requestAnimationFrame(loop);
+  }
+
+  function pointerX(clientX) {
+    var rect = canvas.getBoundingClientRect();
+    var x = (clientX - rect.left) * (W / rect.width);
+    paddle.x = Math.max(0, Math.min(W - paddle.w, x - paddle.w / 2));
+  }
+
+  function tap() {
+    if (state === 'over') newGame();
+    else if (state === 'ready') { state = 'playing'; hint.textContent = ''; }
+  }
+
+  canvas.addEventListener('touchstart', function (e) { pointerX(e.touches[0].clientX); tap(); }, { passive: true });
+  canvas.addEventListener('touchmove', function (e) { pointerX(e.touches[0].clientX); }, { passive: true });
+  canvas.addEventListener('mousedown', function (e) { pointerX(e.clientX); tap(); });
+  canvas.addEventListener('mousemove', function (e) { if (e.buttons) pointerX(e.clientX); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowLeft') paddle.x = Math.max(0, paddle.x - 24);
+    if (e.key === 'ArrowRight') paddle.x = Math.min(W - paddle.w, paddle.x + 24);
+    if (e.key === ' ') tap();
+  });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && state === 'playing') { state = 'ready'; hint.textContent = '일시정지 · 탭해서 계속'; } });
+  window.addEventListener('resize', fit);
+
+  newGame(); fit(); loop();
+})();
+</script>
+</body>
+</html>

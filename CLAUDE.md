@@ -25,7 +25,7 @@
 - `navigation/` 하단 탭 네비게이션 (키패드/최근기록/연락처/웹·게임/설정)
 - `ui/theme/` 테마
 
-현재 상태: 키패드(자동완성), 최근기록, 연락처(즐겨찾기 토글), 통화 화면, 설정 탭(차단/거절 메시지) 구현됨. 웹·게임 탭의 브라우저(5단계) 구현됨, 게임은 빈 화면.
+현재 상태: 키패드(자동완성), 최근기록, 연락처(즐겨찾기 토글), 통화 화면, 설정 탭(차단/거절 메시지) 구현됨. 웹·게임 탭(브라우저 + 게임 3종) 구현됨.
 
 ## 기본 전화 앱 요건 (매니페스트에 이미 반영)
 - `MainActivity`에 `DIAL`(tel/없음), `VIEW tel` intent-filter
@@ -134,3 +134,12 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 한계: 일반 SMS만 보임. MMS, RCS(채팅+), 카카오톡 같은 채팅 메시지는 SMS 프로바이더에 없어 표시되지 않음
 - READ_SMS는 통화기록처럼 제한된 권한이라, adb로 설치하면 허용 팝업이 뜨지만 파일 관리자 등으로 직접 설치한 APK는 막힐 수 있음(막히면 기본 전화 앱 설정 후에도 안 되면 설정 > 앱 > SuperDialer > 권한 확인)
 - 에뮬레이터 테스트: 받은 문자 `adb emu sms send 번호 "내용"`
+
+## 내장 게임 (games/, 6단계)
+- 게임 선택 화면: 카드 2열 그리드(제목·설명·최고 점수). 카드를 탭하면 `GamePlayer`(WebView)로 실행, 뒤로가기/화살표로 선택 화면 복귀
+- **게임 추가 방법**: `app/src/main/assets/games/<폴더>/index.html`을 넣고 `assets/games/games.json`에 `{id, title, description, path, color}` 한 줄 추가 (코틀린 수정 없음). 파싱은 `GameCatalog.parse`(깨진 항목·`..`/절대경로 path는 건너뜀, 테스트 있음)
+- 기본 게임: 2048(스와이프), 스네이크(스와이프로 방향 전환, 탭 시작), 벽돌깨기(터치 드래그로 패들). 각각 단일 HTML 파일
+- 점수: 게임이 `Native.getBest()` / `Native.submitScore(점수)`를 호출 → `GameScores`(SharedPreferences, 게임 id별 최고 점수, Compose 상태라 카드에 바로 반영). 브릿지(`GameBridge`)는 이 두 함수만 노출
+- 보안: 게임은 `WebViewAssetLoader`로 가상 https 호스트(appassets.androidplatform.net)에서만 로드, 다른 호스트로의 이동은 차단, 파일/콘텐츠 접근 off. 점수 브릿지는 우리 파일에만 노출됨
+- **렌더링 주의(해결한 버그)**: `AndroidView(factory = { WebView(context) ... })`처럼 factory 안에서 WebView를 만들면 에뮬레이터에서 페이지 배경만 그려지고 내용이 안 보였음(DOM·JS는 정상). 브라우저처럼 **WebView를 `MutableContextWrapper(applicationContext)`로 따로 만들고 loadUrl → 화면에 붙일 때 `attachTo(activity)`** 하는 방식으로 바꾸자 해결 (`GamePlayer.createGameWebView`)
+- JS 오류 확인: logcat 태그 `GameConsole`

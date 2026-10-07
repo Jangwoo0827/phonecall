@@ -1,6 +1,7 @@
 package com.example.superdialer
 
 import android.app.Application
+import com.example.superdialer.games.GameScores
 import com.example.superdialer.incall.CallNotifications
 import com.example.superdialer.settings.AppSettings
 import com.example.superdialer.settings.RejectMessageStore
@@ -10,6 +11,7 @@ class SuperDialerApplication : Application() {
         super.onCreate()
         AppSettings.init(this)
         RejectMessageStore.init(this)
+        GameScores.init(this)
         CallNotifications.ensureChannels(this)
     }
 }
