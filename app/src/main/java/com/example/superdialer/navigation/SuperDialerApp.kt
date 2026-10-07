@@ -51,6 +51,7 @@ private const val CONTACT_DETAIL_ROUTE = "contacts/{$CONTACT_ID_ARG}"
 @Composable
 fun SuperDialerApp(
     dialerViewModel: DialerViewModel,
+    browserViewModel: BrowserViewModel,
     requestedRoute: String? = null,
     onRouteHandled: () -> Unit = {},
 ) {
@@ -58,7 +59,6 @@ fun SuperDialerApp(
     val callLogViewModel: CallLogViewModel = viewModel()
     val contactsViewModel: ContactsViewModel = viewModel()
     val blockedViewModel: BlockedNumbersViewModel = viewModel()
-    val browserViewModel: BrowserViewModel = viewModel()
 
     val context = LocalContext.current
     // Keypad autocomplete: contacts first, then recent unsaved callers.

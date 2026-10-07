@@ -166,3 +166,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 앱 아이콘: `res/drawable/ic_launcher_{background,foreground,monochrome}.xml` (초록 그라데이션 + 흰 수화기 + 노란 스파클, Android 13 테마 아이콘 지원)
 - 브라우저 링크 아이콘: `browser/data/FaviconStore`가 사이트 자체의 `<link rel=icon>`/`/favicon.ico`를 받아 캐시(`cacheDir/favicons`), 제3자 서비스 미사용. `browser/SiteIcon`이 스피드 다이얼/탭/북마크/기록에 표시하고 아이콘이 없으면 글자 타일. 단위 테스트 `FaviconStoreTest`
 - 게임 카드 아이콘: `games/GameIcon`(Canvas로 직접 그림, id별). 새 게임 추가 시 여기에 케이스 추가(없으면 점 격자)
+
+## 앱을 나가도 3분 유지 (BrowserSession / GameSession)
+- `browser/BrowserSession`이 `BrowserViewModel`(탭·WebView)을 Activity가 아닌 앱 수준에서 보관. `MainActivity.onStop`에서 3분 타이머 시작, `onStart`에서 취소. 만료되면 `release()`로 WebView 해제(+`GameSession.release()`), 이미 만료된 뒤 멈춰 있던 Activity가 돌아오면 `recreate()`
+- `games/GameSession`: 열린 게임 id(`playingId`)와 게임 WebView 보관. 게임 목록으로 돌아가면(`close()`) 그 게임은 종료
+- 프로세스가 죽은 경우 대비: 나갈 때 탭 주소·선택 탭·웹/게임 섹션·열린 게임 id를 SharedPreferences(`browser_session`)에 저장, 3분 이내에 다시 열면 복원(페이지는 다시 로드, 스크롤·게임 판은 초기화)
+- 브라우저 상단 바: 사이트 진입/화면 맨 위 터치 때만 나타나고 2초(`BAR_AUTO_HIDE_MS`) 무터치면 사라짐. 주소 입력 중·메뉴 열림 중엔 유지. 스크롤 올림으로는 안 뜸

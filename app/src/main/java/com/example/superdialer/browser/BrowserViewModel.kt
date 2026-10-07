@@ -33,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /** UI-visible state of one browser tab. The matching [WebView] lives in [BrowserViewModel]. */
@@ -380,10 +381,15 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         webView.destroy()
     }
 
-    override fun onCleared() {
+    /** Frees the WebViews and stops observing; the instance is dropped afterwards (see [BrowserSession]). */
+    fun release() {
         webViews.values.forEach(::destroy)
         webViews.clear()
+        tabs.clear()
+        viewModelScope.cancel()
     }
+
+    override fun onCleared() = release()
 
     private companion object {
         const val MAX_TABS = 20

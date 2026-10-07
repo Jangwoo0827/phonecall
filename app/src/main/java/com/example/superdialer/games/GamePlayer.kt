@@ -84,8 +84,8 @@ private fun createGameWebView(context: Context, game: GameInfo): WebView {
 @Composable
 fun GamePlayer(game: GameInfo, onClose: () -> Unit, modifier: Modifier = Modifier) {
     val activity = LocalContext.current
-    val webView = remember(game.id) { createGameWebView(activity, game) }
-    DisposableEffect(webView) { onDispose { webView.destroy() } }
+    // Kept by GameSession (not destroyed when this screen leaves) so a game in progress survives leaving the app.
+    val webView = remember(game.id) { GameSession.webViewFor(game.id) { createGameWebView(activity, game) } }
 
     LifecycleResumeEffect(webView) {
         webView.onResume()

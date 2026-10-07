@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.superdialer.browser.BrowserSession
 import com.example.superdialer.browser.BrowserViewModel
 import com.example.superdialer.browser.UrlResolver
 import com.example.superdialer.dialer.DialerViewModel
@@ -27,7 +28,7 @@ import com.example.superdialer.ui.theme.SuperDialerTheme
 
 class MainActivity : ComponentActivity() {
     private val dialerViewModel: DialerViewModel by viewModels()
-    private val browserViewModel: BrowserViewModel by viewModels()
+    private lateinit var browserViewModel: BrowserViewModel
 
     /** Tab requested by an external trigger (e.g. tapping a missed-call notification). */
     private var requestedRoute by mutableStateOf<String?>(null)
@@ -37,6 +38,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        browserViewModel = BrowserSession.get(application)
         enableEdgeToEdge()
         if (savedInstanceState == null) {
             handleIntent(intent)
@@ -54,12 +56,28 @@ class MainActivity : ComponentActivity() {
                 } else {
                     SuperDialerApp(
                         dialerViewModel = dialerViewModel,
+                        browserViewModel = browserViewModel,
                         requestedRoute = requestedRoute,
                         onRouteHandled = { requestedRoute = null },
                     )
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // The kept-alive session expired while this (stopped) activity was still around: start over cleanly.
+        if (BrowserSession.peek() !== browserViewModel) {
+            recreate()
+            return
+        }
+        BrowserSession.onReturn()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        BrowserSession.onLeave(application)
     }
 
     override fun onNewIntent(intent: Intent) {

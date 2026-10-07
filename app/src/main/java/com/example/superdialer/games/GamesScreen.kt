@@ -39,13 +39,13 @@ import androidx.compose.ui.unit.sp
 fun GamesScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val games = remember { GameCatalog.load(context) }
-    var playingId by rememberSaveable { mutableStateOf<String?>(null) }
+    val playingId = GameSession.playingId
     val playing = games.firstOrNull { it.id == playingId }
 
-    BackHandler(enabled = playing != null) { playingId = null }
+    BackHandler(enabled = playing != null) { GameSession.close() }
 
     if (playing != null) {
-        GamePlayer(playing, onClose = { playingId = null }, modifier = modifier)
+        GamePlayer(playing, onClose = { GameSession.close() }, modifier = modifier)
         return
     }
 
@@ -64,7 +64,7 @@ fun GamesScreen(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(games, key = { it.id }) { game ->
-            GameCard(game, onClick = { playingId = game.id })
+            GameCard(game, onClick = { GameSession.playingId = game.id })
         }
     }
 }
