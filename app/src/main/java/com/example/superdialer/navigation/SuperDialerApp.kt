@@ -1,5 +1,7 @@
 package com.example.superdialer.navigation
 
+import com.example.superdialer.dialer.Suggestion
+import com.example.superdialer.settings.QuickDialScreen
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.fadeOut
@@ -51,6 +53,7 @@ private const val ENTRY_ID_ARG = "entryId"
 private const val CALL_HISTORY_ROUTE = "calllog/{$ENTRY_ID_ARG}"
 private const val BLOCKED_ROUTE = "settings/blocked"
 private const val REJECT_ROUTE = "settings/reject"
+private const val QUICK_DIAL_ROUTE = "settings/quickdial"
 private const val CONTACT_ID_ARG = "contactId"
 private const val CONTACT_DETAIL_ROUTE = "contacts/{$CONTACT_ID_ARG}"
 
@@ -71,6 +74,14 @@ fun SuperDialerApp(
     val suggestions by remember {
         derivedStateOf {
             findSuggestions(dialerViewModel.number, contactsViewModel.contacts, callLogViewModel.entries)
+        }
+    }
+
+    // Starred contacts, shown on the keypad while no number is typed.
+    val favorites by remember {
+        derivedStateOf {
+            contactsViewModel.contacts.filter { it.starred && it.numbers.isNotEmpty() }
+                .take(10).map { Suggestion(it.name, it.numbers.first(), fromContact = true) }
         }
     }
 
@@ -150,6 +161,7 @@ fun SuperDialerApp(
                 DialerScreen(
                     viewModel = dialerViewModel,
                     suggestions = suggestions,
+                    favorites = favorites,
                     onRefreshSources = {
                         if (context.hasPermission(Manifest.permission.READ_CONTACTS)) contactsViewModel.refresh()
                         if (context.hasPermission(Manifest.permission.READ_CALL_LOG)) callLogViewModel.refresh()
@@ -168,7 +180,11 @@ fun SuperDialerApp(
                 SettingsScreen(
                     onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
                     onOpenRejectMessages = { navController.navigate(REJECT_ROUTE) },
+                    onOpenQuickDial = { navController.navigate(QUICK_DIAL_ROUTE) },
                 )
+            }
+            composable(QUICK_DIAL_ROUTE) {
+                QuickDialScreen(contactsViewModel, onBack = { navController.popBackStack() })
             }
             composable(BLOCKED_ROUTE) {
                 BlockedNumbersScreen(blockedViewModel, onBack = { navController.popBackStack() })

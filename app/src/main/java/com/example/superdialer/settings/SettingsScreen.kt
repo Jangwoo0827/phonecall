@@ -50,6 +50,7 @@ import com.example.superdialer.ui.rememberDefaultDialerStatus
 fun SettingsScreen(
     onOpenBlocked: () -> Unit,
     onOpenRejectMessages: () -> Unit,
+    onOpenQuickDial: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -116,6 +117,7 @@ fun SettingsScreen(
         }
 
         SettingsGroup("키패드") {
+            Clickable("단축 다이얼", "숫자를 길게 눌러 자주 거는 번호 불러오기", onOpenQuickDial)
             ListItem(
                 colors = transparentListItem(),
                 headlineContent = { Text("키패드음") },

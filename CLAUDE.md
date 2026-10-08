@@ -207,3 +207,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## 탭 영구 저장
 - 앱을 나갈 때(`MainActivity.onStop`) 열린 탭의 주소·제목·선택 탭을 SharedPreferences(`browser_session`)에 저장(`SavedTabs`, 테스트 있음) → 다음 실행(프로세스가 죽었든 3분이 지났든)에 탭이 복원됨. 복원된 탭의 페이지는 그 탭이 처음 화면에 나올 때 불러옴(`BrowserTab.pendingUrl`, 최대 20개). 웹/게임 섹션과 열린 게임은 3분 이내일 때만 복원
+
+## 즐겨찾기 / 단축 다이얼
+- 키패드: 번호를 입력하지 않았을 때 자동완성 줄(`SuggestionStrip`)에 별표(즐겨찾기) 연락처를 칩으로 보여줌(최대 10명, 가로 스크롤). 칩을 누르면 번호만 채워지고 통화 버튼을 눌러야 걸림
+- 단축 다이얼(`dialer/QuickDials`, 설정 > 키패드 > 단축 다이얼 `settings/quickdial`): 숫자 1~9에 연락처(또는 직접 입력한 번호)를 지정, 키패드에서 그 숫자를 길게 누르면 번호가 채워짐(0 길게 = +). "길게 누르면 바로 발신" 스위치(`AppSettings.quickDialCallsDirectly`, 기본 꺼짐)를 켜면 바로 발신. 전화번호가 들어 있어서 이 폰에만 저장하고 계정과 동기화하지 않음. 테스트 `QuickDialsTest`

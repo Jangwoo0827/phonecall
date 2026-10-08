@@ -32,6 +32,7 @@ object AppSettings {
     private const val KEY_DYNAMIC_COLOR = "dynamic_color"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_ACCENT = "accent"
+    private const val KEY_QUICK_DIRECT = "quick_dial_direct"
 
     private var prefs: SharedPreferences? = null
 
@@ -49,6 +50,10 @@ object AppSettings {
     var accent by mutableStateOf(AccentColor.GREEN)
         private set
 
+    /** Long-pressing an assigned keypad digit places the call at once instead of only filling in the number. */
+    var quickDialCallsDirectly by mutableStateOf(false)
+        private set
+
     /** Whether the first-run "make this your default phone app" screen has been dealt with. */
     var onboardingDone by mutableStateOf(false)
         private set
@@ -61,6 +66,12 @@ object AppSettings {
         dynamicColor = p.getBoolean(KEY_DYNAMIC_COLOR, false)
         themeMode = ThemeMode.fromKey(p.getString(KEY_THEME_MODE, null))
         accent = AccentColor.fromKey(p.getString(KEY_ACCENT, null))
+        quickDialCallsDirectly = p.getBoolean(KEY_QUICK_DIRECT, false)
+    }
+
+    fun updateQuickDialCallsDirectly(enabled: Boolean) {
+        quickDialCallsDirectly = enabled
+        prefs?.edit()?.putBoolean(KEY_QUICK_DIRECT, enabled)?.apply()
     }
 
     fun updateThemeMode(mode: ThemeMode) {

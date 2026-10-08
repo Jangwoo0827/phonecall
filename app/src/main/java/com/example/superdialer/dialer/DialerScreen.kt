@@ -1,5 +1,6 @@
 package com.example.superdialer.dialer
 
+import android.widget.Toast
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -74,6 +75,7 @@ fun DialerScreen(
     viewModel: DialerViewModel,
     modifier: Modifier = Modifier,
     suggestions: List<Suggestion> = emptyList(),
+    favorites: List<Suggestion> = emptyList(),
     onRefreshSources: () -> Unit = {},
     dtmfEnabled: Boolean = AppSettings.dtmfEnabled,
 ) {
@@ -130,8 +132,9 @@ fun DialerScreen(
         )
 
         // Always the same height, so the keypad below keeps its size whether or not anything matches.
+        // With nothing typed the strip shows the starred contacts; tapping one fills in its number.
         SuggestionStrip(
-            suggestions = suggestions,
+            suggestions = if (number.isEmpty()) favorites else suggestions,
             onPick = { viewModel.replaceNumber(it.number) },
             showAddContact = number.length >= 3 && suggestions.none { it.fromContact },
             onAddContact = { context.addContact(number) },
@@ -171,7 +174,19 @@ fun DialerScreen(
                             onPressStart = dtmf::start,
                             onPressEnd = dtmf::stop,
                             onTap = viewModel::append,
-                            onLongPress = { if (it == '0') viewModel.appendPlus() },
+                            onLongPress = { digit ->
+                                if (digit == '0') {
+                                    viewModel.appendPlus()
+                                } else {
+                                    QuickDials.get(digit)?.let { dial ->
+                                        viewModel.replaceNumber(dial.number)
+                                        if (AppSettings.quickDialCallsDirectly &&
+                                            CallPlacer.placeCall(context, dial.number) == PlaceCallResult.Placed
+                                        ) return@let
+                                        Toast.makeText(context, "${digit}번 · ${dial.name}", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
                             modifier = Modifier.weight(1f).fillMaxSize(),
                         )
                     }
