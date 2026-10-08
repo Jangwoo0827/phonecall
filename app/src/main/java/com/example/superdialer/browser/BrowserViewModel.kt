@@ -352,6 +352,8 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             useWideViewPort = true
             loadWithOverviewMode = true
         }
+        // Lets the phone's autofill service (Samsung Pass, Google, ...) offer to save and fill logins in pages.
+        webView.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_YES
         CookieManager.getInstance().apply {
             setAcceptCookie(true)
             setAcceptThirdPartyCookies(webView, false)

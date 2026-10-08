@@ -185,8 +185,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - `AccountManager`(싱글톤, Compose 상태): 세션은 SharedPreferences `account`에 저장 → 앱을 껐다 켜도 자동 로그인, access token은 만료 60초 전에 refresh. refresh 실패 시 로그아웃 + 안내
 - 동기화 규칙(`runSync`): 서버에 스냅샷 1개. 서버 `updated_at`이 마지막 동기화 때와 다르면 받아오되(로컬도 바뀌었으면 로컬 우선으로 올림), 이 폰만 바뀌었으면 올림. 이 폰의 첫 동기화는 서버 쪽이 우선. 게임 점수는 항상 큰 값. 앱이 앞으로 오거나 나갈 때(`MainActivity.onStart/onStop`, 15초 간격 제한), 로그인 직후, "지금 동기화" 버튼에서 실행. 스냅샷 모양/병합은 `SyncSnapshot`(테스트 있음)
 - 가입 시 메일 인증이 켜져 있으면 가입 직후 세션이 없어 "메일 인증 후 로그인" 안내. 인증 없이 바로 쓰려면 Supabase 대시보드 Authentication > Sign In / Providers > Email 에서 "Confirm email"을 끄면 됨(이 설정은 앱/MCP로 바꾸지 않음)
-- **체크리스트 자동 로그인**(`browser/ChecklistLink`): 시작 페이지 첫 타일 "체크리스트"(`https://jangwoo0827.github.io/checklist_summarizer/`, DB v3 마이그레이션이 기존 폰에도 맨 앞에 추가). 로그인 상태에서 이 주소의 페이지가 다 열리면 localStorage `checklist_note_user_v1`을 읽어 있으면 계정에 기억(다른 폰으로도 동기화), 없고 계정에 기억된 아이디가 있으면 한 번 넣고 새로고침 → 자동 로그인. 사이트 쪽 로그아웃을 해도 같은 탭에선 다시 넣지 않음. 형식이 맞는 아이디(`^[a-z0-9가-힣_-]{2,32}$`)만, 정확히 그 주소에서만 주입
-- 체크리스트 앱은 비밀번호 없는 "아이디" 동기화라 아이디를 아는 사람은 누구나 볼 수 있음(사이트 README 참고). SuperDialer 계정 데이터는 그와 달리 RLS로 본인만 접근
+- **체크리스트 자동 로그인**(`browser/ChecklistLink`): 시작 페이지 첫 타일 "체크리스트"(`https://jangwoo0827.github.io/checklist_summarizer/`, DB v3 마이그레이션이 기존 폰에도 맨 앞에 추가). 체크리스트 사이트도 같은 Supabase 계정(이메일+비밀번호)으로 로그인하는 방식으로 바뀜(아래 "체크리스트 계정" 참고). SuperDialer에 로그인돼 있으면 이 주소의 페이지가 다 열렸을 때 `localStorage.checklist_note_session_v2`를 읽어, 없거나(또는 앱이 넣어 준 것이 10분 안에 만료되면) 앱 계정의 15분 이상 남은 액세스 토큰을 `{access_token,user_id,email,expires_at,managed:true}`로 넣고 한 번 새로고침 → 로그인된 채로 열림. 갱신 토큰은 넘기지 않음(앱과 페이지가 갱신 토큰을 같이 쓰면 서로 무효화시킴). 사용자가 페이지에서 직접 로그인한 세션(`managed:false`)은 덮어쓰지 않음. 정확히 그 주소에서만 주입
+- 옛 아이디 방식의 `SyncSnapshot.checklistId`/`rememberChecklistId`는 더 이상 쓰지 않음(호환용으로 남김)
 
 ## 움직임 (슬라이딩 UI)
 - `navigation/NavTransitions`: 탭 사이는 탭 순서 방향으로 살짝 밀리며 페이드, 하위 화면(연락처 상세·통화 내역·차단 관리 등)은 오른쪽에서 밀려 들어오고 뒤로 가면 오른쪽으로 나감(아래 화면은 1/4만큼 시차). NavHost의 enter/exit/popEnter/popExit에 연결
@@ -235,3 +235,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 게임 판 저장 / 랭킹
 - 판 저장: 브릿지 `Native.loadState()/saveState(json)/clearState()`(`GameStates`, SharedPreferences `game_state`, 게임 id별, 최대 5만 자). 2048은 매 이동마다 격자·점수 저장, 스네이크는 4틱마다/일시정지 때 뱀·먹이·방향 저장하고 일시정지 상태로 복원("이어하기"), 벽돌깨기는 점수·목숨·레벨·남은 벽돌·패들 위치를 저장하고 서브 대기 상태로 복원. 게임 오버면 지움. 게임 목록으로 나가거나 앱을 껐다 켜도 이어짐. 새 게임 HTML을 추가할 땐 같은 세 함수를 쓰면 됨(없으면 저장 안 함)
 - 랭킹: Supabase 테이블 `public.superdialer_scores(user_id, game_id, score, nickname)` (PK user_id+game_id, RLS: 로그인한 사람은 모두 읽기, 쓰기는 본인 행만) + 함수 `superdialer_submit_score(p_game, p_score, p_nickname)`가 더 높은 점수만 남김. 앱은 새 최고 점수가 나오면(`GameBridge.submitScore` → `AccountManager.uploadScore`) 로그인 상태에서 자동 업로드, 로그인 직후엔 이 폰의 최고 점수 전부 업로드. 게임 목록 위 "랭킹 보기"(`LeaderboardScreen`)에서 게임별 상위 20명, 내 줄 강조. 이메일은 노출되지 않고 닉네임만 표시(설정 > 계정 > 닉네임, 기본 "플레이어"+계정 id 앞 4자)
+
+## 체크리스트 계정 (extension/Summarizer, 별도 repo `checklist_summarizer`)
+- 아이디만 쓰던 동기화(누구나 읽을 수 있던 `user_data`)를 Supabase 계정 로그인으로 교체: `js/sync.js`가 `/auth/v1`로 로그인·가입, `public.checklist_data(user_id uuid PK → auth.users, data jsonb)` 테이블(RLS: 본인 행만)에 저장. 로그인 창은 이메일+비밀번호(+ "예전 아이디에서 가져오기": 예전 `user_data` 행을 읽어 합침). 기존 `user_data` 테이블은 읽기용으로 그대로 둠(삭제하지 않음)
+- 이 변경은 체크리스트 repo에 커밋만 돼 있고 푸시하지 않았을 수 있음 — GitHub Pages(사이트)에 반영하려면 그 repo에서 푸시 필요. 사이트가 옛 버전인 동안엔 앱이 넣어 주는 세션이 무시됨(옛 버전은 아이디 방식)
+
+## 비밀번호·자동 완성 (브라우저)
+- 앱이 비밀번호를 직접 저장하지 않음(앱에 JS 브릿지를 두지 않는 보안 원칙 유지). 대신 브라우저 WebView에 `importantForAutofill = YES`를 켜서 폰의 자동 완성 서비스(삼성 패스, 구글 등)가 로그인 정보를 저장·채우도록 함. 설정 > 브라우저 > "비밀번호·자동 완성"이 시스템의 자동 완성 서비스 선택 화면(`ACTION_REQUEST_SET_AUTOFILL_SERVICE`)을 엶. 에뮬레이터엔 서비스가 없어서 동작 확인은 실기기에서

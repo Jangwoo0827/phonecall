@@ -129,6 +129,13 @@ fun SettingsScreen(
         }
 
         SettingsGroup("브라우저") {
+            Clickable("비밀번호·자동 완성", "삼성 패스·구글 같은 자동 완성 서비스를 골라 두면 사이트 로그인 정보를 저장하고 채워 줘요") {
+                try {
+                    context.startActivity(Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                } catch (e: android.content.ActivityNotFoundException) {
+                    Toast.makeText(context, "자동 완성 설정을 열 수 없습니다. 휴대폰 설정 > 일반 > 비밀번호 및 자동 완성에서 정하세요.", Toast.LENGTH_LONG).show()
+                }
+            }
             var externalLinks by remember { mutableStateOf(ExternalLinks.isEnabled(context)) }
             ListItem(
                 colors = transparentListItem(),

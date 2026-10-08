@@ -1,5 +1,6 @@
 package com.example.superdialer.account
 
+import org.json.JSONObject
 import com.example.superdialer.settings.ThemeMode
 import com.example.superdialer.settings.AccentColor
 import android.content.Context
@@ -128,6 +129,25 @@ object AccountManager {
                 Triple(null, e.userMessage, null)
             }
             withContext(Dispatchers.Main) { onResult(result.first, result.second, result.third) }
+        }
+    }
+
+    /**
+     * A login for the checklist page: the same account, handed over as a short-lived "managed" session (access token
+     * only, no refresh token, at least 15 minutes left). [onResult] runs on the main thread; null when not signed in.
+     */
+    fun webSessionJson(onResult: (String?) -> Unit) {
+        if (!signedIn) { onResult(null); return }
+        scope.launch {
+            val json = try {
+                freshSession(minValidityMs = 15 * 60_000L)?.let {
+                    JSONObject().put("access_token", it.accessToken).put("user_id", it.userId).put("email", it.email)
+                        .put("expires_at", it.expiresAtMs).put("managed", true).toString()
+                }
+            } catch (e: ApiError) {
+                null
+            }
+            withContext(Dispatchers.Main) { onResult(json) }
         }
     }
 
@@ -339,7 +359,7 @@ object AccountManager {
     }
 
     /** The stored session, refreshed first when its access token is about to expire. */
-    private fun freshSession(): AuthSession? {
+    private fun freshSession(minValidityMs: Long = 60_000L): AuthSession? {
         val p = prefs ?: return null
         val refresh = p.getString(KEY_REFRESH, null) ?: return null
         val stored = AuthSession(
@@ -349,7 +369,7 @@ object AccountManager {
             userId = p.getString(KEY_USER, "").orEmpty(),
             email = p.getString(KEY_EMAIL, "").orEmpty(),
         )
-        if (stored.expiresAtMs - System.currentTimeMillis() > 60_000L && stored.accessToken.isNotEmpty()) return stored
+        if (stored.expiresAtMs - System.currentTimeMillis() > minValidityMs && stored.accessToken.isNotEmpty()) return stored
         val renewed = SupabaseApi.refresh(refresh)
         saveSession(renewed)
         return renewed
