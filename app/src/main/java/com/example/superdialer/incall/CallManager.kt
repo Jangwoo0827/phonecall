@@ -38,7 +38,7 @@ data class CallSnapshot(
     val isDialing get() = !isRinging && !isActive && !isHolding && !isDisconnected
 }
 
-data class AudioInfo(val muted: Boolean, val route: Int, val bluetoothAvailable: Boolean)
+data class AudioInfo(val muted: Boolean, val route: Int, val bluetoothAvailable: Boolean, val supportedRoutes: Int = 0)
 
 /** Bridges the system's [InCallService] callbacks to the Compose in-call UI. Main-thread only. */
 object CallManager {
@@ -85,6 +85,7 @@ object CallManager {
             muted = state.isMuted,
             route = state.route,
             bluetoothAvailable = state.supportedRouteMask and CallAudioState.ROUTE_BLUETOOTH != 0,
+            supportedRoutes = state.supportedRouteMask,
         )
     }
 
@@ -133,6 +134,12 @@ object CallManager {
     @Suppress("DEPRECATION")
     fun setSpeaker(on: Boolean) {
         val route = if (on) CallAudioState.ROUTE_SPEAKER else CallAudioState.ROUTE_WIRED_OR_EARPIECE
+        service?.setAudioRoute(route)
+    }
+
+    /** Moves the call audio to one of the CallAudioState.ROUTE_* values (earpiece, bluetooth, wired headset, speaker). */
+    @Suppress("DEPRECATION")
+    fun setRoute(route: Int) {
         service?.setAudioRoute(route)
     }
 

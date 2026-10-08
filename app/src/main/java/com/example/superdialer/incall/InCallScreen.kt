@@ -1,5 +1,8 @@
 package com.example.superdialer.incall
 
+import androidx.compose.material3.RadioButton
+import androidx.compose.material.icons.filled.Headset
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.EditNote
 import com.example.superdialer.ui.theme.EndCallRed
 import com.example.superdialer.ui.theme.CallButtonGreen
@@ -20,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -112,6 +116,29 @@ fun InCallScreen(onClose: () -> Unit, onAddCall: () -> Unit) {
     }
 }
 
+/** Two soft rings that grow and fade behind the caller's avatar while the phone rings. */
+@Composable
+private fun RingingPulse() {
+    val transition = androidx.compose.animation.core.rememberInfiniteTransition(label = "ring")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            androidx.compose.animation.core.tween(1800, easing = androidx.compose.animation.core.LinearEasing),
+        ),
+        label = "ringPhase",
+    )
+    androidx.compose.foundation.Canvas(Modifier.size(220.dp)) {
+        listOf(0f, 0.5f).forEach { offset ->
+            val p = (phase + offset) % 1f
+            drawCircle(
+                color = Color(0xFF3DDC97).copy(alpha = (1f - p) * 0.35f),
+                radius = size.minDimension / 2f * (0.55f + 0.45f * p),
+            )
+        }
+    }
+}
+
 @Composable
 private fun CallHeader(call: CallSnapshot, ended: Boolean) {
     val title = call.name
@@ -123,7 +150,10 @@ private fun CallHeader(call: CallSnapshot, ended: Boolean) {
             fontSize = 16.sp,
         )
         Spacer(Modifier.height(24.dp))
-        InitialAvatar(title, size = 120.dp, fontSize = 48.sp)
+        Box(contentAlignment = Alignment.Center) {
+            if (call.isRinging) RingingPulse()
+            InitialAvatar(title, size = 120.dp, fontSize = 48.sp)
+        }
         Spacer(Modifier.height(16.dp))
         Text(title, color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
         if (call.name != null) {
@@ -204,8 +234,45 @@ private fun RingingControls(call: CallSnapshot) {
     }
 }
 
+private fun routeLabel(route: Int) = when (route) {
+    CallAudioState.ROUTE_SPEAKER -> "스피커"
+    CallAudioState.ROUTE_BLUETOOTH -> "블루투스"
+    CallAudioState.ROUTE_WIRED_HEADSET -> "헤드셋"
+    else -> "수화기"
+}
+
+/** Pick where the call audio goes: earpiece, speaker, bluetooth or a wired headset (only the ones available). */
+@Composable
+private fun AudioRouteDialog(audio: AudioInfo, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
+    val options = listOf(
+        CallAudioState.ROUTE_EARPIECE to "수화기",
+        CallAudioState.ROUTE_SPEAKER to "스피커",
+        CallAudioState.ROUTE_BLUETOOTH to "블루투스",
+        CallAudioState.ROUTE_WIRED_HEADSET to "유선 헤드셋",
+    ).filter { audio.supportedRoutes and it.first != 0 }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("소리 출력") },
+        text = {
+            Column {
+                options.forEach { (route, label) ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { onPick(route) }.padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = audio.route == route, onClick = { onPick(route) })
+                        Text(label, modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("닫기") } },
+    )
+}
+
 @Composable
 private fun RejectMessageDialog(onSelect: (String) -> Unit, onDismiss: () -> Unit) {
+    var custom by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("메시지로 거절") },
@@ -223,6 +290,17 @@ private fun RejectMessageDialog(onSelect: (String) -> Unit, onDismiss: () -> Uni
                             .padding(vertical = 12.dp),
                     )
                 }
+                // Write a one-off message instead of a preset.
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = custom,
+                        onValueChange = { custom = it },
+                        placeholder = { Text("직접 입력") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(enabled = custom.isNotBlank(), onClick = { onSelect(custom.trim()) }) { Text("보내기") }
+                }
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("취소") } },
@@ -234,8 +312,12 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
     val context = LocalContext.current
     var showKeypad by remember { mutableStateOf(false) }
     var showMemo by remember { mutableStateOf(false) }
+    var showRoutes by remember { mutableStateOf(false) }
     val speakerOn = audio.route == CallAudioState.ROUTE_SPEAKER
 
+    if (showRoutes) {
+        AudioRouteDialog(audio, onPick = { CallManager.setRoute(it); showRoutes = false }, onDismiss = { showRoutes = false })
+    }
     if (showMemo) {
         com.example.superdialer.calllog.NoteDialog(
             title = "통화 메모",
@@ -256,7 +338,16 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
                 CallManager.setMuted(!audio.muted)
             }
             ToggleAction(Icons.Filled.Dialpad, "키패드", false) { showKeypad = true }
-            ToggleAction(Icons.AutoMirrored.Filled.VolumeUp, "스피커", speakerOn) { CallManager.setSpeaker(!speakerOn) }
+            val extraRoutes = audio.supportedRoutes and (CallAudioState.ROUTE_BLUETOOTH or CallAudioState.ROUTE_WIRED_HEADSET) != 0
+            ToggleAction(
+                icon = when (audio.route) {
+                    CallAudioState.ROUTE_BLUETOOTH -> Icons.Filled.Bluetooth
+                    CallAudioState.ROUTE_WIRED_HEADSET -> Icons.Filled.Headset
+                    else -> Icons.AutoMirrored.Filled.VolumeUp
+                },
+                label = if (extraRoutes) routeLabel(audio.route) else "스피커",
+                active = speakerOn || (extraRoutes && audio.route != CallAudioState.ROUTE_EARPIECE),
+            ) { if (extraRoutes) showRoutes = true else CallManager.setSpeaker(!speakerOn) }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             ToggleAction(Icons.Filled.Add, "통화 추가", false, onClick = onAddCall)

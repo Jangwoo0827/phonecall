@@ -226,3 +226,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 연락처 상세/통화 내역의 "메시지" 탭 맨 위에 입력창 + 보내기 버튼(`MessagesPane.Composer`). `SmsSender`가 `SmsManager.sendMultipartTextMessage`로 발송(SEND_SMS 권한, 처음 보낼 때 요청). 결과는 `SmsSentReceiver`(매니페스트, exported=false)가 받아 상태(보내는 중/전송됨/전송 실패)를 갱신, 실패하면 "다시 보내기"
 - **한계**: 기본 SMS 앱이 아니면 시스템 문자함에 쓸 수 없어서 여기서 보낸 문자는 이 앱의 `SentSms`(SharedPreferences, 최대 300개)에만 기록되고 삼성 문자 앱에는 나타나지 않음. 목록은 시스템 문자 + 보낸 문자를 합쳐 최신순(`SentSms.merge`, 테스트 있음). 이 폰에만 저장, 동기화 안 함
 - 에뮬레이터 테스트: `adb shell pm grant com.example.superdialer android.permission.SEND_SMS` 후 보내면 "보내는 중"으로 표시됨
+
+## 통화 화면 개선
+- 소리 출력 선택: 블루투스/유선 헤드셋이 연결돼 있으면(`AudioInfo.supportedRoutes`) 스피커 버튼이 출력 선택 창(수화기/스피커/블루투스/유선 헤드셋)으로 바뀌고 버튼 아이콘·이름이 현재 출력을 표시, 없으면 기존처럼 스피커 토글. `CallManager.setRoute`
+- 메시지로 거절 창에 "직접 입력" 칸(프리셋 대신 한 번만 쓰는 문구)
+- 수신 중엔 아바타 뒤에서 링이 퍼지는 애니메이션(`RingingPulse`)
