@@ -66,8 +66,10 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     /** Which section of the web/games tab is showing: 0 browser, 1 games. */
     var hubSection by mutableIntStateOf(0)
 
-    /** A website is open full screen: the app hides its own tab bars so the page gets the whole screen. */
-    val immersive: Boolean get() = hubSection == 0 && selected?.isStart == false
+    /** A website or a game is open full screen: the app hides its own tab bars so it gets the whole screen. */
+    val immersive: Boolean
+        get() = (hubSection == 0 && selected?.isStart == false) ||
+            (hubSection == 1 && com.example.superdialer.games.GameSession.playingId != null)
 
     /** Non-null while a page's video is shown full screen. */
     var customView by mutableStateOf<View?>(null)
