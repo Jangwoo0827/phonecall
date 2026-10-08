@@ -73,6 +73,10 @@ fun SettingsScreen(
     ) {
         ScreenHeader("설정", onBack = null)
 
+        SettingsGroup("계정") {
+            AccountRows()
+        }
+
         SettingsGroup("전화") {
             ListItem(
                 colors = transparentListItem(),

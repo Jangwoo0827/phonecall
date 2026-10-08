@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.superdialer.account.AccountManager
 import com.example.superdialer.browser.BrowserSession
 import com.example.superdialer.browser.BrowserViewModel
 import com.example.superdialer.browser.UrlResolver
@@ -73,11 +74,13 @@ class MainActivity : ComponentActivity() {
             return
         }
         BrowserSession.onReturn()
+        AccountManager.syncIfSignedIn()
     }
 
     override fun onStop() {
         super.onStop()
         BrowserSession.onLeave(application)
+        AccountManager.syncIfSignedIn()
     }
 
     override fun onNewIntent(intent: Intent) {

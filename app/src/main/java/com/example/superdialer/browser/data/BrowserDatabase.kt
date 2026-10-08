@@ -54,6 +54,12 @@ interface BookmarkDao {
 
     @Query("DELETE FROM bookmarks WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM bookmarks ORDER BY createdAt DESC")
+    suspend fun getAll(): List<Bookmark>
+
+    @Query("DELETE FROM bookmarks")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -87,11 +93,17 @@ interface SpeedDialDao {
 
     @Query("SELECT COALESCE(MAX(position), -1) + 1 FROM speed_dials")
     suspend fun nextPosition(): Int
+
+    @Query("SELECT * FROM speed_dials ORDER BY position ASC, id ASC")
+    suspend fun getAll(): List<SpeedDial>
+
+    @Query("DELETE FROM speed_dials")
+    suspend fun deleteAll()
 }
 
 @Database(
     entities = [Bookmark::class, HistoryItem::class, SpeedDial::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class BrowserDatabase : RoomDatabase() {
@@ -102,7 +114,12 @@ abstract class BrowserDatabase : RoomDatabase() {
     companion object {
         @Volatile private var instance: BrowserDatabase? = null
 
+        /** The checklist web app (extension/Summarizer, GitHub Pages) is the first tile; see ChecklistLink. */
+        const val CHECKLIST_TITLE = "체크리스트"
+        const val CHECKLIST_URL = "https://jangwoo0827.github.io/checklist_summarizer/"
+
         private val DEFAULT_TILES = listOf(
+            CHECKLIST_TITLE to CHECKLIST_URL,
             "네이버" to "https://m.naver.com",
             "구글" to "https://www.google.com",
             "유튜브" to "https://m.youtube.com",
@@ -132,11 +149,24 @@ abstract class BrowserDatabase : RoomDatabase() {
             }
         }
 
+        // v2 -> v3: the checklist tile goes first on phones that already have a start page.
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val exists = db.query("SELECT 1 FROM speed_dials WHERE url = ?", arrayOf<Any>(CHECKLIST_URL)).use { it.moveToFirst() }
+                if (exists) return
+                db.execSQL("UPDATE speed_dials SET position = position + 1")
+                db.execSQL(
+                    "INSERT INTO speed_dials (title, url, position) VALUES (?, ?, 0)",
+                    arrayOf<Any>(CHECKLIST_TITLE, CHECKLIST_URL),
+                )
+            }
+        }
+
         fun get(context: Context): BrowserDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(
                 context.applicationContext, BrowserDatabase::class.java, "browser.db"
             )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .addCallback(object : Callback() {
                     // Fresh installs only; upgraded databases are seeded by the migration.
                     override fun onCreate(db: SupportSQLiteDatabase) = seed(db)

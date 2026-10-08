@@ -177,3 +177,13 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 자동완성은 `SuggestionStrip`(가로 한 줄, 높이 68dp 고정 슬롯)로 표시해서 제안 유무와 상관없이 키패드 크기가 변하지 않음 (예전엔 제안이 늘면 키가 줄어 글자/영문이 잘렸음). 키 안의 숫자/영문 크기는 키 지름에 비례해 조정
 - 번호 표시는 한 줄에 다 들어올 때까지 글자 크기를 42sp부터 2sp씩 줄임(최소 16sp), `...`로 자르지 않음
 - 좁은 화면 테스트: 에뮬레이터에서 `adb -s emulator-5554 shell wm size 1080x1700` + `settings put system font_scale 1.3`, 끝나면 `wm size reset`, font_scale 1.0
+
+## 계정 / 동기화 (account/, 선택 사항)
+- 설정 탭 "계정"에서 이메일+비밀번호 로그인/회원가입(Supabase Auth). **로그인 없이도 앱 전체 사용 가능**, 로그인하면 시작 페이지 링크·북마크·게임 최고 점수·키패드음/화면 색 설정·거절 메시지를 동기화. 통화·연락처·문자는 올리지 않음
+- Supabase 프로젝트: `wugixanaquagedgtqmyv` (이름 "Checked", 리전 ap-northeast-2). 체크리스트 노트 웹앱(`extension/Summarizer`, 별도 repo `Jangwoo0827/checklist_summarizer`)과 **같은 프로젝트를 공유**. 우리 데이터는 `public.superdialer_sync(user_id uuid PK → auth.users, data jsonb, updated_at)` 한 테이블뿐이고 RLS로 본인 행만 읽기/쓰기(authenticated). 체크리스트 앱의 `user_data`(아이디만 쓰는 익명 정책)는 그대로 둠
+- `SupabaseApi`: SDK 없이 HttpURLConnection으로 `/auth/v1/signup|token|recover`와 `/rest/v1/superdialer_sync`. URL과 publishable key(`sb_publishable_…`)는 공개용이라 코드에 직접 둠. 에러는 한글 메시지로 변환(`errorMessage`, 테스트 있음)
+- `AccountManager`(싱글톤, Compose 상태): 세션은 SharedPreferences `account`에 저장 → 앱을 껐다 켜도 자동 로그인, access token은 만료 60초 전에 refresh. refresh 실패 시 로그아웃 + 안내
+- 동기화 규칙(`runSync`): 서버에 스냅샷 1개. 서버 `updated_at`이 마지막 동기화 때와 다르면 받아오되(로컬도 바뀌었으면 로컬 우선으로 올림), 이 폰만 바뀌었으면 올림. 이 폰의 첫 동기화는 서버 쪽이 우선. 게임 점수는 항상 큰 값. 앱이 앞으로 오거나 나갈 때(`MainActivity.onStart/onStop`, 15초 간격 제한), 로그인 직후, "지금 동기화" 버튼에서 실행. 스냅샷 모양/병합은 `SyncSnapshot`(테스트 있음)
+- 가입 시 메일 인증이 켜져 있으면 가입 직후 세션이 없어 "메일 인증 후 로그인" 안내. 인증 없이 바로 쓰려면 Supabase 대시보드 Authentication > Sign In / Providers > Email 에서 "Confirm email"을 끄면 됨(이 설정은 앱/MCP로 바꾸지 않음)
+- **체크리스트 자동 로그인**(`browser/ChecklistLink`): 시작 페이지 첫 타일 "체크리스트"(`https://jangwoo0827.github.io/checklist_summarizer/`, DB v3 마이그레이션이 기존 폰에도 맨 앞에 추가). 로그인 상태에서 이 주소의 페이지가 다 열리면 localStorage `checklist_note_user_v1`을 읽어 있으면 계정에 기억(다른 폰으로도 동기화), 없고 계정에 기억된 아이디가 있으면 한 번 넣고 새로고침 → 자동 로그인. 사이트 쪽 로그아웃을 해도 같은 탭에선 다시 넣지 않음. 형식이 맞는 아이디(`^[a-z0-9가-힣_-]{2,32}$`)만, 정확히 그 주소에서만 주입
+- 체크리스트 앱은 비밀번호 없는 "아이디" 동기화라 아이디를 아는 사람은 누구나 볼 수 있음(사이트 README 참고). SuperDialer 계정 데이터는 그와 달리 RLS로 본인만 접근

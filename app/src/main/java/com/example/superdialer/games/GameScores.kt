@@ -18,6 +18,9 @@ object GameScores {
 
     fun best(gameId: String): Int = best[gameId] ?: 0
 
+    /** A copy of every stored best score (for account sync). */
+    fun all(): Map<String, Int> = best.toMap()
+
     /** Stores [score] if it beats the current best. Main thread only. */
     fun submit(gameId: String, score: Int): Boolean {
         if (score <= best(gameId)) return false

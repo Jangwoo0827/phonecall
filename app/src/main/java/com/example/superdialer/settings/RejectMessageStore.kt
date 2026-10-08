@@ -42,6 +42,13 @@ object RejectMessageStore {
         if (index in messages.indices) { messages.removeAt(index); save() }
     }
 
+    /** Replaces all presets (account sync); an empty list falls back to the defaults. */
+    fun replaceAll(texts: List<String>) {
+        messages.clear()
+        messages.addAll(texts.map(String::trim).filter(String::isNotEmpty).ifEmpty { DEFAULTS })
+        save()
+    }
+
     fun resetToDefaults() {
         messages.clear()
         messages.addAll(DEFAULTS)

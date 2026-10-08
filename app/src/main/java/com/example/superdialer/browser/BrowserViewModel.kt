@@ -48,6 +48,8 @@ class BrowserTab(val id: Int) {
     /** True while the tab shows the speed-dial start page instead of a website. */
     var isStart by mutableStateOf(true)
     internal var lastRecordedUrl: String? = null
+    /** The checklist site was already signed in automatically in this tab (see [ChecklistLink]). */
+    internal var checklistInjected = false
 }
 
 data class DownloadRequest(val url: String, val userAgent: String?, val mimeType: String?, val fileName: String)
@@ -297,6 +299,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             }
 
             override fun onPageFinished(view: WebView, url: String?) {
+                ChecklistLink.onPageFinished(view, url, tab)
                 tab.loading = false
                 tab.title = view.title.orEmpty()
                 syncNavigation(tab, view)
