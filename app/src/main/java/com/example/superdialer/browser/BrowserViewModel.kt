@@ -210,19 +210,47 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Speed dial ---------------------------------------------------------------------------
 
-    fun addSpeedDial(title: String, url: String) {
+    fun addSpeedDial(title: String, url: String, parentId: Long = 0) {
         viewModelScope.launch(Dispatchers.IO) {
             val dao = db.speedDialDao()
-            dao.insert(SpeedDial(title = title, url = url, position = dao.nextPosition()))
+            dao.insert(SpeedDial(title = title, url = url, position = dao.nextPosition(parentId), parentId = parentId))
+        }
+    }
+
+    fun addSpeedDialFolder(title: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val dao = db.speedDialDao()
+            dao.insert(SpeedDial(title = title, url = "", position = dao.nextPosition(0), isFolder = true))
         }
     }
 
     fun updateSpeedDial(item: SpeedDial, title: String, url: String) {
-        viewModelScope.launch(Dispatchers.IO) { db.speedDialDao().update(item.copy(title = title, url = url)) }
+        viewModelScope.launch(Dispatchers.IO) { db.speedDialDao().update(item.copy(title = title, url = if (item.isFolder) "" else url)) }
     }
 
+    /** Deleting a folder deletes the tiles inside it. */
     fun deleteSpeedDial(item: SpeedDial) {
-        viewModelScope.launch(Dispatchers.IO) { db.speedDialDao().deleteById(item.id) }
+        viewModelScope.launch(Dispatchers.IO) {
+            val dao = db.speedDialDao()
+            if (item.isFolder) dao.deleteChildren(item.id)
+            dao.deleteById(item.id)
+        }
+    }
+
+    /** Moves a tile into a folder ([parentId] = folder id) or back to the top level (0), at the end. */
+    fun moveSpeedDial(item: SpeedDial, parentId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val dao = db.speedDialDao()
+            dao.place(item.id, parentId, dao.nextPosition(parentId))
+        }
+    }
+
+    /** Saves a new order for the tiles of one level (index = position). */
+    fun reorderSpeedDials(ordered: List<SpeedDial>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val dao = db.speedDialDao()
+            ordered.forEachIndexed { index, item -> dao.place(item.id, item.parentId, index) }
+        }
     }
 
     // --- Fullscreen video / downloads ---------------------------------------------------------

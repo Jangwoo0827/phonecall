@@ -20,7 +20,8 @@ data class SyncSnapshot(
     val rejectMessages: List<String> = emptyList(),
     val checklistId: String? = null,
 ) {
-    data class Link(val title: String, val url: String)
+    /** A tile or bookmark. For tiles, [folder] marks a folder and [parent] is the index of its folder in the same list (-1 = top level). */
+    data class Link(val title: String, val url: String, val folder: Boolean = false, val parent: Int = -1)
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("v", VERSION)
@@ -68,7 +69,12 @@ data class SyncSnapshot(
         fun isValidChecklistId(id: String): Boolean = Regex("^[a-z0-9가-힣_-]{2,32}$").matches(id)
 
         private fun linksToJson(links: List<Link>) = JSONArray().also { array ->
-            links.forEach { array.put(JSONObject().put("title", it.title).put("url", it.url)) }
+            links.forEach {
+                val o = JSONObject().put("title", it.title).put("url", it.url)
+                if (it.folder) o.put("folder", true)
+                if (it.parent >= 0) o.put("parent", it.parent)
+                array.put(o)
+            }
         }
 
         private fun linksFrom(array: JSONArray?): List<Link> {
@@ -76,7 +82,9 @@ data class SyncSnapshot(
             return (0 until array.length()).mapNotNull { i ->
                 val o = array.optJSONObject(i) ?: return@mapNotNull null
                 val url = o.optString("url")
-                if (url.isBlank()) null else Link(o.optString("title", url), url)
+                val folder = o.optBoolean("folder", false)
+                if (url.isBlank() && !folder) null
+                else Link(o.optString("title", url), url, folder = folder, parent = o.optInt("parent", -1))
             }
         }
 

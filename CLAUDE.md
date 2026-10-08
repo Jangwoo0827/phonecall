@@ -195,3 +195,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 테마 선택
 - 설정 > 화면: 테마(시스템/라이트/다크, `ThemeMode`) + 강조 색 5종(초록/파랑/보라/주황/분홍, `AccentColor`). `AppSettings.themeMode/accent`에 저장, 계정 동기화 대상(`SyncSnapshot.themeMode/accent`)
 - 초록은 손으로 맞춘 기본 팔레트 그대로, 나머지는 `schemeFor`가 강조 역할(primary/container)을 바꾸고 회색 계열을 강조 색 쪽으로 살짝 물들임. '배경화면 색상 따라가기'가 켜져 있으면 그쪽이 우선
+
+## 스피드 다이얼 순서·폴더
+- 타일을 길게 눌러 끌면 순서 변경(`SpeedDialGrid`, `detectDragGesturesAfterLongPress` + 그리드 레이아웃 정보로 겹친 칸과 교체, 끝나면 `reorderSpeedDials`로 저장). 끌지 않고 길게만 누르면 수정/폴더로 이동/삭제 메뉴. adb로 테스트할 땐 `input swipe`가 바로 움직여 롱프레스가 안 되므로 `input draganddrop x1 y1 x2 y2 2000` 사용
+- 폴더: `SpeedDial.parentId/isFolder`(DB v4, 마이그레이션 3→4), 한 단계만. + 버튼의 링크/폴더 선택으로 추가, 폴더 타일은 안의 사이트 아이콘 4개 미리보기, 탭하면 폴더 안으로(뒤로가기로 나옴). 폴더 삭제 시 안의 링크도 삭제
+- 계정 동기화: `SyncSnapshot.Link(folder, parent=폴더의 목록 인덱스)`, `SpeedDialTree.flatten/plan`(테스트 있음)

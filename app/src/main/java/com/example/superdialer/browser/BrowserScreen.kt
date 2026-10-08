@@ -217,8 +217,11 @@ private fun StartPage(
             dials = dials,
             onOpen = { viewModel.load(it.url) },
             onAdd = viewModel::addSpeedDial,
+            onAddFolder = viewModel::addSpeedDialFolder,
             onUpdate = viewModel::updateSpeedDial,
             onDelete = viewModel::deleteSpeedDial,
+            onMove = viewModel::moveSpeedDial,
+            onReorder = viewModel::reorderSpeedDials,
         )
     }
 }

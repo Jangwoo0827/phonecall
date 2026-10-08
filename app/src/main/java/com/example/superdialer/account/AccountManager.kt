@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.room.withTransaction
+import com.example.superdialer.browser.SpeedDialTree
 import com.example.superdialer.browser.data.Bookmark
 import com.example.superdialer.browser.data.BrowserDatabase
 import com.example.superdialer.browser.data.SpeedDial
@@ -218,7 +219,7 @@ object AccountManager {
     }
 
     private suspend fun readLocal(db: BrowserDatabase): SyncSnapshot {
-        val dials = db.speedDialDao().getAll().map { SyncSnapshot.Link(it.title, it.url) }
+        val dials = SpeedDialTree.flatten(db.speedDialDao().getAll())
         val marks = db.bookmarkDao().getAll().map { SyncSnapshot.Link(it.title, it.url) }
         return withContext(Dispatchers.Main) {
             SyncSnapshot(
@@ -238,8 +239,22 @@ object AccountManager {
     private suspend fun applyLocal(db: BrowserDatabase, snapshot: SyncSnapshot) {
         db.withTransaction {
             db.speedDialDao().deleteAll()
-            snapshot.speedDials.forEachIndexed { index, link ->
-                db.speedDialDao().insert(SpeedDial(title = link.title, url = link.url, position = index))
+            // Top-level rows first so folders have ids before their children are inserted.
+            val planned = SpeedDialTree.plan(snapshot.speedDials)
+            val ids = LongArray(planned.size)
+            planned.forEachIndexed { index, p ->
+                if (p.parentIndex == -1) {
+                    ids[index] = db.speedDialDao().insert(
+                        SpeedDial(title = p.link.title, url = p.link.url, position = p.position, isFolder = p.link.folder)
+                    )
+                }
+            }
+            planned.forEachIndexed { index, p ->
+                if (p.parentIndex != -1) {
+                    db.speedDialDao().insert(
+                        SpeedDial(title = p.link.title, url = p.link.url, position = p.position, parentId = ids[p.parentIndex])
+                    )
+                }
             }
             db.bookmarkDao().deleteAll()
             val now = System.currentTimeMillis()

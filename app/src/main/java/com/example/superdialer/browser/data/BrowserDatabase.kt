@@ -39,6 +39,10 @@ data class SpeedDial(
     val title: String,
     val url: String,
     val position: Int,
+    /** 0 = top level, otherwise the id of the folder this tile sits in. */
+    val parentId: Long = 0,
+    /** A folder tile (no url) that holds other tiles. */
+    val isFolder: Boolean = false,
 )
 
 @Dao
@@ -83,7 +87,7 @@ interface SpeedDialDao {
     fun observeAll(): Flow<List<SpeedDial>>
 
     @Insert
-    suspend fun insert(item: SpeedDial)
+    suspend fun insert(item: SpeedDial): Long
 
     @Update
     suspend fun update(item: SpeedDial)
@@ -91,8 +95,14 @@ interface SpeedDialDao {
     @Query("DELETE FROM speed_dials WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    @Query("SELECT COALESCE(MAX(position), -1) + 1 FROM speed_dials")
-    suspend fun nextPosition(): Int
+    @Query("SELECT COALESCE(MAX(position), -1) + 1 FROM speed_dials WHERE parentId = :parentId")
+    suspend fun nextPosition(parentId: Long): Int
+
+    @Query("DELETE FROM speed_dials WHERE parentId = :parentId")
+    suspend fun deleteChildren(parentId: Long)
+
+    @Query("UPDATE speed_dials SET position = :position, parentId = :parentId WHERE id = :id")
+    suspend fun place(id: Long, parentId: Long, position: Int)
 
     @Query("SELECT * FROM speed_dials ORDER BY position ASC, id ASC")
     suspend fun getAll(): List<SpeedDial>
@@ -103,7 +113,7 @@ interface SpeedDialDao {
 
 @Database(
     entities = [Bookmark::class, HistoryItem::class, SpeedDial::class],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class BrowserDatabase : RoomDatabase() {
@@ -162,11 +172,19 @@ abstract class BrowserDatabase : RoomDatabase() {
             }
         }
 
+        // v3 -> v4: folders on the start page.
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE speed_dials ADD COLUMN parentId INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE speed_dials ADD COLUMN isFolder INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun get(context: Context): BrowserDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(
                 context.applicationContext, BrowserDatabase::class.java, "browser.db"
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .addCallback(object : Callback() {
                     // Fresh installs only; upgraded databases are seeded by the migration.
                     override fun onCreate(db: SupportSQLiteDatabase) = seed(db)
