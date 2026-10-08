@@ -13,6 +13,8 @@ class SyncSnapshotTest {
         gameScores = mapOf("2048" to 1080, "snake" to 12),
         dtmfEnabled = false,
         dynamicColor = true,
+        themeMode = "dark",
+        accent = "purple",
         rejectMessages = listOf("회의 중입니다.", "나중에 연락드릴게요."),
         checklistId = "jangwoo",
     )

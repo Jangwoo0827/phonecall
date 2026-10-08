@@ -15,6 +15,8 @@ data class SyncSnapshot(
     val gameScores: Map<String, Int> = emptyMap(),
     val dtmfEnabled: Boolean = true,
     val dynamicColor: Boolean = false,
+    val themeMode: String = "system",
+    val accent: String = "green",
     val rejectMessages: List<String> = emptyList(),
     val checklistId: String? = null,
 ) {
@@ -27,6 +29,8 @@ data class SyncSnapshot(
         put("gameScores", JSONObject().also { o -> gameScores.toSortedMap().forEach { (k, v) -> o.put(k, v) } })
         put("dtmfEnabled", dtmfEnabled)
         put("dynamicColor", dynamicColor)
+        put("themeMode", themeMode)
+        put("accent", accent)
         put("rejectMessages", JSONArray(rejectMessages))
         if (checklistId != null) put("checklistId", checklistId)
     }
@@ -48,6 +52,8 @@ data class SyncSnapshot(
             gameScores = scoresFrom(json.optJSONObject("gameScores")),
             dtmfEnabled = json.optBoolean("dtmfEnabled", true),
             dynamicColor = json.optBoolean("dynamicColor", false),
+            themeMode = json.optString("themeMode", "system"),
+            accent = json.optString("accent", "green"),
             rejectMessages = stringsFrom(json.optJSONArray("rejectMessages")),
             checklistId = json.optString("checklistId", "").takeIf { isValidChecklistId(it) },
         )

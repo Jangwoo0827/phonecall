@@ -191,3 +191,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 움직임 (슬라이딩 UI)
 - `navigation/NavTransitions`: 탭 사이는 탭 순서 방향으로 살짝 밀리며 페이드, 하위 화면(연락처 상세·통화 내역·차단 관리 등)은 오른쪽에서 밀려 들어오고 뒤로 가면 오른쪽으로 나감(아래 화면은 1/4만큼 시차). NavHost의 enter/exit/popEnter/popExit에 연결
 - 하단 탭 바와 웹·게임 상단 전환 바는 몰입 모드 진입 시 `AnimatedVisibility`로 슬라이드/접힘. 브라우저↔게임 섹션, 시작 페이지↔웹 페이지, 탭·북마크·기록 패널(아래에서 올라옴), 게임 목록↔게임 화면, 최근기록 행 펼침도 모두 애니메이션
+
+## 테마 선택
+- 설정 > 화면: 테마(시스템/라이트/다크, `ThemeMode`) + 강조 색 5종(초록/파랑/보라/주황/분홍, `AccentColor`). `AppSettings.themeMode/accent`에 저장, 계정 동기화 대상(`SyncSnapshot.themeMode/accent`)
+- 초록은 손으로 맞춘 기본 팔레트 그대로, 나머지는 `schemeFor`가 강조 역할(primary/container)을 바꾸고 회색 계열을 강조 색 쪽으로 살짝 물들임. '배경화면 색상 따라가기'가 켜져 있으면 그쪽이 우선

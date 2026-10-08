@@ -1,5 +1,7 @@
 package com.example.superdialer.account
 
+import com.example.superdialer.settings.ThemeMode
+import com.example.superdialer.settings.AccentColor
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
@@ -225,6 +227,8 @@ object AccountManager {
                 gameScores = GameScores.all(),
                 dtmfEnabled = AppSettings.dtmfEnabled,
                 dynamicColor = AppSettings.dynamicColor,
+                themeMode = AppSettings.themeMode.key,
+                accent = AppSettings.accent.key,
                 rejectMessages = RejectMessageStore.messages.toList(),
                 checklistId = prefs?.getString(KEY_CHECKLIST, null),
             )
@@ -248,6 +252,8 @@ object AccountManager {
             snapshot.gameScores.forEach { (id, score) -> GameScores.submit(id, score) }
             AppSettings.updateDtmfEnabled(snapshot.dtmfEnabled)
             AppSettings.updateDynamicColor(snapshot.dynamicColor)
+            AppSettings.updateThemeMode(ThemeMode.fromKey(snapshot.themeMode))
+            AppSettings.updateAccent(AccentColor.fromKey(snapshot.accent))
             if (snapshot.rejectMessages.isNotEmpty()) RejectMessageStore.replaceAll(snapshot.rejectMessages)
         }
         snapshot.checklistId?.let { prefs?.edit()?.putString(KEY_CHECKLIST, it)?.apply() }

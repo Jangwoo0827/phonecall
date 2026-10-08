@@ -1,5 +1,9 @@
 package com.example.superdialer.ui.theme
 
+import com.example.superdialer.settings.ThemeMode
+import com.example.superdialer.settings.AccentColor
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.material3.ColorScheme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -106,9 +110,62 @@ private val AppShapes = Shapes(
     extraLarge = RoundedCornerShape(32.dp),
 )
 
+/** The four roles that carry the accent, per light/dark. */
+private class Accent(
+    val primary: Color, val onPrimary: Color, val container: Color, val onContainer: Color,
+)
+
+private fun accentOf(color: AccentColor, dark: Boolean): Accent = when (color) {
+    AccentColor.GREEN -> if (dark) Accent(Color(0xFF3DDC97), Color(0xFF00371F), Color(0xFF0F4D33), Color(0xFFBDF5D8))
+    else Accent(Color(0xFF0A8F5B), Color.White, Color(0xFFCDF4E1), Color(0xFF00391F))
+    AccentColor.BLUE -> if (dark) Accent(Color(0xFF8AB4FF), Color(0xFF002D6E), Color(0xFF1D3F7A), Color(0xFFD9E6FF))
+    else Accent(Color(0xFF1B6EF3), Color.White, Color(0xFFD9E6FF), Color(0xFF001B45))
+    AccentColor.PURPLE -> if (dark) Accent(Color(0xFFCDB4FF), Color(0xFF3A1C80), Color(0xFF47298F), Color(0xFFE9DDFF))
+    else Accent(Color(0xFF7B4DD8), Color.White, Color(0xFFE9DDFF), Color(0xFF23005C))
+    AccentColor.ORANGE -> if (dark) Accent(Color(0xFFFFB27A), Color(0xFF512400), Color(0xFF6B3200), Color(0xFFFFE0CC))
+    else Accent(Color(0xFFD2620A), Color.White, Color(0xFFFFE0CC), Color(0xFF3A1800))
+    AccentColor.PINK -> if (dark) Accent(Color(0xFFFFA3C2), Color(0xFF5F0F2E), Color(0xFF701A3A), Color(0xFFFFD9E4))
+    else Accent(Color(0xFFD6336C), Color.White, Color(0xFFFFD9E4), Color(0xFF3F0020))
+}
+
+/** The dot color shown in the accent picker. */
+fun accentSwatch(color: AccentColor): Color = accentOf(color, dark = false).primary
+
+/** Green keeps the hand-tuned palette; other accents recolor the accent roles and tint the grays toward the accent. */
+private fun schemeFor(accentColor: AccentColor, dark: Boolean): ColorScheme {
+    val base = if (dark) DarkColors else LightColors
+    if (accentColor == AccentColor.GREEN) return base
+    val a = accentOf(accentColor, dark)
+    fun tint(neutral: Long, amount: Float) = lerp(Color(neutral), a.primary, amount)
+    return if (dark) {
+        base.copy(
+            primary = a.primary, onPrimary = a.onPrimary, primaryContainer = a.container, onPrimaryContainer = a.onContainer,
+            background = tint(0xFF0E0F12, 0.05f), surface = tint(0xFF0E0F12, 0.05f),
+            surfaceVariant = tint(0xFF2B2C31, 0.08f), onSurfaceVariant = Color(0xFFB0B1B8),
+            surfaceContainerLowest = tint(0xFF08090B, 0.04f), surfaceContainerLow = tint(0xFF131418, 0.05f),
+            surfaceContainer = tint(0xFF1A1B20, 0.06f), surfaceContainerHigh = tint(0xFF23242A, 0.07f),
+            surfaceContainerHighest = tint(0xFF2D2E35, 0.08f),
+            outline = tint(0xFF787980, 0.08f), outlineVariant = tint(0xFF393A41, 0.08f),
+        )
+    } else {
+        base.copy(
+            primary = a.primary, onPrimary = a.onPrimary, primaryContainer = a.container, onPrimaryContainer = a.onContainer,
+            background = tint(0xFFF4F4F7, 0.05f), surface = tint(0xFFF4F4F7, 0.05f),
+            surfaceVariant = tint(0xFFE0E1E6, 0.08f), onSurfaceVariant = Color(0xFF56575E),
+            surfaceContainerLow = tint(0xFFFAFAFC, 0.03f), surfaceContainer = Color.White,
+            surfaceContainerHigh = tint(0xFFEBEBF0, 0.06f), surfaceContainerHighest = tint(0xFFE0E1E6, 0.08f),
+            outline = tint(0xFF8C8D95, 0.08f), outlineVariant = tint(0xFFCFD0D8, 0.08f),
+        )
+    }
+}
+
 @Composable
 fun SuperDialerTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = when (AppSettings.themeMode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    },
     dynamicColor: Boolean = AppSettings.dynamicColor,
     content: @Composable () -> Unit,
 ) {
@@ -117,8 +174,7 @@ fun SuperDialerTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColors
-        else -> LightColors
+        else -> schemeFor(AppSettings.accent, darkTheme)
     }
     MaterialTheme(
         colorScheme = colorScheme,

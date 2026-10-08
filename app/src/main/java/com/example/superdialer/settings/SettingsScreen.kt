@@ -104,6 +104,7 @@ fun SettingsScreen(
         }
 
         SettingsGroup("화면") {
+            ThemeRows()
             ListItem(
                 colors = transparentListItem(),
                 headlineContent = { Text("배경화면 색상 따라가기") },
