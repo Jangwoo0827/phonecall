@@ -62,6 +62,33 @@ fun SettingsScreen(
         ).show()
     }
 
+    var showLockShortcutHelp by remember { mutableStateOf(false) }
+    if (showLockShortcutHelp) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showLockShortcutHelp = false },
+            title = { Text("잠금 화면 전화 바로가기") },
+            text = {
+                Text(
+                    "잠금 화면 모서리 아이콘은 삼성 시스템 설정이라 앱이 바꿀 수 없습니다. 직접 바꾸려면:\n\n" +
+                        "1. 휴대폰 설정 > 잠금 화면 > 바로가기\n" +
+                        "2. 왼쪽(또는 오른쪽) 바로가기를 고르고 앱 목록에서 SuperDialer를 선택\n\n" +
+                        "기본 전화 앱이 SuperDialer이면 전화 아이콘으로 들어갈 때도 이 앱이 열립니다."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLockShortcutHelp = false
+                    try {
+                        context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (e: android.content.ActivityNotFoundException) {
+                        Toast.makeText(context, "설정을 열 수 없습니다.", Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("설정 열기") }
+            },
+            dismissButton = { TextButton(onClick = { showLockShortcutHelp = false }) { Text("닫기") } },
+        )
+    }
+
     // Permission state can change in system settings while this screen stays open.
     var refresh by remember { mutableIntStateOf(0) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { refresh++ }
@@ -99,6 +126,7 @@ fun SettingsScreen(
                     }
                 },
             )
+            Clickable("잠금 화면 전화 바로가기", "잠금 화면 아래 모서리 전화 아이콘을 SuperDialer로 바꾸는 방법") { showLockShortcutHelp = true }
             Clickable("차단 관리", "차단한 번호 보기·추가·해제", onOpenBlocked)
             Clickable("거절 메시지", "수신 거절 시 보낼 문구 관리", onOpenRejectMessages)
             Clickable("착신전환·통화 부가서비스", "통신사 통화 설정 열기 (착신전환 등)") { openCallSettings(context) }
@@ -188,7 +216,9 @@ fun SettingsScreen(
             ListItem(
                 colors = transparentListItem(),
                 headlineContent = { Text("통화 녹음") },
-                supportingContent = { Text("안드로이드는 보안 정책상 일반 앱의 통화 녹음을 허용하지 않아 지원하지 않습니다") },
+                supportingContent = {
+                    Text("통화 화면의 녹음 버튼은 마이크로 녹음합니다. 안드로이드는 통화 음성 자체의 녹음을 허용하지 않아 내 목소리와, 스피커를 켰을 때의 상대 목소리만 담깁니다. 파일은 내 파일 > 음악 > SuperDialer에 저장되며 녹음 관련 법을 확인하고 사용하세요")
+                },
             )
         }
     }

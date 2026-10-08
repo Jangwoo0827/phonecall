@@ -247,3 +247,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 오류 기록(`crash/CrashLog`): `Application.onCreate`에서 기본 예외 처리기를 감싸 앱이 멈출 때 시각·앱 버전·기기·스택을 `filesDir/crashes/`에 저장(최근 10개), 폰 밖으로는 안 나감. 설정 > 앱 정보 > 오류 기록에서 보기/복사/공유/지우기
 - 업데이트 확인(`update/UpdateChecker`): GitHub `releases/latest`(공개 repo)의 태그를 현재 `versionName`과 숫자로 비교(`isNewer`, 테스트 있음). 설정 > 앱 정보 > 업데이트 확인(수동) + 앱을 열 때 하루 한 번 조용히 확인해 새 버전이 있으면 그 줄에 표시. 새 버전이면 APK 받기(브라우저로 열어 받음)/릴리스 페이지 버튼. 자동 설치는 안 함. 디버그 빌드는 versionName이 0.1.0이라 항상 "새 버전 있음"으로 보임
 - 릴리스 자동화: `.github/workflows/release.yml`이 태그 푸시 때 이전 태그부터의 커밋 제목으로 릴리스 노트("변경 내용" + 설치 안내)를 만들어 Release 본문으로 올림(`fetch-depth: 0`, `body_path`) + GitHub 자동 노트(Full Changelog)도 함께
+
+## 통화 녹음(마이크) / 잠금 화면 바로가기
+- 통화 화면의 "녹음" 버튼 = `incall/CallRecorder`: **마이크로** 녹음(RECORD_AUDIO, 처음 누를 때 권한 요청). 안드로이드는 일반 앱이 통화 음성 자체를 녹음하지 못하게 막아서 내 목소리와 스피커를 켰을 때의 상대 소리만 담김. `MediaStore`에 `Music/SuperDialer/통화_날짜_시간_이름.m4a`(AAC)로 저장돼 파일 앱/음악 앱에서 보임(저장소 권한 불필요). 통화가 끝나면(화면이 사라지면) 자동 저장. 화면이 꺼지면 소리가 안 들어갈 수 있음. 녹음 관련 법 안내를 설정 > 앱 정보에 적어 둠. 에뮬레이터에서 파일 생성까지 확인, 음질은 실기기 확인 필요
+- 잠금 화면 전화 바로가기: 삼성 시스템 설정이라 앱이 바꿀 수 없음. 설정 > 전화 > "잠금 화면 전화 바로가기"가 바꾸는 방법(설정 > 잠금 화면 > 바로가기)을 안내하고 설정 앱을 열어 줌

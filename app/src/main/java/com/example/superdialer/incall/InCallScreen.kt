@@ -1,5 +1,7 @@
 package com.example.superdialer.incall
 
+import com.example.superdialer.ui.hasPermission
+import android.Manifest
 import androidx.compose.material3.RadioButton
 import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.Bluetooth
@@ -312,6 +314,22 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
     val context = LocalContext.current
     var showKeypad by remember { mutableStateOf(false) }
     var showMemo by remember { mutableStateOf(false) }
+    // Microphone recording of the call: Android blocks real call recording, so this hears your side, and the other
+    // side only on speaker (said in the toast and in Settings).
+    fun startRecording() {
+        if (CallRecorder.start(context, call.name ?: call.number)) {
+            Toast.makeText(context, "마이크로 녹음을 시작했습니다. 상대 목소리는 스피커를 켰을 때만 담깁니다.", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(context, "녹음을 시작하지 못했습니다.", Toast.LENGTH_SHORT).show()
+        }
+    }
+    val micPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) startRecording() else Toast.makeText(context, "녹음하려면 마이크 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+    }
+    // A recording never outlives its call.
+    androidx.compose.runtime.DisposableEffect(call.id) { onDispose { CallRecorder.stop(context) } }
     var showRoutes by remember { mutableStateOf(false) }
     val speakerOn = audio.route == CallAudioState.ROUTE_SPEAKER
 
@@ -367,12 +385,15 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
             if (call.canMerge) {
                 ToggleAction(Icons.Filled.EditNote, "메모", false, enabled = call.number.isNotEmpty()) { showMemo = true }
             }
-            ToggleAction(Icons.Filled.FiberManualRecord, "녹음", false) {
-                Toast.makeText(
-                    context,
-                    "안드로이드는 보안 정책상 일반 앱의 통화 녹음을 허용하지 않습니다.",
-                    Toast.LENGTH_LONG,
-                ).show()
+            ToggleAction(Icons.Filled.FiberManualRecord, if (CallRecorder.recording) "녹음 중" else "녹음", CallRecorder.recording) {
+                if (CallRecorder.recording) {
+                    CallRecorder.stop(context)
+                    Toast.makeText(context, "녹음을 저장했습니다 (내 파일 > 음악 > SuperDialer)", Toast.LENGTH_LONG).show()
+                } else if (context.hasPermission(Manifest.permission.RECORD_AUDIO)) {
+                    startRecording()
+                } else {
+                    micPermission.launch(Manifest.permission.RECORD_AUDIO)
+                }
             }
         }
         Spacer(Modifier.height(8.dp))
