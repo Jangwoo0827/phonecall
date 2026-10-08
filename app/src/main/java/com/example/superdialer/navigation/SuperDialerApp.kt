@@ -1,5 +1,7 @@
 package com.example.superdialer.navigation
 
+import com.example.superdialer.contacts.DuplicateContactsScreen
+import com.example.superdialer.contacts.ContactGroupsScreen
 import com.example.superdialer.dialer.Suggestion
 import com.example.superdialer.settings.QuickDialScreen
 import androidx.compose.animation.slideOutVertically
@@ -54,6 +56,8 @@ private const val CALL_HISTORY_ROUTE = "calllog/{$ENTRY_ID_ARG}"
 private const val BLOCKED_ROUTE = "settings/blocked"
 private const val REJECT_ROUTE = "settings/reject"
 private const val QUICK_DIAL_ROUTE = "settings/quickdial"
+private const val CONTACT_GROUPS_ROUTE = "contacts/tools/groups"
+private const val CONTACT_DUPLICATES_ROUTE = "contacts/tools/duplicates"
 private const val CONTACT_ID_ARG = "contactId"
 private const val CONTACT_DETAIL_ROUTE = "contacts/{$CONTACT_ID_ARG}"
 
@@ -208,7 +212,15 @@ fun SuperDialerApp(
                     viewModel = contactsViewModel,
                     onOpenContact = { id -> navController.navigate("contacts/$id") },
                     onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
+                    onOpenGroups = { navController.navigate(CONTACT_GROUPS_ROUTE) },
+                    onOpenDuplicates = { navController.navigate(CONTACT_DUPLICATES_ROUTE) },
                 )
+            }
+            composable(CONTACT_GROUPS_ROUTE) {
+                ContactGroupsScreen(contactsViewModel, onBack = { navController.popBackStack() })
+            }
+            composable(CONTACT_DUPLICATES_ROUTE) {
+                DuplicateContactsScreen(contactsViewModel, onBack = { navController.popBackStack() })
             }
             composable(
                 route = CONTACT_DETAIL_ROUTE,

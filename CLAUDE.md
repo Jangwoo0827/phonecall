@@ -216,3 +216,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 통화 중: 통화 화면의 "메모" 버튼 → `NoteDialog`. 통화 후: 최근기록 행을 펼치면 "메모" 버튼, 통화 내역 화면은 행을 눌러 추가/수정. 빈 내용으로 저장하면 삭제
 - 시스템 통화 기록에는 메모 칸이 없어서 `CallNotes`(SharedPreferences, 최대 500개)가 번호(`numberKey`)와 시간으로 통화 기록 항목에 맞춤: 메모 시각이 통화 시작 ~ 시작+통화시간+90초 안이면 그 통화의 메모. 전화번호/통화 내용이 들어 있어 이 폰에만 저장, 계정 동기화 안 함. 테스트 `CallNotesTest`
 - 통화 화면 버튼 배치: 음소거/키패드/스피커, 통화 추가/보류/병합(없으면 메모), 메모(병합이 있을 때)/녹음
+
+## 연락처 그룹 / 중복 정리 / 병합 (contacts/)
+- 그룹(`ContactGroups`, SharedPreferences): 앱 안에서만 쓰는 연락처 묶음(연락처 id 목록). 연락처 화면 ⋮ > 그룹 관리(`contacts/tools/groups`)에서 만들기·이름 변경·삭제·구성원 선택, 그룹이 있으면 연락처 목록 위에 그룹 칩(필터). 폰 연락처 DB는 안 건드리고 계정에 동기화하지 않음. 연락처가 합쳐지거나 지워져 없는 id는 `prune`으로 정리
+- 중복 정리(`findDuplicates`, 테스트 있음): 같은 번호(+82/010 동일 취급) 또는 같은 이름(대소문자·공백 무시)인 연락처를 묶어 보여줌(`contacts/tools/duplicates`). "하나로 합치기" = `AggregationExceptions` TYPE_KEEP_TOGETHER로 raw 연락처를 묶음(원본은 남아 폰 연락처 앱에서 되돌릴 수 있음), 개별 삭제도 가능(되돌릴 수 없음, 확인 창). 둘 다 WRITE_CONTACTS 권한을 필요할 때 요청
+- 에뮬레이터 테스트: `adb shell "content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:N ..."`에서 `--sort '_id DESC'`처럼 공백이 있는 인자는 따옴표 안에 넣어야 함

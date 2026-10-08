@@ -1,5 +1,7 @@
 package com.example.superdialer.contacts
 
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FilterChip
 import com.example.superdialer.ui.theme.starColor
 import com.example.superdialer.ui.groupShape
 import androidx.compose.ui.text.font.FontWeight
@@ -59,6 +61,8 @@ fun ContactsScreen(
     viewModel: ContactsViewModel,
     onOpenContact: (Long) -> Unit,
     onOpenBlocked: () -> Unit,
+    onOpenGroups: () -> Unit,
+    onOpenDuplicates: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     PermissionGate(
@@ -66,7 +70,7 @@ fun ContactsScreen(
         rationale = "연락처를 보려면 연락처 권한이 필요합니다.",
         modifier = modifier,
     ) {
-        ContactsList(viewModel, onOpenContact, onOpenBlocked, modifier)
+        ContactsList(viewModel, onOpenContact, onOpenBlocked, onOpenGroups, onOpenDuplicates, modifier)
     }
 }
 
@@ -75,6 +79,8 @@ private fun ContactsList(
     viewModel: ContactsViewModel,
     onOpenContact: (Long) -> Unit,
     onOpenBlocked: () -> Unit,
+    onOpenGroups: () -> Unit,
+    onOpenDuplicates: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -114,7 +120,30 @@ private fun ContactsList(
                     Icon(Icons.Filled.MoreVert, contentDescription = "더보기")
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    DropdownMenuItem(text = { Text("그룹 관리") }, onClick = { menuOpen = false; onOpenGroups() })
+                    DropdownMenuItem(text = { Text("중복 연락처 정리") }, onClick = { menuOpen = false; onOpenDuplicates() })
                     DropdownMenuItem(text = { Text("차단 관리") }, onClick = { menuOpen = false; onOpenBlocked() })
+                }
+            }
+        }
+
+        if (ContactGroups.groups.isNotEmpty()) {
+            val chipColors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            androidx.compose.foundation.lazy.LazyRow(
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            ) {
+                item { FilterChip(selected = viewModel.selectedGroupId == null, onClick = { viewModel.selectGroup(null) }, label = { Text("전체") }, colors = chipColors) }
+                items(ContactGroups.groups.toList(), key = { it.id }) { group ->
+                    FilterChip(
+                        selected = viewModel.selectedGroupId == group.id,
+                        onClick = { viewModel.selectGroup(group.id) },
+                        label = { Text(group.name) },
+                        colors = chipColors,
+                    )
                 }
             }
         }

@@ -100,6 +100,44 @@ class ContactsRepository(private val context: Context) {
         false
     }
 
+    /** Joins the contacts into one (the system aggregates them; the originals stay and can be split again). Needs WRITE_CONTACTS. */
+    fun merge(contactIds: List<Long>): Boolean = try {
+        val raws = contactIds.flatMap { rawContactIds(it) }
+        val base = raws.firstOrNull()
+        if (base == null || raws.size < 2) {
+            false
+        } else {
+            raws.drop(1).forEach { other ->
+                val values = android.content.ContentValues().apply {
+                    put(ContactsContract.AggregationExceptions.TYPE, ContactsContract.AggregationExceptions.TYPE_KEEP_TOGETHER)
+                    put(ContactsContract.AggregationExceptions.RAW_CONTACT_ID1, base)
+                    put(ContactsContract.AggregationExceptions.RAW_CONTACT_ID2, other)
+                }
+                resolver.update(ContactsContract.AggregationExceptions.CONTENT_URI, values, null, null)
+            }
+            true
+        }
+    } catch (e: SecurityException) {
+        false
+    }
+
+    fun delete(contactId: Long): Boolean = try {
+        resolver.delete(Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, contactId.toString()), null, null) > 0
+    } catch (e: SecurityException) {
+        false
+    }
+
+    private fun rawContactIds(contactId: Long): List<Long> {
+        val out = ArrayList<Long>()
+        resolver.query(
+            ContactsContract.RawContacts.CONTENT_URI,
+            arrayOf(ContactsContract.RawContacts._ID),
+            "${ContactsContract.RawContacts.CONTACT_ID}=? AND ${ContactsContract.RawContacts.DELETED}=0",
+            arrayOf(contactId.toString()), null,
+        )?.use { c -> while (c.moveToNext()) out += c.getLong(0) }
+        return out
+    }
+
     private fun loadPhoto(contactId: Long): Bitmap? = try {
         val uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, contactId.toString())
         ContactsContract.Contacts.openContactPhotoInputStream(resolver, uri, false)

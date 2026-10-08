@@ -26,11 +26,18 @@ class ContactsViewModel(application: Application) : AndroidViewModel(application
     var loading by mutableStateOf(false)
         private set
 
-    private val filtered by derivedStateOf { all.filter { ContactSorting.matches(it, query) } }
+    /** Id of the app-side group the list is limited to, or null for everyone. */
+    var selectedGroupId by mutableStateOf<String?>(null)
+        private set
 
-    /** Pinned on top; hidden while searching so results are not duplicated. */
+    private val filtered by derivedStateOf {
+        val members = ContactGroups.get(selectedGroupId)?.members
+        all.filter { ContactSorting.matches(it, query) && (members == null || it.id in members) }
+    }
+
+    /** Pinned on top; hidden while searching or inside a group so results are not duplicated. */
     val favorites: List<Contact> by derivedStateOf {
-        if (query.isBlank()) filtered.filter { it.starred } else emptyList()
+        if (query.isBlank() && selectedGroupId == null) filtered.filter { it.starred } else emptyList()
     }
 
     /** Every matching contact grouped by initial, in 가나다순. */
@@ -50,6 +57,10 @@ class ContactsViewModel(application: Application) : AndroidViewModel(application
         query = value
     }
 
+    fun selectGroup(id: String?) {
+        selectedGroupId = id
+    }
+
     fun refresh() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
@@ -60,6 +71,26 @@ class ContactsViewModel(application: Application) : AndroidViewModel(application
                 emptyList()
             }
             loading = false
+            if (all.isNotEmpty()) {
+                ContactGroups.prune(all.map { it.id }.toSet())
+                if (ContactGroups.get(selectedGroupId) == null) selectedGroupId = null
+            }
+        }
+    }
+
+    fun mergeContacts(contactIds: List<Long>, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { repository.merge(contactIds) }
+            if (ok) refresh()
+            onResult(ok)
+        }
+    }
+
+    fun deleteContact(contactId: Long, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { repository.delete(contactId) }
+            if (ok) refresh()
+            onResult(ok)
         }
     }
 
