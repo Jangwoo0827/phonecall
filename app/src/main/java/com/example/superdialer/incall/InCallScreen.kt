@@ -1,5 +1,6 @@
 package com.example.superdialer.incall
 
+import androidx.compose.material.icons.filled.EditNote
 import com.example.superdialer.ui.theme.EndCallRed
 import com.example.superdialer.ui.theme.CallButtonGreen
 import androidx.compose.ui.graphics.Brush
@@ -232,7 +233,17 @@ private fun RejectMessageDialog(onSelect: (String) -> Unit, onDismiss: () -> Uni
 private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -> Unit) {
     val context = LocalContext.current
     var showKeypad by remember { mutableStateOf(false) }
+    var showMemo by remember { mutableStateOf(false) }
     val speakerOn = audio.route == CallAudioState.ROUTE_SPEAKER
+
+    if (showMemo) {
+        com.example.superdialer.calllog.NoteDialog(
+            title = "통화 메모",
+            initial = com.example.superdialer.calllog.CallNotes.duringCall(call.number, call.connectTimeMillis)?.text.orEmpty(),
+            onSave = { com.example.superdialer.calllog.CallNotes.saveDuringCall(call.number, call.connectTimeMillis, it) },
+            onDismiss = { showMemo = false },
+        )
+    }
 
     if (showKeypad) {
         InCallKeypad(call.id, onHide = { showKeypad = false })
@@ -258,13 +269,19 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
             if (call.canMerge) {
                 ToggleAction(Icons.AutoMirrored.Filled.CallMerge, "병합", false) { CallManager.merge(call.id) }
             } else {
-                ToggleAction(Icons.Filled.FiberManualRecord, "녹음", false) {
-                    Toast.makeText(
-                        context,
-                        "안드로이드는 보안 정책상 일반 앱의 통화 녹음을 허용하지 않습니다.",
-                        Toast.LENGTH_LONG,
-                    ).show()
-                }
+                ToggleAction(Icons.Filled.EditNote, "메모", false, enabled = call.number.isNotEmpty()) { showMemo = true }
+            }
+        }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            if (call.canMerge) {
+                ToggleAction(Icons.Filled.EditNote, "메모", false, enabled = call.number.isNotEmpty()) { showMemo = true }
+            }
+            ToggleAction(Icons.Filled.FiberManualRecord, "녹음", false) {
+                Toast.makeText(
+                    context,
+                    "안드로이드는 보안 정책상 일반 앱의 통화 녹음을 허용하지 않습니다.",
+                    Toast.LENGTH_LONG,
+                ).show()
             }
         }
         Spacer(Modifier.height(8.dp))

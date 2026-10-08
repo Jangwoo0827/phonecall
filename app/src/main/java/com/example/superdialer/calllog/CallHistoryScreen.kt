@@ -1,5 +1,6 @@
 package com.example.superdialer.calllog
 
+import androidx.compose.foundation.clickable
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -122,6 +123,15 @@ fun CallHistoryScreen(
         HorizontalDivider()
 
         var showMessages by rememberSaveable { mutableStateOf(false) }
+        var memoEntry by remember { mutableStateOf<CallLogEntry?>(null) }
+        memoEntry?.let { target ->
+            NoteDialog(
+                title = "통화 메모",
+                initial = CallNotes.noteFor(target)?.text.orEmpty(),
+                onSave = { CallNotes.setFor(target, it) },
+                onDismiss = { memoEntry = null },
+            )
+        }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             if (entry.number.isNotEmpty()) {
                 item {
@@ -135,6 +145,7 @@ fun CallHistoryScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable { memoEntry = item }
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -146,6 +157,12 @@ fun CallHistoryScreen(
                             formatDateTime(item.dateMillis),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        val memo = CallNotes.noteFor(item)?.text
+                        Text(
+                            if (memo != null) "메모 · $memo" else "눌러서 메모 추가",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (memo != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                         )
                     }
                     val duration = formatDuration(item.durationSeconds)

@@ -1,5 +1,7 @@
 package com.example.superdialer.calllog
 
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.fadeIn
@@ -168,6 +170,15 @@ private fun CallLogList(
     var confirmDeleteAll by rememberSaveable { mutableStateOf(false) }
     // Tapping a row only expands it; the green button is the only thing that dials.
     var expandedId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var memoEntry by remember { mutableStateOf<CallLogEntry?>(null) }
+    memoEntry?.let { entry ->
+        NoteDialog(
+            title = "통화 메모",
+            initial = CallNotes.noteFor(entry)?.text.orEmpty(),
+            onSave = { CallNotes.setFor(entry, it) },
+            onDismiss = { memoEntry = null },
+        )
+    }
 
     val groups = viewModel.groups
     val days = remember(groups) {
@@ -219,6 +230,7 @@ private fun CallLogList(
                                     if (id != null) onOpenContact(id) else context.addContact(group.latest.number)
                                 },
                                 onMessage = { context.sendSms(group.latest.number) },
+                                onMemo = { memoEntry = group.latest },
                                 onSelect = { viewModel.startSelecting(group.id) },
                                 onDelete = { withWritePermission { viewModel.deleteGroup(group, ::onDeleted) } },
                                 onCopy = { copyNumber(context, group.latest.number) },
@@ -371,8 +383,10 @@ private fun CallLogRow(
     onCopy: () -> Unit,
     onShare: () -> Unit,
     onBlock: () -> Unit,
+    onMemo: () -> Unit,
 ) {
     val entry = group.latest
+    val memo = CallNotes.noteFor(entry)?.text
     var menuOpen by remember { mutableStateOf(false) }
     val missed = entry.type == CallType.Missed
     val titleColor = if (missed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
@@ -435,6 +449,15 @@ private fun CallLogRow(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                     )
+                    if (memo != null) {
+                        Text(
+                            "메모 · $memo",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 if (entry.number.isNotEmpty() && !selecting) {
                     CallButton(onClick = onCall)
@@ -454,6 +477,7 @@ private fun CallLogRow(
                     ActionButton(Icons.Filled.History, "기록", onHistory)
                     ActionButton(Icons.Filled.Person, "연락처", onContact, enabled = entry.number.isNotEmpty())
                     ActionButton(Icons.AutoMirrored.Filled.Message, "메시지", onMessage, enabled = entry.number.isNotEmpty())
+                    ActionButton(Icons.Filled.EditNote, "메모", onMemo, enabled = entry.number.isNotEmpty())
                 }
             }
         }
