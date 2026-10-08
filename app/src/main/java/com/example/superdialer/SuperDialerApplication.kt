@@ -1,5 +1,6 @@
 package com.example.superdialer
 
+import com.example.superdialer.messages.SentSms
 import com.example.superdialer.contacts.ContactGroups
 import com.example.superdialer.calllog.CallNotes
 import com.example.superdialer.dialer.QuickDials
@@ -20,6 +21,7 @@ class SuperDialerApplication : Application() {
         QuickDials.init(this)
         CallNotes.init(this)
         ContactGroups.init(this)
+        SentSms.init(this)
         CallNotifications.ensureChannels(this)
     }
 }

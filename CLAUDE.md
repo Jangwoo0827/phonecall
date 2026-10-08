@@ -221,3 +221,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 그룹(`ContactGroups`, SharedPreferences): 앱 안에서만 쓰는 연락처 묶음(연락처 id 목록). 연락처 화면 ⋮ > 그룹 관리(`contacts/tools/groups`)에서 만들기·이름 변경·삭제·구성원 선택, 그룹이 있으면 연락처 목록 위에 그룹 칩(필터). 폰 연락처 DB는 안 건드리고 계정에 동기화하지 않음. 연락처가 합쳐지거나 지워져 없는 id는 `prune`으로 정리
 - 중복 정리(`findDuplicates`, 테스트 있음): 같은 번호(+82/010 동일 취급) 또는 같은 이름(대소문자·공백 무시)인 연락처를 묶어 보여줌(`contacts/tools/duplicates`). "하나로 합치기" = `AggregationExceptions` TYPE_KEEP_TOGETHER로 raw 연락처를 묶음(원본은 남아 폰 연락처 앱에서 되돌릴 수 있음), 개별 삭제도 가능(되돌릴 수 없음, 확인 창). 둘 다 WRITE_CONTACTS 권한을 필요할 때 요청
 - 에뮬레이터 테스트: `adb shell "content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:N ..."`에서 `--sort '_id DESC'`처럼 공백이 있는 인자는 따옴표 안에 넣어야 함
+
+## 문자 보내기 (messages/SentSms)
+- 연락처 상세/통화 내역의 "메시지" 탭 맨 위에 입력창 + 보내기 버튼(`MessagesPane.Composer`). `SmsSender`가 `SmsManager.sendMultipartTextMessage`로 발송(SEND_SMS 권한, 처음 보낼 때 요청). 결과는 `SmsSentReceiver`(매니페스트, exported=false)가 받아 상태(보내는 중/전송됨/전송 실패)를 갱신, 실패하면 "다시 보내기"
+- **한계**: 기본 SMS 앱이 아니면 시스템 문자함에 쓸 수 없어서 여기서 보낸 문자는 이 앱의 `SentSms`(SharedPreferences, 최대 300개)에만 기록되고 삼성 문자 앱에는 나타나지 않음. 목록은 시스템 문자 + 보낸 문자를 합쳐 최신순(`SentSms.merge`, 테스트 있음). 이 폰에만 저장, 동기화 안 함
+- 에뮬레이터 테스트: `adb shell pm grant com.example.superdialer android.permission.SEND_SMS` 후 보내면 "보내는 중"으로 표시됨

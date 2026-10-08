@@ -1,5 +1,12 @@
 package com.example.superdialer.messages
 
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.Row
+import android.widget.Toast
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -72,7 +79,10 @@ fun MessagesPane(
             return@Column
         }
 
-        val messages = viewModel.messages
+        Composer(numbers.firstOrNull().orEmpty())
+
+        val sentHere = SentSms.forNumbers(numbers)
+        val messages = SentSms.merge(viewModel.messages, sentHere)
         when {
             messages.isEmpty() && viewModel.loading ->
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally).padding(24.dp))
@@ -84,7 +94,11 @@ fun MessagesPane(
             )
             else -> {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    messages.forEach { Bubble(it) }
+                    messages.forEach { message ->
+                        Bubble(message, onRetry = {
+                            numbers.firstOrNull()?.let { SmsSender.send(context, it, message.body, retryId = message.sentId) }
+                        })
+                    }
                 }
                 TextButton(
                     onClick = { numbers.firstOrNull()?.let(context::sendSms) },
@@ -95,8 +109,58 @@ fun MessagesPane(
     }
 }
 
+/** Write and send a text from here. Sent texts are kept by this app (a non-default SMS app cannot add them to the system inbox). */
 @Composable
-private fun Bubble(message: SmsMessage) {
+private fun Composer(number: String) {
+    val context = LocalContext.current
+    var text by rememberSaveable { mutableStateOf("") }
+    var pendingSend by remember { mutableStateOf<String?>(null) }
+
+    fun doSend(body: String) {
+        if (SmsSender.send(context, number, body)) text = ""
+        else Toast.makeText(context, "문자를 보내지 못했습니다.", Toast.LENGTH_SHORT).show()
+    }
+
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val body = pendingSend
+        pendingSend = null
+        if (granted && body != null) doSend(body)
+        else Toast.makeText(context, "문자를 보내려면 문자 보내기 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+    }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("문자 보내기") },
+                maxLines = 4,
+                shape = RoundedCornerShape(24.dp),
+            )
+            IconButton(
+                enabled = text.isNotBlank() && number.isNotBlank(),
+                onClick = {
+                    if (context.hasPermission(Manifest.permission.SEND_SMS)) {
+                        doSend(text)
+                    } else {
+                        pendingSend = text
+                        permission.launch(Manifest.permission.SEND_SMS)
+                    }
+                },
+            ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "보내기", tint = MaterialTheme.colorScheme.primary) }
+        }
+        Text(
+            "여기서 보낸 문자는 이 앱에만 기록되고 기본 문자 앱에는 나타나지 않습니다.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 8.dp),
+        )
+    }
+}
+
+@Composable
+private fun Bubble(message: SmsMessage, onRetry: () -> Unit) {
     val mine = message.outgoing
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart) {
         Surface(
@@ -107,11 +171,18 @@ private fun Bubble(message: SmsMessage) {
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                 Text(message.body, style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    formatDateTime(message.dateMillis),
+                    formatDateTime(message.dateMillis) + when {
+                        message.sentId != 0L && message.status == SentMessage.SENDING -> " · 보내는 중"
+                        message.sentId != 0L && message.status == SentMessage.FAILED -> " · 전송 실패"
+                        else -> ""
+                    },
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (message.status == SentMessage.FAILED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
                 )
+                if (message.sentId != 0L && message.status == SentMessage.FAILED) {
+                    TextButton(onClick = onRetry) { Text("다시 보내기") }
+                }
             }
         }
     }

@@ -13,6 +13,10 @@ data class SmsMessage(
     val dateMillis: Long,
     /** True for messages this phone sent (or tried to send). */
     val outgoing: Boolean,
+    /** For messages sent from this app: [SentMessage.SENDING], [SentMessage.SENT] or [SentMessage.FAILED]. */
+    val status: Int = SentMessage.SENT,
+    /** Id in [SentSms] when this message was sent from this app, else 0. */
+    val sentId: Long = 0,
 )
 
 /**
