@@ -231,3 +231,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 소리 출력 선택: 블루투스/유선 헤드셋이 연결돼 있으면(`AudioInfo.supportedRoutes`) 스피커 버튼이 출력 선택 창(수화기/스피커/블루투스/유선 헤드셋)으로 바뀌고 버튼 아이콘·이름이 현재 출력을 표시, 없으면 기존처럼 스피커 토글. `CallManager.setRoute`
 - 메시지로 거절 창에 "직접 입력" 칸(프리셋 대신 한 번만 쓰는 문구)
 - 수신 중엔 아바타 뒤에서 링이 퍼지는 애니메이션(`RingingPulse`)
+
+## 게임 판 저장 / 랭킹
+- 판 저장: 브릿지 `Native.loadState()/saveState(json)/clearState()`(`GameStates`, SharedPreferences `game_state`, 게임 id별, 최대 5만 자). 2048은 매 이동마다 격자·점수 저장, 스네이크는 4틱마다/일시정지 때 뱀·먹이·방향 저장하고 일시정지 상태로 복원("이어하기"), 벽돌깨기는 점수·목숨·레벨·남은 벽돌·패들 위치를 저장하고 서브 대기 상태로 복원. 게임 오버면 지움. 게임 목록으로 나가거나 앱을 껐다 켜도 이어짐. 새 게임 HTML을 추가할 땐 같은 세 함수를 쓰면 됨(없으면 저장 안 함)
+- 랭킹: Supabase 테이블 `public.superdialer_scores(user_id, game_id, score, nickname)` (PK user_id+game_id, RLS: 로그인한 사람은 모두 읽기, 쓰기는 본인 행만) + 함수 `superdialer_submit_score(p_game, p_score, p_nickname)`가 더 높은 점수만 남김. 앱은 새 최고 점수가 나오면(`GameBridge.submitScore` → `AccountManager.uploadScore`) 로그인 상태에서 자동 업로드, 로그인 직후엔 이 폰의 최고 점수 전부 업로드. 게임 목록 위 "랭킹 보기"(`LeaderboardScreen`)에서 게임별 상위 20명, 내 줄 강조. 이메일은 노출되지 않고 닉네임만 표시(설정 > 계정 > 닉네임, 기본 "플레이어"+계정 id 앞 4자)

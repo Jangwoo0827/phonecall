@@ -42,6 +42,7 @@ object AccountManager {
     private const val KEY_STAMP = "last_stamp"
     private const val KEY_LAST_SYNC = "last_sync_ms"
     private const val KEY_CHECKLIST = "checklist_id"
+    private const val KEY_NICKNAME = "nickname"
     private const val MIN_AUTO_SYNC_GAP_MS = 15_000L
 
     private var appContext: Context? = null
@@ -81,6 +82,55 @@ object AccountManager {
         syncSoon()
     }
 
+    // --- Leaderboard ----------------------------------------------------------------------------
+
+    /** The name shown on leaderboards: the chosen one, or "플레이어" + the first characters of the account id. */
+    val nickname: String
+        get() = prefs?.getString(KEY_NICKNAME, null)?.takeIf { it.isNotBlank() }
+            ?: "플레이어" + (prefs?.getString(KEY_USER, "").orEmpty().take(4))
+
+    fun updateNickname(value: String) {
+        val clean = value.trim().take(20)
+        if (clean.isEmpty()) return
+        prefs?.edit()?.putString(KEY_NICKNAME, clean)?.apply()
+        nicknameVersion++
+        // Renames the player on every score they already have.
+        scope.launch { GameScores.all().forEach { (game, score) -> pushScore(game, score) } }
+    }
+
+    /** Bumped when the nickname changes, so screens showing it recompose. */
+    var nicknameVersion by mutableStateOf(0)
+        private set
+
+    /** Sends a new best score to the leaderboard (does nothing when not signed in; failures are ignored, the next sync retries). */
+    fun uploadScore(gameId: String, score: Int) {
+        if (!signedIn || score <= 0) return
+        scope.launch { pushScore(gameId, score) }
+    }
+
+    private fun pushScore(gameId: String, score: Int) {
+        try {
+            val session = freshSession() ?: return
+            SupabaseApi.submitScore(session.accessToken, gameId, score, nickname)
+        } catch (e: ApiError) {
+            if (e.authExpired) scope.launch(Dispatchers.Main) { signOut(); message = e.userMessage }
+        }
+    }
+
+    /** Loads a leaderboard in the background; [onResult] runs on the main thread with the rows, or null and an error text. */
+    fun loadLeaderboard(gameId: String, onResult: (rows: List<LeaderRow>?, error: String?, myUserId: String?) -> Unit) {
+        scope.launch {
+            val result = try {
+                val session = freshSession()
+                if (session == null) Triple(null, "로그인이 필요합니다.", null)
+                else Triple(SupabaseApi.fetchLeaderboard(session.accessToken, gameId), null, session.userId)
+            } catch (e: ApiError) {
+                Triple(null, e.userMessage, null)
+            }
+            withContext(Dispatchers.Main) { onResult(result.first, result.second, result.third) }
+        }
+    }
+
     // --- Account actions (UI) --------------------------------------------------------------------
 
     fun signIn(emailInput: String, password: String, onDone: (Boolean) -> Unit) = authenticate(emailInput, password, create = false, onDone)
@@ -107,6 +157,7 @@ object AccountManager {
                     ok = true
                     post(null)
                     runSync()
+                    GameScores.all().forEach { (game, score) -> pushScore(game, score) }
                 }
             } catch (e: ApiError) {
                 post(e.userMessage)

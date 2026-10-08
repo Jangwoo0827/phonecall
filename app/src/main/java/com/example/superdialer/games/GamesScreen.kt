@@ -51,6 +51,9 @@ fun GamesScreen(modifier: Modifier = Modifier) {
 
     BackHandler(enabled = playing != null) { GameSession.close() }
 
+    var showRanking by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = showRanking && playing == null) { showRanking = false }
+
     // The player slides over the list; the list slides back in when the game closes.
     AnimatedContent(
         targetState = playing,
@@ -66,12 +69,16 @@ fun GamesScreen(modifier: Modifier = Modifier) {
         label = "game",
         modifier = modifier,
     ) { current ->
-        if (current != null) GamePlayer(current, onClose = { GameSession.close() }) else GameList(games)
+        when {
+            current != null -> GamePlayer(current, onClose = { GameSession.close() })
+            showRanking -> LeaderboardScreen(games, onBack = { showRanking = false })
+            else -> GameList(games, onOpenRanking = { showRanking = true })
+        }
     }
 }
 
 @Composable
-private fun GameList(games: List<GameInfo>) {
+private fun GameList(games: List<GameInfo>, onOpenRanking: () -> Unit) {
     if (games.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("등록된 게임이 없습니다.")
@@ -86,6 +93,9 @@ private fun GameList(games: List<GameInfo>) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+            androidx.compose.material3.TextButton(onClick = onOpenRanking) { Text("🏆 랭킹 보기") }
+        }
         items(games, key = { it.id }) { game ->
             GameCard(game, onClick = { GameSession.playingId = game.id })
         }

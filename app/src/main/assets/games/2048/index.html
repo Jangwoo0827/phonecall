@@ -51,6 +51,21 @@
 
   try { if (window.Native) best = Native.getBest() | 0; } catch (e) {}
 
+  // The board survives leaving the game or the app (stored by the app through the Native bridge).
+  function save() {
+    try { if (window.Native) { if (over) Native.clearState(); else Native.saveState(JSON.stringify({ g: grid, s: score, w: won })); } } catch (e) {}
+  }
+  function restore() {
+    try {
+      if (!window.Native) return false;
+      var t = Native.loadState(); if (!t) return false;
+      var o = JSON.parse(t);
+      if (!o.g || o.g.length !== N) return false;
+      for (var r = 0; r < N; r++) if (!o.g[r] || o.g[r].length !== N) return false;
+      grid = o.g; score = o.s | 0; won = !!o.w; over = false; render(); return true;
+    } catch (e) { return false; }
+  }
+
   function init() {
     grid = []; for (var r = 0; r < N; r++) grid.push([0, 0, 0, 0]);
     score = 0; over = false; won = false;
@@ -134,6 +149,7 @@
       d.textContent = v || '';
       boardEl.appendChild(d);
     }
+    save();
   }
 
   // Touch: swipe direction decides the move.
@@ -152,7 +168,7 @@
   });
   document.getElementById('new').addEventListener('click', init);
 
-  init();
+  if (!restore()) init();
 })();
 </script>
 </body>

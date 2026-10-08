@@ -39,8 +39,20 @@ private class GameBridge(private val gameId: String) {
     @JavascriptInterface
     fun submitScore(score: Int) {
         // Called on a WebView background thread; scores live in Compose state, so hop to main.
-        main.post { GameScores.submit(gameId, score) }
+        main.post {
+            if (GameScores.submit(gameId, score)) com.example.superdialer.account.AccountManager.uploadScore(gameId, score)
+        }
     }
+
+    /** The board this game was left on, or "" when there is none. */
+    @JavascriptInterface
+    fun loadState(): String = GameStates.load(gameId)
+
+    @JavascriptInterface
+    fun saveState(json: String) = GameStates.save(gameId, json)
+
+    @JavascriptInterface
+    fun clearState() = GameStates.clear(gameId)
 }
 
 /**

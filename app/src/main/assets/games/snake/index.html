@@ -36,6 +36,27 @@
     draw();
   }
 
+  // The game is kept paused where it was left (stored by the app through the Native bridge).
+  var ticks = 0;
+  function save() {
+    try {
+      if (!window.Native || !snake) return;
+      if (dead) Native.clearState();
+      else Native.saveState(JSON.stringify({ snake: snake, dir: dir, nextDir: nextDir, apple: apple, score: score, delay: delay }));
+    } catch (e) {}
+  }
+  function restore() {
+    try {
+      if (!window.Native) return false;
+      var t = Native.loadState(); if (!t) return false;
+      var o = JSON.parse(t);
+      if (!o.snake || o.snake.length < 3 || !o.dir || !o.apple) return false;
+      snake = o.snake; dir = o.dir; nextDir = o.nextDir || o.dir; apple = o.apple; score = o.score | 0; delay = o.delay || 140; dead = false;
+      scoreEl.textContent = score; hint.textContent = '이어하기 · 탭해서 계속';
+      return true;
+    } catch (e) { return false; }
+  }
+
   function reset() {
     snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
     dir = { x: 1, y: 0 }; nextDir = dir; score = 0; delay = 140; dead = false;
@@ -65,6 +86,7 @@
       score++; scoreEl.textContent = score; delay = Math.max(60, delay - 3); placeApple();
     } else snake.pop();
     draw();
+    if (++ticks % 4 === 0) save();
     timer = setTimeout(tick, delay);
   }
 
@@ -73,6 +95,7 @@
     hint.textContent = '게임 오버 · 점수 ' + score + ' · 탭해서 다시 시작';
     if (score > best) { best = score; bestEl.textContent = best; }
     try { if (window.Native) Native.submitScore(score); } catch (e) {}
+    save();
   }
 
   function draw() {
@@ -107,10 +130,11 @@
     if (!m) return;
     e.preventDefault(); if (!running) start(); turn(m[0], m[1]);
   });
-  document.addEventListener('visibilitychange', function () { if (document.hidden && running) { running = false; hint.textContent = '일시정지 · 탭해서 계속'; } });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && running) { running = false; hint.textContent = '일시정지 · 탭해서 계속'; save(); } });
   window.addEventListener('resize', resize);
 
-  reset(); resize();
+  if (!restore()) reset();
+  resize();
 })();
 </script>
 </body>

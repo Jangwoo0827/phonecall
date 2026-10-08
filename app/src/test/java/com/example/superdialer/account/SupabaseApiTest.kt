@@ -36,4 +36,10 @@ class SupabaseApiTest {
         assertEquals("요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.", SupabaseApi.errorMessage(429, "{}"))
         assertEquals("요청에 실패했습니다 (418).", SupabaseApi.errorMessage(418, ""))
     }
+
+    @Test fun parsesLeaderboardRows() {
+        val rows = SupabaseApi.parseLeaderboard("""[{"user_id":"u1","nickname":"A","score":50},{"user_id":"u2","nickname":"","score":9},{"user_id":"u3","nickname":"B","score":7}]""")
+        assertEquals(listOf(LeaderRow("u1", "A", 50), LeaderRow("u3", "B", 7)), rows)
+        assertEquals(emptyList<LeaderRow>(), SupabaseApi.parseLeaderboard("nope"))
+    }
 }

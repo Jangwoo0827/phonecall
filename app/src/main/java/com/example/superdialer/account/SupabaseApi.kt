@@ -20,6 +20,9 @@ data class AuthSession(
 
 data class RemoteSnapshot(val data: String, val updatedAt: String)
 
+/** One line of a game's leaderboard. */
+data class LeaderRow(val userId: String, val nickname: String, val score: Int)
+
 /**
  * Minimal Supabase client (auth + one table) over plain HTTPS, no SDK. The URL and the publishable key are
  * public by design (they only identify the project); what a signed-in user can reach is limited to their own
@@ -76,6 +79,23 @@ object SupabaseApi {
         if (code == 401) throw ApiError("로그인이 만료되었습니다. 다시 로그인해 주세요.", authExpired = true)
         if (code !in 200..299) throw ApiError(errorMessage(code, body))
         return parseRemote(body)?.updatedAt ?: throw ApiError("저장 응답을 읽을 수 없습니다.")
+    }
+
+    /** Sends a score; the server keeps the better of this and the stored one. */
+    fun submitScore(accessToken: String, gameId: String, score: Int, nickname: String) {
+        val body = JSONObject().put("p_game", gameId).put("p_score", score).put("p_nickname", nickname)
+        val (code, text) = request("POST", "/rest/v1/rpc/superdialer_submit_score", body, accessToken)
+        if (code == 401) throw ApiError("로그인이 만료되었습니다. 다시 로그인해 주세요.", authExpired = true)
+        if (code !in 200..299) throw ApiError(errorMessage(code, text))
+    }
+
+    fun fetchLeaderboard(accessToken: String, gameId: String, limit: Int = 20): List<LeaderRow> {
+        val path = "/rest/v1/superdialer_scores?game_id=eq.${java.net.URLEncoder.encode(gameId, "UTF-8")}" +
+            "&select=user_id,nickname,score&order=score.desc&limit=$limit"
+        val (code, text) = request("GET", path, null, accessToken)
+        if (code == 401) throw ApiError("로그인이 만료되었습니다. 다시 로그인해 주세요.", authExpired = true)
+        if (code !in 200..299) throw ApiError(errorMessage(code, text))
+        return parseLeaderboard(text)
     }
 
     private fun request(
@@ -143,6 +163,17 @@ object SupabaseApi {
         row?.let { RemoteSnapshot(it.optJSONObject("data")?.toString() ?: "{}", it.getString("updated_at")) }
     } catch (e: JSONException) {
         null
+    }
+
+    fun parseLeaderboard(body: String): List<LeaderRow> = try {
+        val array = JSONArray(body)
+        (0 until array.length()).mapNotNull { i ->
+            val o = array.optJSONObject(i) ?: return@mapNotNull null
+            val nickname = o.optString("nickname")
+            if (nickname.isBlank()) null else LeaderRow(o.optString("user_id"), nickname, o.optInt("score"))
+        }
+    } catch (e: JSONException) {
+        emptyList()
     }
 
     /** Turns the server's error payload into a short Korean message. */

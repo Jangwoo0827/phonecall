@@ -55,6 +55,30 @@
     score = 0; lives = 3; level = 1; state = 'ready';
     scoreEl.textContent = 0; updateLives(); buildBricks(); resetBall();
     hint.textContent = '탭해서 시작 · 손가락을 좌우로 움직여 패들 조작';
+    persist();
+  }
+
+  // Score, lives, level, remaining bricks and paddle survive leaving the game (stored by the app through the Native bridge).
+  function persist() {
+    try {
+      if (!window.Native) return;
+      if (state === 'over') { Native.clearState(); return; }
+      Native.saveState(JSON.stringify({ s: score, l: lives, v: level, p: paddle.x, b: bricks.map(function (b) { return b.alive ? 1 : 0; }) }));
+    } catch (e) {}
+  }
+  function restore() {
+    try {
+      if (!window.Native) return false;
+      var t = Native.loadState(); if (!t) return false;
+      var o = JSON.parse(t);
+      if (!o.b || o.b.length !== ROWS * COLS || !(o.l > 0)) return false;
+      paddle = { x: o.p, y: H - 30, w: 80, h: 10 };
+      score = o.s | 0; lives = o.l; level = o.v || 1; state = 'ready';
+      buildBricks(); bricks.forEach(function (b, i) { b.alive = !!o.b[i]; });
+      scoreEl.textContent = score; updateLives(); resetBall();
+      hint.textContent = '이어하기 · 탭해서 시작';
+      return true;
+    } catch (e) { return false; }
   }
 
   function updateLives() { livesEl.textContent = new Array(lives + 1).join('♥') || '-'; }
@@ -86,19 +110,19 @@
         var overlapX = Math.min(ball.x + ball.r - b.x, b.x + BW - (ball.x - ball.r));
         var overlapY = Math.min(ball.y + ball.r - b.y, b.y + BH - (ball.y - ball.r));
         if (overlapX < overlapY) ball.vx = -ball.vx; else ball.vy = -ball.vy;
-        score += 10 * level; scoreEl.textContent = score;
+        score += 10 * level; scoreEl.textContent = score; persist();
         if (score > best) { best = score; bestEl.textContent = best; }
         break;
       }
     }
 
-    if (alive === 0) { level++; buildBricks(); resetBall(); state = 'ready'; hint.textContent = '레벨 ' + level + ' · 탭해서 시작'; }
+    if (alive === 0) { level++; buildBricks(); resetBall(); state = 'ready'; hint.textContent = '레벨 ' + level + ' · 탭해서 시작'; persist(); }
     if (ball.y > H + ball.r) {
       lives--; updateLives();
       if (lives <= 0) {
-        state = 'over'; hint.textContent = '게임 오버 · 점수 ' + score + ' · 탭해서 다시 시작';
+        state = 'over'; hint.textContent = '게임 오버 · 점수 ' + score + ' · 탭해서 다시 시작'; persist();
         try { if (window.Native) Native.submitScore(score); } catch (e) {}
-      } else { state = 'ready'; resetBall(); hint.textContent = '탭해서 계속'; }
+      } else { state = 'ready'; resetBall(); hint.textContent = '탭해서 계속'; persist(); }
     }
   }
 
@@ -134,10 +158,11 @@
     if (e.key === 'ArrowRight') paddle.x = Math.min(W - paddle.w, paddle.x + 24);
     if (e.key === ' ') tap();
   });
-  document.addEventListener('visibilitychange', function () { if (document.hidden && state === 'playing') { state = 'ready'; hint.textContent = '일시정지 · 탭해서 계속'; } });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && state === 'playing') { state = 'ready'; hint.textContent = '일시정지 · 탭해서 계속'; persist(); } });
   window.addEventListener('resize', fit);
 
-  newGame(); fit(); loop();
+  if (!restore()) newGame();
+  fit(); loop();
 })();
 </script>
 </body>

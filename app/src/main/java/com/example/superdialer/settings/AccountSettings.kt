@@ -58,6 +58,14 @@ internal fun AccountRows() {
             },
             trailingContent = { if (AccountManager.busy) CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(4.dp)) },
         )
+        var editingNickname by rememberSaveable { mutableStateOf(false) }
+        ListItem(
+            modifier = Modifier.clickable { editingNickname = true },
+            colors = transparent,
+            headlineContent = { Text("닉네임 (랭킹에 표시)") },
+            supportingContent = { Text(AccountManager.nickname.also { AccountManager.nicknameVersion }) },
+        )
+        if (editingNickname) NicknameDialog(AccountManager.nickname, onDismiss = { editingNickname = false })
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -130,5 +138,24 @@ private fun LoginDialog(onDismiss: () -> Unit, onSignedIn: () -> Unit) {
             }
         },
         dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text("취소") } },
+    )
+}
+
+@Composable
+private fun NicknameDialog(current: String, onDismiss: () -> Unit) {
+    var text by remember { mutableStateOf(current) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("닉네임") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it.take(20) },
+                singleLine = true,
+                supportingText = { Text("랭킹에서 다른 사람들에게 보입니다 (이메일은 보이지 않아요)") },
+            )
+        },
+        confirmButton = { TextButton(enabled = text.isNotBlank(), onClick = { AccountManager.updateNickname(text); onDismiss() }) { Text("저장") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
     )
 }
