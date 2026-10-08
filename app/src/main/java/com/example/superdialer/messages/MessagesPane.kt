@@ -37,7 +37,7 @@ import com.example.superdialer.ui.openAppSettings
 import com.example.superdialer.ui.sendSms
 
 /**
- * Recent text messages with [numbers] as chat bubbles (received on the left, sent on the right).
+ * Recent text messages with [numbers] as chat bubbles, newest first (received on the left, sent on the right).
  * Asks for the SMS permission first. Meant to sit inside a scrolling list, so it is a plain Column.
  */
 @Composable

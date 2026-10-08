@@ -23,7 +23,7 @@ class SmsRepository(private val context: Context) {
     private val resolver: ContentResolver get() = context.contentResolver
 
     /**
-     * The most recent [limit] messages to or from any of [numbers], oldest first.
+     * The most recent [limit] messages to or from any of [numbers], newest first.
      * Numbers match across formats (+82 10-1234-5678 = 01012345678). Blocking I/O.
      */
     fun loadFor(numbers: Collection<String>, limit: Int = DEFAULT_LIMIT): List<SmsMessage> {
@@ -59,7 +59,7 @@ class SmsRepository(private val context: Context) {
         } catch (e: SecurityException) {
             return emptyList()
         }
-        return found.reversed()
+        return found
     }
 
     companion object {
