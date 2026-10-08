@@ -200,3 +200,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 타일을 길게 눌러 끌면 순서 변경(`SpeedDialGrid`, `detectDragGesturesAfterLongPress` + 그리드 레이아웃 정보로 겹친 칸과 교체, 끝나면 `reorderSpeedDials`로 저장). 끌지 않고 길게만 누르면 수정/폴더로 이동/삭제 메뉴. adb로 테스트할 땐 `input swipe`가 바로 움직여 롱프레스가 안 되므로 `input draganddrop x1 y1 x2 y2 2000` 사용
 - 폴더: `SpeedDial.parentId/isFolder`(DB v4, 마이그레이션 3→4), 한 단계만. + 버튼의 링크/폴더 선택으로 추가, 폴더 타일은 안의 사이트 아이콘 4개 미리보기, 탭하면 폴더 안으로(뒤로가기로 나옴). 폴더 삭제 시 안의 링크도 삭제
 - 계정 동기화: `SyncSnapshot.Link(folder, parent=폴더의 목록 인덱스)`, `SpeedDialTree.flatten/plan`(테스트 있음)
+
+## 파일 업로드 / 다운로드 관리
+- 업로드: 페이지의 `<input type=file>`은 `WebChromeClient.onShowFileChooser` → `BrowserViewModel.fileChooser` → 브라우저 화면이 시스템 파일 선택기를 열고(`FileChooserParams.createIntent`), 결과를 `finishFileChooser`로 돌려줌(취소해도 반드시 한 번 호출, 이전 요청은 null로 응답). 에뮬레이터에서 the-internet.herokuapp.com/upload로 확인
+- 다운로드 관리: 브라우저 ⋮ 메뉴 > 다운로드(`DownloadsPanel`). 별도 DB 없이 `DownloadManager.query`로 이 앱이 시작한 다운로드를 1초마다 읽어 진행률/완료/실패 표시, 완료 항목을 누르면 `getUriForDownloadedFile`로 열기, 삭제는 `DownloadManager.remove`(파일도 삭제)

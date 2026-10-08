@@ -52,6 +52,11 @@ class BrowserTab(val id: Int) {
     internal var checklistInjected = false
 }
 
+class FileChooserRequest(
+    val callback: android.webkit.ValueCallback<Array<Uri>>,
+    val params: WebChromeClient.FileChooserParams,
+)
+
 data class DownloadRequest(val url: String, val userAgent: String?, val mimeType: String?, val fileName: String)
 
 class BrowserViewModel(application: Application) : AndroidViewModel(application) {
@@ -77,6 +82,10 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
 
     var pendingDownload by mutableStateOf<DownloadRequest?>(null)
+        private set
+
+    /** A page asked for a file (<input type=file>); the screen opens the system picker and answers via [finishFileChooser]. */
+    var fileChooser by mutableStateOf<FileChooserRequest?>(null)
         private set
 
     /** A link opened from another app, waiting for the browser screen to pick it up. */
@@ -261,6 +270,12 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         customView = null
     }
 
+    /** Hands the picked files (or null when cancelled) back to the page. Must be called exactly once per request. */
+    fun finishFileChooser(uris: Array<Uri>?) {
+        fileChooser?.callback?.onReceiveValue(uris)
+        fileChooser = null
+    }
+
     fun dismissDownload() {
         pendingDownload = null
     }
@@ -357,6 +372,17 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             override fun onReceivedIcon(view: WebView, icon: Bitmap?) {
                 val pageUrl = view.url ?: return
                 if (icon != null) faviconStore.put(pageUrl, icon)
+            }
+
+            override fun onShowFileChooser(
+                webView: WebView,
+                filePathCallback: android.webkit.ValueCallback<Array<Uri>>,
+                fileChooserParams: FileChooserParams,
+            ): Boolean {
+                // Only one picker at a time: answer the previous one with "nothing chosen".
+                fileChooser?.callback?.onReceiveValue(null)
+                fileChooser = FileChooserRequest(filePathCallback, fileChooserParams)
+                return true
             }
 
             override fun onShowCustomView(view: View, callback: CustomViewCallback) {

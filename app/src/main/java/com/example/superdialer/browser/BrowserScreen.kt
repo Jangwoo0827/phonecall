@@ -1,5 +1,10 @@
 package com.example.superdialer.browser
 
+import androidx.compose.material.icons.filled.Download
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.webkit.WebChromeClient
+import android.content.ActivityNotFoundException
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.core.tween
@@ -74,7 +79,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LifecycleResumeEffect
 
-private enum class Panel { None, Tabs, Bookmarks, History }
+private enum class Panel { None, Tabs, Bookmarks, History, Downloads }
 
 /**
  * The browser tab. A tab either shows the start page (editable link tiles) or a website. While a
@@ -91,6 +96,20 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
     }
 
     var panel by rememberSaveable { mutableStateOf(Panel.None) }
+
+    // <input type=file>: open the system picker, then answer the page (also when it is cancelled).
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        viewModel.finishFileChooser(WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data))
+    }
+    val pendingChooser = viewModel.fileChooser
+    LaunchedEffect(pendingChooser) {
+        val request = pendingChooser ?: return@LaunchedEffect
+        try {
+            filePicker.launch(request.params.createIntent())
+        } catch (e: ActivityNotFoundException) {
+            viewModel.finishFileChooser(null)
+        }
+    }
     val tab = viewModel.selected ?: return
     val bookmarks by viewModel.bookmarks.collectAsState()
     val bookmarked = !tab.isStart && bookmarks.any { it.url == tab.url }
@@ -120,6 +139,7 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
                 onOpenTabs = { panel = Panel.Tabs },
                 onOpenBookmarks = { panel = Panel.Bookmarks },
                 onOpenHistory = { panel = Panel.History },
+                onOpenDownloads = { panel = Panel.Downloads },
             )
         } else {
             WebPage(
@@ -129,6 +149,7 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
                 onOpenTabs = { panel = if (panel == Panel.Tabs) Panel.None else Panel.Tabs },
                 onOpenBookmarks = { panel = Panel.Bookmarks },
                 onOpenHistory = { panel = Panel.History },
+                onOpenDownloads = { panel = Panel.Downloads },
             )
         }
         }
@@ -160,6 +181,7 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
                 onDelete = viewModel::deleteBookmark,
                 onBack = { panel = Panel.None },
             )
+            Panel.Downloads -> DownloadsPanel(onBack = { panel = Panel.None })
             Panel.History -> {
                 val history by viewModel.history.collectAsState()
                 HistoryPanel(
@@ -196,6 +218,7 @@ private fun StartPage(
     onOpenTabs: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenDownloads: () -> Unit,
 ) {
     val dials by viewModel.speedDials.collectAsState()
     Column(modifier = Modifier.fillMaxSize()) {
@@ -211,7 +234,7 @@ private fun StartPage(
                 modifier = Modifier.weight(1f),
             )
             TabCountButton(tabCount, onOpenTabs)
-            OverflowMenu(viewModel::newTab, onOpenBookmarks, onOpenHistory)
+            OverflowMenu(viewModel::newTab, onOpenBookmarks, onOpenHistory, onOpenDownloads)
         }
         SpeedDialGrid(
             dials = dials,
@@ -236,6 +259,7 @@ private fun WebPage(
     onOpenTabs: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenDownloads: () -> Unit,
 ) {
     var topBarVisible by remember(tab.id) { mutableStateOf(true) }
     // Navigating always brings the bar back so the new address is visible.
@@ -250,6 +274,7 @@ private fun WebPage(
             onTopBarVisible = { topBarVisible = it },
             onOpenBookmarks = onOpenBookmarks,
             onOpenHistory = onOpenHistory,
+            onOpenDownloads = onOpenDownloads,
             modifier = Modifier.weight(1f),
         )
         BottomToolbar(
@@ -274,6 +299,7 @@ private fun WebArea(
     onTopBarVisible: (Boolean) -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenDownloads: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // The bar appears on navigation or a touch at the top edge (not on scroll, so feeds like Shorts stay clean)
@@ -320,6 +346,7 @@ private fun WebArea(
                 onNewTab = { viewModel.newTab() },
                 onOpenBookmarks = onOpenBookmarks,
                 onOpenHistory = onOpenHistory,
+                onOpenDownloads = onOpenDownloads,
                 onMenuOpenChange = { menuOpen = it },
             )
         }
@@ -344,6 +371,7 @@ private fun WebTopBar(
     onNewTab: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenDownloads: () -> Unit,
     onMenuOpenChange: (Boolean) -> Unit,
 ) {
     Surface(
@@ -364,7 +392,7 @@ private fun WebTopBar(
                     tint = if (bookmarked) Color(0xFFF9A825) else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            OverflowMenu(onNewTab, onOpenBookmarks, onOpenHistory, onMenuOpenChange)
+            OverflowMenu(onNewTab, onOpenBookmarks, onOpenHistory, onOpenDownloads, onMenuOpenChange)
         }
     }
 }
@@ -412,6 +440,7 @@ private fun OverflowMenu(
     onNewTab: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenDownloads: () -> Unit,
     onOpenChange: (Boolean) -> Unit = {},
 ) {
     var open by remember { mutableStateOf(false) }
@@ -433,6 +462,11 @@ private fun OverflowMenu(
                 text = { Text("방문 기록") },
                 leadingIcon = { Icon(Icons.Filled.History, contentDescription = null) },
                 onClick = { open = false; onOpenHistory() },
+            )
+            DropdownMenuItem(
+                text = { Text("다운로드") },
+                leadingIcon = { Icon(Icons.Filled.Download, contentDescription = null) },
+                onClick = { open = false; onOpenDownloads() },
             )
         }
     }
