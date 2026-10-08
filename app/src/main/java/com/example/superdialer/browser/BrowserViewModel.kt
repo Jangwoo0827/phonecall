@@ -50,6 +50,8 @@ class BrowserTab(val id: Int) {
     internal var lastRecordedUrl: String? = null
     /** The checklist site was already signed in automatically in this tab (see [ChecklistLink]). */
     internal var checklistInjected = false
+    /** A restored tab loads its page only when it is first shown, so reopening 20 tabs does not load 20 pages. */
+    internal var pendingUrl: String? = null
 }
 
 class FileChooserRequest(
@@ -139,7 +141,26 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun webViewFor(tab: BrowserTab): WebView = webViews.getOrPut(tab.id) { createWebView(tab) }
+    fun webViewFor(tab: BrowserTab): WebView = webViews.getOrPut(tab.id) {
+        createWebView(tab).also { view ->
+            tab.pendingUrl?.let { view.loadUrl(it) }
+            tab.pendingUrl = null
+        }
+    }
+
+    /** Adds a tab saved from an earlier run; its page is loaded lazily (see [BrowserTab.pendingUrl]). */
+    internal fun restoreTab(saved: SavedTab): BrowserTab {
+        val tab = BrowserTab(nextId++)
+        if (saved.url != null) {
+            tab.isStart = false
+            tab.url = saved.url
+            tab.title = saved.title
+            tab.pendingUrl = saved.url
+        }
+        tabs += tab
+        if (selectedId == -1) selectedId = tab.id
+        return tab
+    }
 
     // --- Navigation ---------------------------------------------------------------------------
 

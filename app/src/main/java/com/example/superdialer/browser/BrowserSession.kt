@@ -11,8 +11,8 @@ import com.example.superdialer.games.GameSession
  * swipe away while the process survives), so coming back within a few minutes finds everything as it was.
  *
  * Two layers: the [BrowserViewModel] (with its live WebViews) is owned here instead of by an Activity, and
- * a small snapshot (tab addresses, section, open game) is saved so that even if Android kills the process
- * in the meantime the pages are reopened (reloaded; scroll position and game progress are lost then).
+ * a small snapshot (tab addresses and titles, section, open game) is saved every time the app is left. The
+ * open tabs always come back on the next start (pages reload); section and game only within the keep-alive time.
  */
 object BrowserSession {
     const val KEEP_ALIVE_MS = 3 * 60 * 1000L
@@ -23,7 +23,6 @@ object BrowserSession {
     private const val KEY_SELECTED = "selected"
     private const val KEY_SECTION = "section"
     private const val KEY_GAME = "game"
-    private const val SEPARATOR = "\u0001"
 
     private var viewModel: BrowserViewModel? = null
     private val handler = Handler(Looper.getMainLooper())
@@ -58,31 +57,34 @@ object BrowserSession {
     }
 
     private fun save(app: Application, vm: BrowserViewModel) {
-        val urls = vm.tabs.map { if (it.isStart) "" else it.url }
+        val saved = vm.tabs.map { SavedTab(if (it.isStart) null else it.url, it.title) }
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putLong(KEY_TIME, System.currentTimeMillis())
-            .putString(KEY_TABS, urls.joinToString(SEPARATOR))
+            .putString(KEY_TABS, SavedTabs.encode(saved))
             .putInt(KEY_SELECTED, vm.tabs.indexOfFirst { it.id == vm.selectedId })
             .putInt(KEY_SECTION, vm.hubSection)
             .putString(KEY_GAME, GameSession.playingId.orEmpty())
             .apply()
     }
 
-    /** After a process restart: reopen what was open if the app was left less than [KEEP_ALIVE_MS] ago. */
+    /**
+     * On a fresh start: the tabs saved when the app was last left come back (pages reload, lazily). Which section was
+     * showing and the open game only come back when that was less than [KEEP_ALIVE_MS] ago.
+     */
     private fun restore(app: Application, vm: BrowserViewModel) {
         val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val leftAt = prefs.getLong(KEY_TIME, 0L)
         val fresh = leftAt > 0 && System.currentTimeMillis() - leftAt in 0..KEEP_ALIVE_MS
-        val tabs = prefs.getString(KEY_TABS, null)
-        val selected = prefs.getInt(KEY_SELECTED, -1)
-        val section = prefs.getInt(KEY_SECTION, 0)
-        val game = prefs.getString(KEY_GAME, null)?.ifEmpty { null }
-        prefs.edit().clear().apply()
-        if (!fresh || tabs == null) return
+        val saved = SavedTabs.decode(prefs.getString(KEY_TABS, null)).take(MAX_RESTORED)
+        if (saved.isEmpty()) return
 
-        tabs.split(SEPARATOR).forEach { vm.newTab(it.ifEmpty { null }) }
-        vm.tabs.getOrNull(selected)?.let { vm.selectTab(it.id) }
-        vm.hubSection = section
-        if (game != null) GameSession.playingId = game
+        saved.forEach { vm.restoreTab(it) }
+        vm.tabs.getOrNull(prefs.getInt(KEY_SELECTED, -1))?.let { vm.selectTab(it.id) }
+        if (fresh) {
+            vm.hubSection = prefs.getInt(KEY_SECTION, 0)
+            prefs.getString(KEY_GAME, null)?.ifEmpty { null }?.let { GameSession.playingId = it }
+        }
     }
+
+    private const val MAX_RESTORED = 20
 }

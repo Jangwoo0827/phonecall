@@ -126,7 +126,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 보안: file/content 접근 차단, 혼합 콘텐츠 차단, 팝업 창 차단, 서드파티 쿠키 차단, Safe Browsing on, JS 브릿지(addJavascriptInterface) 없음, 웹 페이지가 여는 file:/content:/intent: 링크는 무시(tel:/mailto:/sms:만 외부 앱으로). 카메라·마이크·위치 권한 요청은 거부(기본 동작)
 - 앱 전체 `usesCleartextTraffic=true`: 브라우저가 http:// 사이트를 열 수 있게 하려는 것 (이 앱의 네트워크 사용은 브라우저뿐)
 - **외부 링크 옵션**: 매니페스트의 `ExternalLinkAlias`(http/https VIEW 필터)는 기본 비활성. 설정 탭 "외부 링크를 이 브라우저로 열기"로 켜고 끔(`settings/ExternalLinks`, `PackageManager.setComponentEnabledSetting`). 켜면 다른 앱 링크가 `BrowserViewModel.openExternal` → 새 탭으로 열림. 기본을 꺼 둔 이유: 켜는 순간 폰의 모든 웹 링크 "다음으로 열기" 선택지에 이 앱이 나타나 기본 브라우저가 될 수 있는데, 이 브라우저는 파일 업로드(<input type=file>)·인증서 오류 화면·비밀번호 저장 같은 일반 브라우저 기능이 없는 가벼운 인앱 브라우저라서
-- 미구현: 파일 업로드(`onShowFileChooser`), 탭 상태 영구 저장(앱 재시작 시 새 탭 1개로 시작), 비공개 모드
+- 미구현: 비공개 모드 (파일 업로드·탭 영구 저장은 구현됨, 아래 참고)
 
 ## 문자 내용 보기 (messages/)
 - 연락처 상세와 통화 내역 화면에 "통화 기록 / 메시지" 전환 칩. 메시지는 말풍선(받은 문자 왼쪽, 보낸 문자 오른쪽)으로 최근 30건, 가장 최근 것이 맨 위. 아래 "문자 앱에서 이어서 보기"는 시스템 문자 앱을 `smsto:`로 엶
@@ -204,3 +204,6 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 파일 업로드 / 다운로드 관리
 - 업로드: 페이지의 `<input type=file>`은 `WebChromeClient.onShowFileChooser` → `BrowserViewModel.fileChooser` → 브라우저 화면이 시스템 파일 선택기를 열고(`FileChooserParams.createIntent`), 결과를 `finishFileChooser`로 돌려줌(취소해도 반드시 한 번 호출, 이전 요청은 null로 응답). 에뮬레이터에서 the-internet.herokuapp.com/upload로 확인
 - 다운로드 관리: 브라우저 ⋮ 메뉴 > 다운로드(`DownloadsPanel`). 별도 DB 없이 `DownloadManager.query`로 이 앱이 시작한 다운로드를 1초마다 읽어 진행률/완료/실패 표시, 완료 항목을 누르면 `getUriForDownloadedFile`로 열기, 삭제는 `DownloadManager.remove`(파일도 삭제)
+
+## 탭 영구 저장
+- 앱을 나갈 때(`MainActivity.onStop`) 열린 탭의 주소·제목·선택 탭을 SharedPreferences(`browser_session`)에 저장(`SavedTabs`, 테스트 있음) → 다음 실행(프로세스가 죽었든 3분이 지났든)에 탭이 복원됨. 복원된 탭의 페이지는 그 탭이 처음 화면에 나올 때 불러옴(`BrowserTab.pendingUrl`, 최대 20개). 웹/게임 섹션과 열린 게임은 3분 이내일 때만 복원
