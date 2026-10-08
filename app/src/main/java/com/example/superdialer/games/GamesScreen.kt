@@ -1,5 +1,12 @@
 package com.example.superdialer.games
 
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedContent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,13 +51,29 @@ fun GamesScreen(modifier: Modifier = Modifier) {
 
     BackHandler(enabled = playing != null) { GameSession.close() }
 
-    if (playing != null) {
-        GamePlayer(playing, onClose = { GameSession.close() }, modifier = modifier)
-        return
+    // The player slides over the list; the list slides back in when the game closes.
+    AnimatedContent(
+        targetState = playing,
+        transitionSpec = {
+            if (targetState != null) {
+                (slideInHorizontally(tween(300)) { it } + fadeIn(tween(300))) togetherWith
+                    (slideOutHorizontally(tween(300)) { -it / 4 } + fadeOut(tween(300)))
+            } else {
+                (slideInHorizontally(tween(300)) { -it / 4 } + fadeIn(tween(300))) togetherWith
+                    (slideOutHorizontally(tween(300)) { it } + fadeOut(tween(300)))
+            }
+        },
+        label = "game",
+        modifier = modifier,
+    ) { current ->
+        if (current != null) GamePlayer(current, onClose = { GameSession.close() }) else GameList(games)
     }
+}
 
+@Composable
+private fun GameList(games: List<GameInfo>) {
     if (games.isEmpty()) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("등록된 게임이 없습니다.")
         }
         return
@@ -58,7 +81,7 @@ fun GamesScreen(modifier: Modifier = Modifier) {
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),

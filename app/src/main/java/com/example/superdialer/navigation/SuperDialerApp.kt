@@ -1,5 +1,11 @@
 package com.example.superdialer.navigation
 
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -99,7 +105,11 @@ fun SuperDialerApp(
 
     Scaffold(
         bottomBar = {
-            if (!hideBottomBar) NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+            AnimatedVisibility(
+                visible = !hideBottomBar,
+                enter = slideInVertically(tween(260)) { it } + fadeIn(tween(260)),
+                exit = slideOutVertically(tween(220)) { it } + fadeOut(tween(220)),
+            ) { NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
                 TopLevelDestination.entries.forEach { destination ->
                     // Sub-screens such as "contacts/{id}" keep their tab highlighted.
                     val selected = currentRoute == destination.route ||
@@ -124,13 +134,17 @@ fun SuperDialerApp(
                         ),
                     )
                 }
-            }
+            } }
         },
     ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = TopLevelDestination.Dialer.route,
             modifier = Modifier.padding(innerPadding),
+            enterTransition = { NavTransitions.enter(this) },
+            exitTransition = { NavTransitions.exit(this) },
+            popEnterTransition = { NavTransitions.popEnter(this) },
+            popExitTransition = { NavTransitions.popExit(this) },
         ) {
             composable(TopLevelDestination.Dialer.route) {
                 DialerScreen(

@@ -1,5 +1,9 @@
 package com.example.superdialer.browser
 
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -102,7 +106,14 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        if (tab.isStart) {
+        AnimatedContent(
+            targetState = tab.isStart,
+            transitionSpec = {
+                (fadeIn(tween(260)) + scaleIn(tween(260), initialScale = 0.96f)) togetherWith fadeOut(tween(160))
+            },
+            label = "startOrPage",
+        ) { isStart ->
+        if (isStart) {
             StartPage(
                 viewModel = viewModel,
                 tabCount = viewModel.tabs.size,
@@ -120,8 +131,20 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
                 onOpenHistory = { panel = Panel.History },
             )
         }
+        }
 
-        when (panel) {
+        AnimatedContent(
+            targetState = panel,
+            transitionSpec = {
+                if (targetState == Panel.None) {
+                    fadeIn(tween(1)) togetherWith (slideOutVertically(tween(240)) { it / 3 } + fadeOut(tween(240)))
+                } else {
+                    (slideInVertically(tween(280)) { it / 3 } + fadeIn(tween(280))) togetherWith fadeOut(tween(120))
+                }
+            },
+            label = "panel",
+        ) { shownPanel ->
+        when (shownPanel) {
             Panel.None -> Unit
             Panel.Tabs -> TabsPanel(
                 tabs = viewModel.tabs,
@@ -147,6 +170,7 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
                     onBack = { panel = Panel.None },
                 )
             }
+        }
         }
     }
 

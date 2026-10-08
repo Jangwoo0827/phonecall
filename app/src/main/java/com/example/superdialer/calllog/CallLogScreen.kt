@@ -1,5 +1,11 @@
 package com.example.superdialer.calllog
 
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -434,7 +440,11 @@ private fun CallLogRow(
                     CallButton(onClick = onCall)
                 }
             }
-            if (expanded && !selecting) {
+            AnimatedVisibility(
+                visible = expanded && !selecting,
+                enter = expandVertically(tween(220)) + fadeIn(tween(220)),
+                exit = shrinkVertically(tween(180)) + fadeOut(tween(120)),
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

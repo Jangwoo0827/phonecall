@@ -187,3 +187,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 가입 시 메일 인증이 켜져 있으면 가입 직후 세션이 없어 "메일 인증 후 로그인" 안내. 인증 없이 바로 쓰려면 Supabase 대시보드 Authentication > Sign In / Providers > Email 에서 "Confirm email"을 끄면 됨(이 설정은 앱/MCP로 바꾸지 않음)
 - **체크리스트 자동 로그인**(`browser/ChecklistLink`): 시작 페이지 첫 타일 "체크리스트"(`https://jangwoo0827.github.io/checklist_summarizer/`, DB v3 마이그레이션이 기존 폰에도 맨 앞에 추가). 로그인 상태에서 이 주소의 페이지가 다 열리면 localStorage `checklist_note_user_v1`을 읽어 있으면 계정에 기억(다른 폰으로도 동기화), 없고 계정에 기억된 아이디가 있으면 한 번 넣고 새로고침 → 자동 로그인. 사이트 쪽 로그아웃을 해도 같은 탭에선 다시 넣지 않음. 형식이 맞는 아이디(`^[a-z0-9가-힣_-]{2,32}$`)만, 정확히 그 주소에서만 주입
 - 체크리스트 앱은 비밀번호 없는 "아이디" 동기화라 아이디를 아는 사람은 누구나 볼 수 있음(사이트 README 참고). SuperDialer 계정 데이터는 그와 달리 RLS로 본인만 접근
+
+## 움직임 (슬라이딩 UI)
+- `navigation/NavTransitions`: 탭 사이는 탭 순서 방향으로 살짝 밀리며 페이드, 하위 화면(연락처 상세·통화 내역·차단 관리 등)은 오른쪽에서 밀려 들어오고 뒤로 가면 오른쪽으로 나감(아래 화면은 1/4만큼 시차). NavHost의 enter/exit/popEnter/popExit에 연결
+- 하단 탭 바와 웹·게임 상단 전환 바는 몰입 모드 진입 시 `AnimatedVisibility`로 슬라이드/접힘. 브라우저↔게임 섹션, 시작 페이지↔웹 페이지, 탭·북마크·기록 패널(아래에서 올라옴), 게임 목록↔게임 화면, 최근기록 행 펼침도 모두 애니메이션

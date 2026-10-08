@@ -1,5 +1,15 @@
 package com.example.superdialer.hub
 
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,7 +38,11 @@ fun WebGamesScreen(browserViewModel: BrowserViewModel, modifier: Modifier = Modi
         if (browserViewModel.externalUrl != null) browserViewModel.hubSection = 0
     }
     Column(modifier = modifier.fillMaxSize()) {
-        if (!browserViewModel.immersive) {
+        AnimatedVisibility(
+            visible = !browserViewModel.immersive,
+            enter = expandVertically(tween(260)) + fadeIn(tween(260)),
+            exit = shrinkVertically(tween(220)) + fadeOut(tween(220)),
+        ) {
             PrimaryTabRow(selectedTabIndex = selected) {
                 sections.forEachIndexed { index, title ->
                     Tab(
@@ -39,9 +53,19 @@ fun WebGamesScreen(browserViewModel: BrowserViewModel, modifier: Modifier = Modi
                 }
             }
         }
-        when (selected) {
-            0 -> BrowserScreen(browserViewModel)
-            else -> GamesScreen()
+        AnimatedContent(
+            targetState = selected,
+            transitionSpec = {
+                val dir = if (targetState > initialState) 1 else -1
+                (slideInHorizontally(tween(300)) { dir * it / 3 } + fadeIn(tween(300))) togetherWith
+                    (slideOutHorizontally(tween(300)) { -dir * it / 3 } + fadeOut(tween(200)))
+            },
+            label = "hubSection",
+        ) { section ->
+            when (section) {
+                0 -> BrowserScreen(browserViewModel)
+                else -> GamesScreen()
+            }
         }
     }
 }
