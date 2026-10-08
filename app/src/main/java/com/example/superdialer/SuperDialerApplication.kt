@@ -1,5 +1,6 @@
 package com.example.superdialer
 
+import com.example.superdialer.crash.CrashLog
 import com.example.superdialer.messages.SentSms
 import com.example.superdialer.contacts.ContactGroups
 import com.example.superdialer.calllog.CallNotes
@@ -15,6 +16,7 @@ import com.example.superdialer.settings.RejectMessageStore
 class SuperDialerApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        CrashLog.install(this)
         AppSettings.init(this)
         RejectMessageStore.init(this)
         GameScores.init(this)

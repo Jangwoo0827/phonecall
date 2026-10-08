@@ -179,6 +179,7 @@ fun SettingsScreen(
         }
 
         SettingsGroup("앱 정보") {
+            AppInfoRows()
             ListItem(
                 colors = transparentListItem(),
                 headlineContent = { Text("버전") },

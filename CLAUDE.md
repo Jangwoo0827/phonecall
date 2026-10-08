@@ -242,3 +242,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## 비밀번호·자동 완성 (브라우저)
 - 앱이 비밀번호를 직접 저장하지 않음(앱에 JS 브릿지를 두지 않는 보안 원칙 유지). 대신 브라우저 WebView에 `importantForAutofill = YES`를 켜서 폰의 자동 완성 서비스(삼성 패스, 구글 등)가 로그인 정보를 저장·채우도록 함. 설정 > 브라우저 > "비밀번호·자동 완성"이 시스템의 자동 완성 서비스 선택 화면(`ACTION_REQUEST_SET_AUTOFILL_SERVICE`)을 엶. 에뮬레이터엔 서비스가 없어서 동작 확인은 실기기에서
+
+## 오류 기록 / 업데이트 확인 / 릴리스 노트
+- 오류 기록(`crash/CrashLog`): `Application.onCreate`에서 기본 예외 처리기를 감싸 앱이 멈출 때 시각·앱 버전·기기·스택을 `filesDir/crashes/`에 저장(최근 10개), 폰 밖으로는 안 나감. 설정 > 앱 정보 > 오류 기록에서 보기/복사/공유/지우기
+- 업데이트 확인(`update/UpdateChecker`): GitHub `releases/latest`(공개 repo)의 태그를 현재 `versionName`과 숫자로 비교(`isNewer`, 테스트 있음). 설정 > 앱 정보 > 업데이트 확인(수동) + 앱을 열 때 하루 한 번 조용히 확인해 새 버전이 있으면 그 줄에 표시. 새 버전이면 APK 받기(브라우저로 열어 받음)/릴리스 페이지 버튼. 자동 설치는 안 함. 디버그 빌드는 versionName이 0.1.0이라 항상 "새 버전 있음"으로 보임
+- 릴리스 자동화: `.github/workflows/release.yml`이 태그 푸시 때 이전 태그부터의 커밋 제목으로 릴리스 노트("변경 내용" + 설치 안내)를 만들어 Release 본문으로 올림(`fetch-depth: 0`, `body_path`) + GitHub 자동 노트(Full Changelog)도 함께

@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the tags are needed to list what changed since the last release
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -76,8 +78,26 @@ jobs:
       - name: Name the APK after the tag
         run: cp app/build/outputs/apk/release/app-release.apk "SuperDialer-${GITHUB_REF_NAME}.apk"
 
+      - name: Write release notes
+        run: |
+          # The commit subjects since the previous tag (direct pushes have no pull requests for GitHub to list).
+          PREV="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          {
+            echo "## 변경 내용"
+            if [ -n "$PREV" ]; then
+              git log "$PREV..${GITHUB_REF_NAME}" --no-merges --pretty='- %s'
+            else
+              git log -20 --no-merges --pretty='- %s'
+            fi
+            echo
+            echo "## 설치"
+            echo "APK를 받아 열면 설치됩니다. 폰에 디버그 빌드가 깔려 있으면 먼저 지워야 합니다 (서명이 달라 덮어쓰기가 안 됩니다)."
+          } > "$RUNNER_TEMP/release-notes.md"
+          cat "$RUNNER_TEMP/release-notes.md"
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: SuperDialer-${{ github.ref_name }}.apk
+          body_path: ${{ runner.temp }}/release-notes.md
           generate_release_notes: true

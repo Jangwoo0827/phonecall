@@ -1,5 +1,6 @@
 package com.example.superdialer
 
+import com.example.superdialer.update.UpdateChecker
 import android.Manifest
 import android.content.Intent
 import android.os.Build
@@ -75,6 +76,7 @@ class MainActivity : ComponentActivity() {
         }
         BrowserSession.onReturn()
         AccountManager.syncIfSignedIn()
+        UpdateChecker.checkInBackground(this)
     }
 
     override fun onStop() {
