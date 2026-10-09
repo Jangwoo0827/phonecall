@@ -95,8 +95,7 @@ fun MessagesPane(
             else -> {
                 // Where the list starts, so a missing recent chat is obvious: Samsung "채팅+"/RCS and MMS chats are not readable by apps.
                 Text(
-                    "가장 최근 문자 · ${formatDateTime(messages.first().dateMillis)}
-채팅+(RCS)·MMS로 주고받은 대화는 여기에 보이지 않아요",
+                    "가장 최근 문자 · ${formatDateTime(messages.first().dateMillis)}\n채팅+(RCS)·MMS로 주고받은 대화는 여기에 보이지 않아요",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp),
