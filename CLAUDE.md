@@ -257,3 +257,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 필요한 시스템 허용: "출처를 알 수 없는 앱 설치"를 이 앱에 허용(`REQUEST_INSTALL_PACKAGES`). 안 돼 있으면 안내 후 `ACTION_MANAGE_UNKNOWN_APP_SOURCES` 화면을 엶. 에뮬레이터 테스트: `adb shell appops set com.example.superdialer REQUEST_INSTALL_PACKAGES allow`
 - "새 버전 미리 받아 두기" 스위치(`AppSettings.autoDownloadUpdates`, 기본 꺼짐): 앱을 열 때(하루 1회) 새 버전이 있고 Wi-Fi(unmetered)이면 백그라운드로 받아 검사까지 해 두고 알림("업데이트 준비됨"), 업데이트 줄이 "설치 준비됨"으로 바뀌어 한 번만 누르면 설치. 설치는 직접 누름
 - 디버그 빌드(adb로 깐 것)는 릴리스와 서명이 달라 검사에서 "서명이 달라 덮어 설치할 수 없다"로 막힘(에뮬레이터에서 0.5.1 APK 다운로드·검사·안내까지 확인). 실제 설치 성공 경로는 릴리스 서명 빌드를 깐 폰에서만 확인 가능
+
+## 새 설치 점검 (중요, v0.5.2 크래시 교훈)
+- DB(Room) 스키마나 시작 시 코드를 바꾸면 **에뮬레이터에서 `adb -s emulator-5554 shell pm clear com.example.superdialer` 후 실행해 새 설치 상태**를 꼭 확인할 것. 이미 DB가 있는 상태(업그레이드)만 테스트하면 새 설치 때만 나는 오류를 놓침: v0.5.2는 `BrowserDatabase.onCreate`의 기본 타일 INSERT에 나중에 추가한 NOT NULL 컬럼(`parentId`)이 빠져 새로 설치하면 실행 즉시 멈췄음(`SQLiteConstraintException`). 지금은 `SEED_INSERT_SQL`이 모든 컬럼을 채우고 `BrowserDatabaseSeedTest`가 컬럼 누락을 막음. 마이그레이션 1→2의 시딩은 옛 스키마용(`withFolderColumns=false`)
+- 폰 크래시 로그 보기(터치 입력 아님, 읽기만): `adb -s R3CWA0MFJVY logcat -d -b crash`

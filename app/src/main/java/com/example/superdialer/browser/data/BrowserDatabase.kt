@@ -128,6 +128,10 @@ abstract class BrowserDatabase : RoomDatabase() {
         const val CHECKLIST_TITLE = "체크리스트"
         const val CHECKLIST_URL = "https://jangwoo0827.github.io/checklist_summarizer/"
 
+        /** Insert used on a fresh install; must name every NOT NULL column of [SpeedDial] (see BrowserDatabaseSeedTest). */
+        internal const val SEED_INSERT_SQL =
+            "INSERT INTO speed_dials (title, url, position, parentId, isFolder) VALUES (?, ?, ?, 0, 0)"
+
         private val DEFAULT_TILES = listOf(
             CHECKLIST_TITLE to CHECKLIST_URL,
             "네이버" to "https://m.naver.com",
@@ -138,12 +142,20 @@ abstract class BrowserDatabase : RoomDatabase() {
             "위키백과" to "https://ko.m.wikipedia.org",
         )
 
-        private fun seed(db: SupportSQLiteDatabase) {
+        /**
+         * The default tiles. A fresh install is created at the newest schema, so the folder columns must be filled
+         * (they are NOT NULL); the 1 -> 2 migration runs when those columns do not exist yet, hence [withFolderColumns].
+         */
+        private fun seed(db: SupportSQLiteDatabase, withFolderColumns: Boolean = true) {
             DEFAULT_TILES.forEachIndexed { index, (title, url) ->
-                db.execSQL(
-                    "INSERT INTO speed_dials (title, url, position) VALUES (?, ?, ?)",
-                    arrayOf<Any>(title, url, index),
-                )
+                if (withFolderColumns) {
+                    db.execSQL(SEED_INSERT_SQL, arrayOf<Any>(title, url, index))
+                } else {
+                    db.execSQL(
+                        "INSERT INTO speed_dials (title, url, position) VALUES (?, ?, ?)",
+                        arrayOf<Any>(title, url, index),
+                    )
+                }
             }
         }
 
@@ -155,7 +167,7 @@ abstract class BrowserDatabase : RoomDatabase() {
                         "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
                         "`title` TEXT NOT NULL, `url` TEXT NOT NULL, `position` INTEGER NOT NULL)"
                 )
-                seed(db)
+                seed(db, withFolderColumns = false)
             }
         }
 
