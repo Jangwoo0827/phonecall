@@ -33,6 +33,7 @@ object AppSettings {
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_ACCENT = "accent"
     private const val KEY_QUICK_DIRECT = "quick_dial_direct"
+    private const val KEY_AUTO_UPDATE = "auto_download_updates"
 
     private var prefs: SharedPreferences? = null
 
@@ -48,6 +49,10 @@ object AppSettings {
         private set
 
     var accent by mutableStateOf(AccentColor.GREEN)
+        private set
+
+    /** Fetch a newer release in the background (on Wi-Fi) so installing it is one tap. */
+    var autoDownloadUpdates by mutableStateOf(false)
         private set
 
     /** Long-pressing an assigned keypad digit places the call at once instead of only filling in the number. */
@@ -67,6 +72,12 @@ object AppSettings {
         themeMode = ThemeMode.fromKey(p.getString(KEY_THEME_MODE, null))
         accent = AccentColor.fromKey(p.getString(KEY_ACCENT, null))
         quickDialCallsDirectly = p.getBoolean(KEY_QUICK_DIRECT, false)
+        autoDownloadUpdates = p.getBoolean(KEY_AUTO_UPDATE, false)
+    }
+
+    fun updateAutoDownloadUpdates(enabled: Boolean) {
+        autoDownloadUpdates = enabled
+        prefs?.edit()?.putBoolean(KEY_AUTO_UPDATE, enabled)?.apply()
     }
 
     fun updateQuickDialCallsDirectly(enabled: Boolean) {

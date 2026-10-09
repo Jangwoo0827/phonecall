@@ -251,3 +251,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 통화 녹음(마이크) / 잠금 화면 바로가기
 - 통화 화면의 "녹음" 버튼 = `incall/CallRecorder`: **마이크로** 녹음(RECORD_AUDIO, 처음 누를 때 권한 요청). 안드로이드는 일반 앱이 통화 음성 자체를 녹음하지 못하게 막아서 내 목소리와 스피커를 켰을 때의 상대 소리만 담김. `MediaStore`에 `Music/SuperDialer/통화_날짜_시간_이름.m4a`(AAC)로 저장돼 파일 앱/음악 앱에서 보임(저장소 권한 불필요). 통화가 끝나면(화면이 사라지면) 자동 저장. 화면이 꺼지면 소리가 안 들어갈 수 있음. 녹음 관련 법 안내를 설정 > 앱 정보에 적어 둠. 에뮬레이터에서 파일 생성까지 확인, 음질은 실기기 확인 필요
 - 잠금 화면 전화 바로가기: 삼성 시스템 설정이라 앱이 바꿀 수 없음. 설정 > 전화 > "잠금 화면 전화 바로가기"가 바꾸는 방법(설정 > 잠금 화면 > 바로가기)을 안내하고 설정 앱을 열어 줌
+
+## 앱 안에서 업데이트 (update/UpdateInstaller)
+- 설정 > 앱 정보 > 업데이트 확인 > "지금 업데이트": GitHub 릴리스의 APK(허용 주소는 `https://github.com/Jangwoo0827/phonecall/releases/download/` 아래만)를 `cacheDir/updates/`로 받고(진행률 표시) → 검사(`verify`: 같은 패키지, 설치된 것보다 높은 versionCode, **같은 서명 인증서** SHA-256) → `PackageInstaller` 세션으로 설치(`SessionParams.setRequireUserAction(USER_ACTION_NOT_REQUIRED)`, 결과는 `InstallStatusReceiver`). 처음엔 시스템 확인 창이 뜨고, 이 앱이 설치한 뒤부터는 안드로이드 12+에서 확인 없이 업데이트될 수 있음(`UPDATE_PACKAGES_WITHOUT_USER_ACTION`). 완전 무음 설치는 스토어 앱이 아니라 불가
+- 필요한 시스템 허용: "출처를 알 수 없는 앱 설치"를 이 앱에 허용(`REQUEST_INSTALL_PACKAGES`). 안 돼 있으면 안내 후 `ACTION_MANAGE_UNKNOWN_APP_SOURCES` 화면을 엶. 에뮬레이터 테스트: `adb shell appops set com.example.superdialer REQUEST_INSTALL_PACKAGES allow`
+- "새 버전 미리 받아 두기" 스위치(`AppSettings.autoDownloadUpdates`, 기본 꺼짐): 앱을 열 때(하루 1회) 새 버전이 있고 Wi-Fi(unmetered)이면 백그라운드로 받아 검사까지 해 두고 알림("업데이트 준비됨"), 업데이트 줄이 "설치 준비됨"으로 바뀌어 한 번만 누르면 설치. 설치는 직접 누름
+- 디버그 빌드(adb로 깐 것)는 릴리스와 서명이 달라 검사에서 "서명이 달라 덮어 설치할 수 없다"로 막힘(에뮬레이터에서 0.5.1 APK 다운로드·검사·안내까지 확인). 실제 설치 성공 경로는 릴리스 서명 빌드를 깐 폰에서만 확인 가능

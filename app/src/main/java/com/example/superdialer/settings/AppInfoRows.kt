@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.update.UpdateInstaller
+import com.example.superdialer.update.ReleaseInfo
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -10,6 +12,7 @@ import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -51,10 +54,20 @@ internal fun AppInfoRows() {
             Text(
                 when (update) {
                     is UpdateState.Available -> "새 버전 ${update.info.version} 이 있습니다"
+                    is UpdateState.Ready -> "새 버전 ${update.info.version} 설치 준비됨 · 눌러서 설치"
+                    is UpdateState.Downloading -> "새 버전 받는 중…"
                     else -> "GitHub에 올라온 최신 버전을 확인합니다"
                 },
-                color = if (update is UpdateState.Available) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                color = if (update is UpdateState.Available || update is UpdateState.Ready) MaterialTheme.colorScheme.primary else Color.Unspecified,
             )
+        },
+    )
+    ListItem(
+        colors = transparent,
+        headlineContent = { Text("새 버전 미리 받아 두기") },
+        supportingContent = { Text("앱을 열 때 새 버전이 있으면 Wi-Fi에서 설치 파일을 받아 두고 알려 줍니다. 설치는 직접 누릅니다") },
+        trailingContent = {
+            androidx.compose.material3.Switch(checked = AppSettings.autoDownloadUpdates, onCheckedChange = AppSettings::updateAutoDownloadUpdates)
         },
     )
     val crashCount = CrashLog.version.let { CrashLog.entries().size }
@@ -72,6 +85,27 @@ internal fun AppInfoRows() {
 @Composable
 private fun UpdateDialog(state: UpdateState, onDismiss: () -> Unit) {
     val context = LocalContext.current
+    var askPermission by remember { mutableStateOf<ReleaseInfo?>(null) }
+
+    fun update(info: ReleaseInfo) {
+        if (info.apkUrl == null) { openUrl(context, info.pageUrl); return }
+        if (!UpdateInstaller.canInstall(context)) { askPermission = info; return }
+        UpdateChecker.startUpdate(context, info)
+    }
+
+    askPermission?.let { info ->
+        AlertDialog(
+            onDismissRequest = { askPermission = null },
+            title = { Text("설치 허용 필요") },
+            text = { Text("앱을 직접 설치하려면 이 앱에 '출처를 알 수 없는 앱 설치'를 허용해야 합니다. 다음 화면에서 SuperDialer를 허용한 뒤 돌아와서 다시 눌러 주세요.") },
+            confirmButton = {
+                TextButton(onClick = { askPermission = null; UpdateInstaller.openInstallPermissionSettings(context) }) { Text("설정 열기") }
+            },
+            dismissButton = { TextButton(onClick = { askPermission = null }) { Text("취소") } },
+        )
+    }
+
+    val busy = state is UpdateState.Checking || state is UpdateState.Downloading || state is UpdateState.Installing
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("업데이트") },
@@ -80,24 +114,31 @@ private fun UpdateDialog(state: UpdateState, onDismiss: () -> Unit) {
                 UpdateState.Idle, UpdateState.Checking -> CircularProgressIndicator()
                 is UpdateState.UpToDate -> Text("최신 버전(${state.current})을 쓰고 있습니다.")
                 is UpdateState.Failed -> Text(state.message)
+                is UpdateState.Downloading -> androidx.compose.foundation.layout.Column {
+                    Text("${state.info.version} 받는 중… ${if (state.percent >= 0) "${state.percent}%" else ""}")
+                    if (state.percent >= 0) androidx.compose.material3.LinearProgressIndicator(progress = { state.percent / 100f }, modifier = Modifier.fillMaxWidth())
+                    else androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+                is UpdateState.Installing -> Text("설치 중입니다. 확인 창이 뜨면 '설치'를 눌러 주세요. 설치가 끝나면 앱이 다시 시작됩니다.")
+                is UpdateState.Ready -> Text("새 버전 ${state.info.version} 설치 파일을 받아 두었습니다. 설치하면 앱이 다시 시작됩니다.")
                 is UpdateState.Available -> androidx.compose.foundation.layout.Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp)) {
-                    Text("새 버전 ${state.info.version} 이 올라와 있습니다. 받은 APK를 열어 설치하면 됩니다 (디버그 빌드가 깔려 있으면 먼저 지워야 합니다).")
-                    if (state.info.notes.isNotBlank()) Text("\n" + state.info.notes.take(1200), fontSize = 12.sp)
+                    Text("새 버전 ${state.info.version} 이 올라와 있습니다. 앱 안에서 받아 바로 설치할 수 있습니다 (디버그 빌드가 깔려 있으면 먼저 지워야 합니다).")
+                    if (state.info.notes.isNotBlank()) Text(state.info.notes.take(1200), fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
                 }
             }
         },
         confirmButton = {
-            if (state is UpdateState.Available) {
-                TextButton(onClick = { openUrl(context, state.info.apkUrl ?: state.info.pageUrl); onDismiss() }) {
-                    Text(if (state.info.apkUrl != null) "APK 받기" else "릴리스 페이지")
-                }
-            } else {
-                TextButton(onClick = onDismiss) { Text("확인") }
+            when (state) {
+                is UpdateState.Available -> TextButton(onClick = { update(state.info) }) { Text("지금 업데이트") }
+                is UpdateState.Ready -> TextButton(onClick = { update(state.info) }) { Text("설치") }
+                else -> TextButton(onClick = onDismiss) { Text(if (busy) "백그라운드로" else "확인") }
             }
         },
         dismissButton = {
-            if (state is UpdateState.Available) {
-                TextButton(onClick = { openUrl(context, state.info.pageUrl); onDismiss() }) { Text("릴리스 페이지") }
+            when (state) {
+                is UpdateState.Available -> TextButton(onClick = { openUrl(context, state.info.pageUrl); onDismiss() }) { Text("릴리스 페이지") }
+                is UpdateState.Ready -> TextButton(onClick = onDismiss) { Text("나중에") }
+                else -> {}
             }
         },
     )
