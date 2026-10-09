@@ -2,7 +2,6 @@ package com.example.superdialer.messages
 
 import android.content.ContentResolver
 import android.content.Context
-import android.os.Bundle
 import android.provider.Telephony
 import com.example.superdialer.calllog.numberKey
 
@@ -34,19 +33,18 @@ class SmsRepository(private val context: Context) {
         val keys = numbers.map(::numberKey).filter { it.isNotEmpty() }.toSet()
         if (keys.isEmpty()) return emptyList()
 
-        val args = Bundle().apply {
-            putString(ContentResolver.QUERY_ARG_SQL_SORT_ORDER, "${Telephony.Sms.DATE} DESC")
-            putInt(ContentResolver.QUERY_ARG_LIMIT, SCAN_LIMIT)
-        }
+        // Some phones ignore the requested order (or limit), so never trust it: read the whole inbox (capped), keep every
+        // match and sort by date here. Stopping early after the first few matches returned the OLDEST messages there.
         val found = ArrayList<SmsMessage>()
         try {
-            resolver.query(Telephony.Sms.CONTENT_URI, PROJECTION, args, null)?.use { c ->
+            resolver.query(Telephony.Sms.CONTENT_URI, PROJECTION, null, null, "${Telephony.Sms.DATE} DESC")?.use { c ->
                 val idCol = c.getColumnIndexOrThrow(Telephony.Sms._ID)
                 val addressCol = c.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
                 val bodyCol = c.getColumnIndexOrThrow(Telephony.Sms.BODY)
                 val dateCol = c.getColumnIndexOrThrow(Telephony.Sms.DATE)
                 val typeCol = c.getColumnIndexOrThrow(Telephony.Sms.TYPE)
-                while (c.moveToNext() && found.size < limit) {
+                var scanned = 0
+                while (c.moveToNext() && scanned++ < SCAN_ROWS) {
                     val type = c.getInt(typeCol)
                     if (type == Telephony.Sms.MESSAGE_TYPE_DRAFT) continue
                     val address = c.getString(addressCol).orEmpty()
@@ -63,14 +61,18 @@ class SmsRepository(private val context: Context) {
         } catch (e: SecurityException) {
             return emptyList()
         }
-        return found
+        return newestFirst(found, limit)
     }
 
     companion object {
         const val DEFAULT_LIMIT = 30
 
-        /** How many of the newest messages are scanned for a match; keeps the lookup quick on big inboxes. */
-        private const val SCAN_LIMIT = 5000
+        /** Safety cap on how many inbox rows are read for one lookup. */
+        private const val SCAN_ROWS = 30_000
+
+        /** The [limit] most recent of [messages], newest first, whatever order they came in. */
+        fun newestFirst(messages: List<SmsMessage>, limit: Int): List<SmsMessage> =
+            messages.sortedByDescending { it.dateMillis }.take(limit)
 
         private val PROJECTION = arrayOf(
             Telephony.Sms._ID,

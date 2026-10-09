@@ -19,4 +19,13 @@ class SentSmsTest {
         assertEquals(listOf("new in", "mine", "old in"), merged.map { it.body })
         assertEquals(listOf(false, true, false), merged.map { it.outgoing })
     }
+
+    @Test fun newestFirstDoesNotTrustTheProvidersOrder() {
+        // a provider that ignores the sort order hands rows over oldest first
+        val oldestFirst = (1..100).map { SmsMessage(it.toLong(), "010", "m$it", it * 1000L, outgoing = false) }
+        val top = SmsRepository.newestFirst(oldestFirst, 30)
+        assertEquals(30, top.size)
+        assertEquals("m100", top.first().body)
+        assertEquals("m71", top.last().body)
+    }
 }
