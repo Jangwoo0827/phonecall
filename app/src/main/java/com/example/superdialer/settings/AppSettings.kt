@@ -15,6 +15,15 @@ enum class ThemeMode(val key: String, val label: String) {
     }
 }
 
+/** App text size on top of the phone's own font size setting. */
+enum class TextSize(val key: String, val label: String, val scale: Float) {
+    SMALL("small", "작게", 0.9f), NORMAL("normal", "보통", 1f), LARGE("large", "크게", 1.15f), HUGE("huge", "최대", 1.3f);
+
+    companion object {
+        fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: NORMAL
+    }
+}
+
 /** Accent color of the app palette. */
 enum class AccentColor(val key: String, val label: String) {
     GREEN("green", "초록"), BLUE("blue", "파랑"), PURPLE("purple", "보라"), ORANGE("orange", "주황"), PINK("pink", "분홍");
@@ -34,6 +43,7 @@ object AppSettings {
     private const val KEY_ACCENT = "accent"
     private const val KEY_QUICK_DIRECT = "quick_dial_direct"
     private const val KEY_AUTO_UPDATE = "auto_download_updates"
+    private const val KEY_TEXT_SIZE = "text_size"
 
     private var prefs: SharedPreferences? = null
 
@@ -49,6 +59,9 @@ object AppSettings {
         private set
 
     var accent by mutableStateOf(AccentColor.GREEN)
+        private set
+
+    var textSize by mutableStateOf(TextSize.NORMAL)
         private set
 
     /** Fetch a newer release in the background (on Wi-Fi) so installing it is one tap. */
@@ -73,6 +86,12 @@ object AppSettings {
         accent = AccentColor.fromKey(p.getString(KEY_ACCENT, null))
         quickDialCallsDirectly = p.getBoolean(KEY_QUICK_DIRECT, false)
         autoDownloadUpdates = p.getBoolean(KEY_AUTO_UPDATE, false)
+        textSize = TextSize.fromKey(p.getString(KEY_TEXT_SIZE, null))
+    }
+
+    fun updateTextSize(size: TextSize) {
+        textSize = size
+        prefs?.edit()?.putString(KEY_TEXT_SIZE, size.key)?.apply()
     }
 
     fun updateAutoDownloadUpdates(enabled: Boolean) {

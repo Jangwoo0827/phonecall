@@ -1,5 +1,6 @@
 package com.example.superdialer.account
 
+import com.example.superdialer.settings.TextSize
 import org.json.JSONObject
 import com.example.superdialer.settings.ThemeMode
 import com.example.superdialer.settings.AccentColor
@@ -301,6 +302,7 @@ object AccountManager {
                 dynamicColor = AppSettings.dynamicColor,
                 themeMode = AppSettings.themeMode.key,
                 accent = AppSettings.accent.key,
+                textSize = AppSettings.textSize.key,
                 rejectMessages = RejectMessageStore.messages.toList(),
                 checklistId = prefs?.getString(KEY_CHECKLIST, null),
             )
@@ -340,6 +342,7 @@ object AccountManager {
             AppSettings.updateDynamicColor(snapshot.dynamicColor)
             AppSettings.updateThemeMode(ThemeMode.fromKey(snapshot.themeMode))
             AppSettings.updateAccent(AccentColor.fromKey(snapshot.accent))
+            AppSettings.updateTextSize(TextSize.fromKey(snapshot.textSize))
             if (snapshot.rejectMessages.isNotEmpty()) RejectMessageStore.replaceAll(snapshot.rejectMessages)
         }
         snapshot.checklistId?.let { prefs?.edit()?.putString(KEY_CHECKLIST, it)?.apply() }

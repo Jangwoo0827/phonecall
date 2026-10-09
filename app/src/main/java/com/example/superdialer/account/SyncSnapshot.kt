@@ -17,6 +17,7 @@ data class SyncSnapshot(
     val dynamicColor: Boolean = false,
     val themeMode: String = "system",
     val accent: String = "green",
+    val textSize: String = "normal",
     val rejectMessages: List<String> = emptyList(),
     val checklistId: String? = null,
 ) {
@@ -32,6 +33,7 @@ data class SyncSnapshot(
         put("dynamicColor", dynamicColor)
         put("themeMode", themeMode)
         put("accent", accent)
+        put("textSize", textSize)
         put("rejectMessages", JSONArray(rejectMessages))
         if (checklistId != null) put("checklistId", checklistId)
     }
@@ -55,6 +57,7 @@ data class SyncSnapshot(
             dynamicColor = json.optBoolean("dynamicColor", false),
             themeMode = json.optString("themeMode", "system"),
             accent = json.optString("accent", "green"),
+            textSize = json.optString("textSize", "normal"),
             rejectMessages = stringsFrom(json.optJSONArray("rejectMessages")),
             checklistId = json.optString("checklistId", "").takeIf { isValidChecklistId(it) },
         )

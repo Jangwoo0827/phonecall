@@ -1,5 +1,6 @@
 package com.example.superdialer
 
+import com.example.superdialer.update.WhatsNewHost
 import com.example.superdialer.update.UpdateChecker
 import android.Manifest
 import android.content.Intent
@@ -62,6 +63,7 @@ class MainActivity : ComponentActivity() {
                         requestedRoute = requestedRoute,
                         onRouteHandled = { requestedRoute = null },
                     )
+                    WhatsNewHost()
                 }
             }
         }

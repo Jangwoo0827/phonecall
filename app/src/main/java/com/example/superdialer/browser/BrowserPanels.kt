@@ -1,5 +1,9 @@
 package com.example.superdialer.browser
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -90,11 +94,16 @@ internal fun BookmarksPanel(
     Surface(modifier = Modifier.fillMaxSize()) {
         Column {
             ScreenHeader("북마크", onBack)
+            var query by remember { mutableStateOf("") }
+            if (bookmarks.isNotEmpty()) PanelSearch(query) { query = it }
+            val shown = bookmarks.filter { matchesQuery(it.title, it.url, query) }
             if (bookmarks.isEmpty()) {
                 Text("북마크가 없습니다. 주소창의 별을 눌러 추가하세요.", modifier = Modifier.padding(24.dp))
+            } else if (shown.isEmpty()) {
+                Text("검색 결과가 없습니다.", modifier = Modifier.padding(24.dp))
             }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(bookmarks, key = { it.id }) { item ->
+                items(shown, key = { it.id }) { item ->
                     ListItem(
                         modifier = Modifier.clickable { onOpen(item) },
                         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -125,11 +134,16 @@ internal fun HistoryPanel(
             ScreenHeader("방문 기록", onBack) {
                 if (items.isNotEmpty()) TextButton(onClick = onClear) { Text("전체 삭제") }
             }
+            var query by remember { mutableStateOf("") }
+            if (items.isNotEmpty()) PanelSearch(query) { query = it }
+            val shown = items.filter { matchesQuery(it.title, it.url, query) }
             if (items.isEmpty()) {
                 Text("방문 기록이 없습니다.", modifier = Modifier.padding(24.dp))
+            } else if (shown.isEmpty()) {
+                Text("검색 결과가 없습니다.", modifier = Modifier.padding(24.dp))
             }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(items, key = { it.id }) { item ->
+                items(shown, key = { it.id }) { item ->
                     ListItem(
                         modifier = Modifier.clickable { onOpen(item) },
                         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -183,4 +197,27 @@ internal fun FullscreenVideo(video: View, onExit: () -> Unit) {
             onRelease = { it.removeAllViews() },
         )
     }
+}
+
+/** Case-insensitive match on the title or the address; an empty query matches everything. */
+internal fun matchesQuery(title: String, url: String, query: String): Boolean {
+    val q = query.trim()
+    return q.isEmpty() || title.contains(q, ignoreCase = true) || url.contains(q, ignoreCase = true)
+}
+
+@Composable
+private fun PanelSearch(query: String, onChange: (String) -> Unit) {
+    androidx.compose.material3.OutlinedTextField(
+        value = query,
+        onValueChange = onChange,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        placeholder = { Text("제목이나 주소로 검색") },
+        singleLine = true,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onChange("") }) { Icon(Icons.Filled.Close, contentDescription = "지우기") }
+            }
+        },
+    )
 }

@@ -72,6 +72,20 @@ internal fun ThemeRows() {
                 }
             }
         }
+        Text("글자 크기", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 16.dp))
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            TextSize.entries.forEachIndexed { index, size ->
+                SegmentedButton(
+                    selected = AppSettings.textSize == size,
+                    onClick = { AppSettings.updateTextSize(size) },
+                    shape = SegmentedButtonDefaults.itemShape(index, TextSize.entries.size),
+                    colors = SegmentedButtonDefaults.colors(
+                        activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+                ) { Text(size.label, maxLines = 1, softWrap = false) }
+            }
+        }
         if (AppSettings.dynamicColor) {
             Text(
                 "아래 '배경화면 색상 따라가기'가 켜져 있으면 강조 색은 적용되지 않습니다.",

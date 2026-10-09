@@ -15,6 +15,7 @@ class SyncSnapshotTest {
         dynamicColor = true,
         themeMode = "dark",
         accent = "purple",
+        textSize = "large",
         rejectMessages = listOf("회의 중입니다.", "나중에 연락드릴게요."),
         checklistId = "jangwoo",
     )

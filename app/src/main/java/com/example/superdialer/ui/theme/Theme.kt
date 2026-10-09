@@ -176,12 +176,21 @@ fun SuperDialerTheme(
         }
         else -> schemeFor(AppSettings.accent, darkTheme)
     }
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = AppTypography,
-        shapes = AppShapes,
-        content = content,
-    )
+    // The app's own text size multiplies the phone's font size setting.
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
+            density = density.density,
+            fontScale = density.fontScale * AppSettings.textSize.scale,
+        ),
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = AppTypography,
+            shapes = AppShapes,
+            content = content,
+        )
+    }
 }
 
 private fun isDark(background: Color) = background.luminance() < 0.5f
