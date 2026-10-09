@@ -42,7 +42,10 @@ object UpdateChecker {
     private const val LATEST_URL = "https://api.github.com/repos/Jangwoo0827/phonecall/releases/latest"
     private const val PREFS = "update_checker"
     private const val KEY_LAST_CHECK = "last_check"
-    private const val AUTO_INTERVAL_MS = 24L * 60 * 60 * 1000
+    private const val AUTO_INTERVAL_MS = 60L * 60 * 1000
+    private const val KEY_SNOOZED_VERSION = "snoozed_version"
+    private const val KEY_SNOOZED_AT = "snoozed_at"
+    private const val SNOOZE_MS = 24L * 60 * 60 * 1000
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var appContext: Context? = null
@@ -50,6 +53,36 @@ object UpdateChecker {
     /** Observable by Compose. */
     var state by mutableStateOf<UpdateState>(UpdateState.Idle)
         private set
+
+    /** A newer version to offer in a dialog when the app is opened; null when there is none or the user said "later". */
+    var prompt by mutableStateOf<ReleaseInfo?>(null)
+        private set
+
+    /** "나중에": that version is not offered in a dialog again for a day (the settings banner stays). */
+    fun snoozePrompt() {
+        val info = prompt ?: return
+        prompt = null
+        appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
+            ?.putString(KEY_SNOOZED_VERSION, info.version)
+            ?.putLong(KEY_SNOOZED_AT, System.currentTimeMillis())
+            ?.apply()
+    }
+
+    private fun isSnoozed(context: Context, version: String): Boolean {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_SNOOZED_VERSION, null) == version &&
+            System.currentTimeMillis() - prefs.getLong(KEY_SNOOZED_AT, 0L) < SNOOZE_MS
+    }
+
+    /** Offers an already-known newer version in a dialog (unless snoozed). */
+    private fun offerPrompt(context: Context, found: UpdateState) {
+        val info = when (found) {
+            is UpdateState.Available -> found.info
+            is UpdateState.Ready -> found.info
+            else -> return
+        }
+        if (prompt == null && !isSnoozed(context, info.version)) prompt = info
+    }
 
     /** The release being downloaded or installed, kept so a failure can offer it again. */
     private var working: ReleaseInfo? = null
@@ -102,9 +135,13 @@ object UpdateChecker {
         }
     }
 
-    /** At most once a day, quietly: only a found update is shown; failures and "up to date" leave the state alone. */
+    /**
+     * When the app is opened: asks GitHub at most once an hour, quietly (failures and "up to date" change nothing),
+     * and offers a found newer version in a dialog unless the user said "later" for it in the last day.
+     */
     fun checkInBackground(context: Context) {
         appContext = context.applicationContext
+        offerPrompt(context.applicationContext, state)
         val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val now = System.currentTimeMillis()
         if (now - prefs.getLong(KEY_LAST_CHECK, 0L) < AUTO_INTERVAL_MS || state == UpdateState.Checking) return
@@ -112,9 +149,12 @@ object UpdateChecker {
         val current = currentVersion(context)
         scope.launch {
             val result = fetch(current)
-            if (result !is UpdateState.Available) return@launch
-            withContext(Dispatchers.Main) { state = result }
-            if (AppSettings.autoDownloadUpdates && result.info.apkUrl != null && UpdateInstaller.isUnmetered(context)) {
+            if (result !is UpdateState.Available && result !is UpdateState.Ready) return@launch
+            withContext(Dispatchers.Main) {
+                if (state !is UpdateState.Downloading && state !is UpdateState.Installing) state = result
+                offerPrompt(context.applicationContext, result)
+            }
+            if (result is UpdateState.Available && AppSettings.autoDownloadUpdates && result.info.apkUrl != null && UpdateInstaller.isUnmetered(context)) {
                 predownload(context.applicationContext, result.info)
             }
         }

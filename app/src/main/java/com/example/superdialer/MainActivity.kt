@@ -1,5 +1,7 @@
 package com.example.superdialer
 
+import com.example.superdialer.settings.UpdatePromptHost
+import com.example.superdialer.update.WhatsNew
 import com.example.superdialer.update.WhatsNewHost
 import com.example.superdialer.update.UpdateChecker
 import android.Manifest
@@ -64,6 +66,7 @@ class MainActivity : ComponentActivity() {
                         onRouteHandled = { requestedRoute = null },
                     )
                     WhatsNewHost()
+                    if (WhatsNew.pending == null) UpdatePromptHost()
                 }
             }
         }

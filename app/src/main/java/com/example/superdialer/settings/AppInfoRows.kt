@@ -1,5 +1,6 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.update.WhatsNew
 import com.example.superdialer.update.UpdateInstaller
 import com.example.superdialer.update.ReleaseInfo
 import android.content.ActivityNotFoundException
@@ -83,7 +84,7 @@ internal fun AppInfoRows() {
 }
 
 @Composable
-private fun UpdateDialog(state: UpdateState, onDismiss: () -> Unit) {
+internal fun UpdateDialog(state: UpdateState, onDismiss: () -> Unit, onLater: (() -> Unit)? = null) {
     val context = LocalContext.current
     var askPermission by remember { mutableStateOf<ReleaseInfo?>(null) }
 
@@ -123,7 +124,11 @@ private fun UpdateDialog(state: UpdateState, onDismiss: () -> Unit) {
                 is UpdateState.Ready -> Text("새 버전 ${state.info.version} 설치 파일을 받아 두었습니다. 설치하면 앱이 다시 시작됩니다.")
                 is UpdateState.Available -> androidx.compose.foundation.layout.Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp)) {
                     Text("새 버전 ${state.info.version} 이 올라와 있습니다. 앱 안에서 받아 바로 설치할 수 있습니다 (디버그 빌드가 깔려 있으면 먼저 지워야 합니다).")
-                    if (state.info.notes.isNotBlank()) Text(state.info.notes.take(1200), fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+                    val changes = WhatsNew.cleanNotes(state.info.notes)
+                    if (changes.isNotEmpty()) {
+                        Text("바뀐 내용", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 12.dp))
+                        changes.forEach { Text("• $it", fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp)) }
+                    }
                 }
             }
         },
@@ -136,8 +141,10 @@ private fun UpdateDialog(state: UpdateState, onDismiss: () -> Unit) {
         },
         dismissButton = {
             when (state) {
-                is UpdateState.Available -> TextButton(onClick = { openUrl(context, state.info.pageUrl); onDismiss() }) { Text("릴리스 페이지") }
-                is UpdateState.Ready -> TextButton(onClick = onDismiss) { Text("나중에") }
+                is UpdateState.Available ->
+                    if (onLater != null) TextButton(onClick = onLater) { Text("나중에") }
+                    else TextButton(onClick = { openUrl(context, state.info.pageUrl); onDismiss() }) { Text("릴리스 페이지") }
+                is UpdateState.Ready -> TextButton(onClick = onLater ?: onDismiss) { Text("나중에") }
                 else -> {}
             }
         },
@@ -198,4 +205,51 @@ private fun share(context: Context, text: String) {
     } catch (e: ActivityNotFoundException) {
         Toast.makeText(context, "공유할 앱이 없습니다.", Toast.LENGTH_SHORT).show()
     }
+}
+
+/** Top-of-settings card shown while a newer version is available (or being downloaded / installed). */
+@Composable
+internal fun UpdateBanner() {
+    val state = UpdateChecker.state
+    val info = when (state) {
+        is UpdateState.Available -> state.info
+        is UpdateState.Ready -> state.info
+        is UpdateState.Downloading -> state.info
+        is UpdateState.Installing -> state.info
+        else -> return
+    }
+    var open by remember { mutableStateOf(false) }
+    androidx.compose.material3.Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp).clickable { open = true },
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+    ) {
+        ListItem(
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            headlineContent = { Text("새 버전 ${info.version} 이 있어요", color = MaterialTheme.colorScheme.onPrimaryContainer) },
+            supportingContent = {
+                Text(
+                    when (state) {
+                        is UpdateState.Downloading -> "받는 중… ${if (state.percent >= 0) "${state.percent}%" else ""}"
+                        is UpdateState.Installing -> "설치 중…"
+                        is UpdateState.Ready -> "설치 준비됨 · 눌러서 설치"
+                        else -> "눌러서 업데이트"
+                    },
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            },
+        )
+    }
+    if (open) UpdateDialog(UpdateChecker.state, onDismiss = { open = false })
+}
+
+/** Opens the update dialog at app start when a newer version is waiting (place once near the app root). */
+@Composable
+fun UpdatePromptHost() {
+    if (UpdateChecker.prompt == null) return
+    UpdateDialog(
+        state = UpdateChecker.state,
+        onDismiss = UpdateChecker::snoozePrompt,
+        onLater = UpdateChecker::snoozePrompt,
+    )
 }

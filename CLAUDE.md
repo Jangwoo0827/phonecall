@@ -266,3 +266,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 업데이트 후 바뀐 내용(`update/WhatsNew`): 마지막으로 본 버전(`whats_new` prefs)과 지금 `versionName`이 다르면(새 설치는 제외) 앱을 처음 열 때 한 번 "x.y.z 업데이트 완료" 창. 내용은 GitHub `releases/tags/v<버전>`의 본문 중 "## 변경 내용" 아래 `- ` 줄만(`cleanNotes`), 못 가져오면 기본 문구. 실패해도 매 시작마다 뜨지 않도록 버전은 먼저 기록. 에뮬레이터 테스트: `run-as`로 `shared_prefs/whats_new.xml`의 `seen_version`을 옛 버전으로 바꾸고 실행(Git Bash에서는 `MSYS_NO_PATHCONV=1` 필요)
 - 글자 크기(`AppSettings.textSize`, 작게/보통/크게/최대): `SuperDialerTheme`이 `LocalDensity`의 fontScale에 곱함(폰의 글꼴 크기 설정 위에 더해짐). 설정 > 화면, 계정 동기화 대상(`SyncSnapshot.textSize`)
 - 북마크·방문 기록 패널 맨 위 검색창: 제목이나 주소에 포함되면 표시(`matchesQuery`, 대소문자 무시)
+
+## 새 버전 알림 (시작 창 + 설정 배너)
+- 앱을 열 때마다(`MainActivity.onStart` → `UpdateChecker.checkInBackground`) GitHub를 최대 1시간에 한 번 확인(조용히, 실패/최신이면 변화 없음). 새 버전이 있으면 시작 직후 `UpdatePromptHost` 창("지금 업데이트 / 나중에", 바뀐 내용 목록 포함). "나중에"(또는 창 밖 터치)를 누르면 그 버전은 24시간 동안 창으로 다시 묻지 않음(`snoozePrompt`). WhatsNew 창이 떠 있을 땐 뒤로 미룸
+- 설정 탭 맨 위 `UpdateBanner` 카드: 새 버전이 있거나 받는 중/설치 준비/설치 중일 때만 보이고 누르면 같은 업데이트 창이 열림(나중에를 눌러도 배너는 남음). "새 버전 미리 받아 두기"를 켜 두면 Wi-Fi에서 미리 받아 둬서 창이 "설치"로 바로 뜸
+- 확인은 이 앱 안에서 실제로 `v0.5.3 → v0.5.4` 업데이트가 성공해 검증됨(사용자 폰). 업데이트 줄은 설정 > 앱 정보에도 그대로 있음

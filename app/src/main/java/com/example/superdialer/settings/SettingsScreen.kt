@@ -100,6 +100,7 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState()),
     ) {
         ScreenHeader("설정", onBack = null)
+        UpdateBanner()
 
         SettingsGroup("계정") {
             AccountRows()
