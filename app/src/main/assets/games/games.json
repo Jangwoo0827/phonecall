@@ -19,5 +19,12 @@
     "description": "공을 튕겨 벽돌을 부수세요",
     "path": "breakout/index.html",
     "color": "#E53935"
+  },
+  {
+    "id": "crossyroads",
+    "title": "Crossy Chicks",
+    "description": "차·강·기차를 피해 끝없이 건너세요",
+    "path": "crossyroads/index.html",
+    "color": "#FF7A59"
   }
 ]

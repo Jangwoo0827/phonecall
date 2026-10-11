@@ -22,6 +22,7 @@ internal fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
             "2048" -> draw2048()
             "snake" -> drawSnake()
             "breakout" -> drawBreakout()
+            "crossyroads" -> drawCrossy()
             else -> drawDots()
         }
     }
@@ -90,6 +91,25 @@ private fun DrawScope.drawBreakout() {
     }
     drawCircle(Color(0xFFFFEB3B), w * 0.055f, Offset(w * 0.6f, w * 0.64f))
     drawRoundRect(white, Offset(w * 0.3f, w * 0.8f), Size(w * 0.4f, brickH * 0.9f), radius)
+}
+
+/** A boxy chick standing on a lane with a car block coming along the road. */
+private fun DrawScope.drawCrossy() {
+    val w = size.width
+    val radius = CornerRadius(w * 0.04f)
+    // road band with dashed lane marking
+    drawRoundRect(Color(0x55000000), Offset(w * 0.08f, w * 0.52f), Size(w * 0.84f, w * 0.34f), radius)
+    for (i in 0 until 4) {
+        drawRoundRect(soft(0.7f), Offset(w * (0.14f + i * 0.2f), w * 0.685f), Size(w * 0.11f, w * 0.03f), CornerRadius(w * 0.015f))
+    }
+    // car
+    drawRoundRect(Color(0xFFFFEB3B), Offset(w * 0.5f, w * 0.58f), Size(w * 0.34f, w * 0.15f), radius)
+    drawRoundRect(soft(0.9f), Offset(w * 0.58f, w * 0.545f), Size(w * 0.17f, w * 0.07f), CornerRadius(w * 0.02f))
+    // chick: body, beak, eye
+    drawRoundRect(white, Offset(w * 0.2f, w * 0.14f), Size(w * 0.3f, w * 0.34f), radius)
+    drawRoundRect(Color(0xFFFFB300), Offset(w * 0.47f, w * 0.27f), Size(w * 0.1f, w * 0.07f), CornerRadius(w * 0.015f))
+    drawRoundRect(Color(0xFFE53935), Offset(w * 0.3f, w * 0.1f), Size(w * 0.1f, w * 0.06f), CornerRadius(w * 0.015f))
+    drawCircle(Color(0xCC000000), w * 0.024f, Offset(w * 0.42f, w * 0.25f))
 }
 
 private fun DrawScope.drawDots() {
