@@ -193,16 +193,17 @@ abstract class BrowserDatabase : RoomDatabase() {
         }
 
         fun get(context: Context): BrowserDatabase = instance ?: synchronized(this) {
-            instance ?: Room.databaseBuilder(
-                context.applicationContext, BrowserDatabase::class.java, "browser.db"
-            )
+            instance ?: build(context, "browser.db").also { instance = it }
+        }
+
+        /** The real database setup (migrations + fresh-install seed); a separate [name] lets tests start from nothing. */
+        internal fun build(context: Context, name: String): BrowserDatabase =
+            Room.databaseBuilder(context.applicationContext, BrowserDatabase::class.java, name)
                 .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .addCallback(object : Callback() {
                     // Fresh installs only; upgraded databases are seeded by the migration.
                     override fun onCreate(db: SupportSQLiteDatabase) = seed(db)
                 })
                 .build()
-                .also { instance = it }
-        }
     }
 }

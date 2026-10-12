@@ -272,3 +272,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 앱을 열 때마다(`MainActivity.onStart` → `UpdateChecker.checkInBackground`) GitHub를 최대 1시간에 한 번 확인(조용히, 실패/최신이면 변화 없음). 새 버전이 있으면 시작 직후 `UpdatePromptHost` 창("지금 업데이트 / 나중에", 바뀐 내용 목록 포함). "나중에"(또는 창 밖 터치)를 누르면 그 버전은 24시간 동안 창으로 다시 묻지 않음(`snoozePrompt`). WhatsNew 창이 떠 있을 땐 뒤로 미룸
 - 설정 탭 맨 위 `UpdateBanner` 카드: 새 버전이 있거나 받는 중/설치 준비/설치 중일 때만 보이고 누르면 같은 업데이트 창이 열림(나중에를 눌러도 배너는 남음). "새 버전 미리 받아 두기"를 켜 두면 Wi-Fi에서 미리 받아 둬서 창이 "설치"로 바로 뜸
 - 확인은 이 앱 안에서 실제로 `v0.5.3 → v0.5.4` 업데이트가 성공해 검증됨(사용자 폰). 업데이트 줄은 설정 > 앱 정보에도 그대로 있음
+
+## UI 테스트 (androidTest, Compose)
+- `app/src/androidTest/`: 에뮬레이터/폰에서 도는 계측 테스트. 실행: `ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest` (에뮬레이터가 켜져 있어야 함, 약 1~2분). 한 클래스만: `-Pandroid.testInstrumentationRunnerArguments.class=com.example.superdialer.FreshInstallTest`. GitHub Actions 릴리스는 에뮬레이터가 없어 단위 테스트(`testDebugUnitTest`)만 돌림 — 큰 변경 뒤엔 로컬에서 이것도 돌릴 것
+- `AppTestBase`: 권한을 미리 허용하고 온보딩 완료 + 업데이트 확인 건너뛰기(`update_checker.last_check`) 상태로 `MainActivity`를 띄움. `tab(라벨)`은 하단 탭(`Role.Tab`)만 집음(같은 글자가 화면 제목/목록에도 있어서), `waitFor`는 액티비티 재생성 중 compose 트리가 잠깐 없을 때도 재시도
+- `AppSmokeTest`(탭 5개/키패드 입력·포맷·지우기·0 길게=+/탭 이동), `GamesAndBrowserTest`(시작 페이지 기본 타일, 게임 4종 카드), `FreshInstallTest`(**새 설치 DB 생성+시딩** — v0.5.2 크래시를 재현해서 실제로 잡는 것까지 확인함)
+- 키패드 키와 번호 표시에 `testTag`(`key_<문자>`, `number_display`)가 있음: 화면에 같은 글자("0" 키와 입력한 "0")가 둘이라 글자로는 못 집음. UI를 바꿀 땐 이 태그를 유지할 것
+- 새 화면 테스트를 추가할 땐 `AppTestBase`를 상속하고, 실제 연락처/통화 기록 내용에 의존하지 않게(기기에 있는 데이터가 달라도 통과해야 함) 쓸 것. 실기기(S23)에서는 돌리지 말 것(터치 입력이 실제 발신으로 이어질 수 있음)

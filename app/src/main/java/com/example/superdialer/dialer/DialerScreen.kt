@@ -1,5 +1,6 @@
 package com.example.superdialer.dialer
 
+import androidx.compose.ui.platform.testTag
 import android.widget.Toast
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyRow
@@ -233,7 +234,7 @@ private fun NumberDisplay(
         var fontSize by remember(formatted) { mutableStateOf(42.sp) }
         Text(
             text = formatted,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).testTag("number_display"),
             fontSize = fontSize,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
@@ -283,6 +284,7 @@ private fun DialKey(
         Box(
             modifier = Modifier
                 .size(diameter)
+                .testTag("key_${key.char}")
                 .clip(CircleShape)
                 .background(if (pressed) pressedContainer else container)
                 .pointerInput(key) {

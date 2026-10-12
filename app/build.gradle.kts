@@ -16,6 +16,7 @@ android {
         // CI sets these from the release tag (v1.2.3 -> "1.2.3") and the run number; local builds use the defaults.
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = System.getenv("VERSION_NAME") ?: "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     // Release signing comes from the environment (GitHub Secrets in CI). Without KEYSTORE_FILE no signing
@@ -73,4 +74,10 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation("org.json:json:20240303")
     debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }
