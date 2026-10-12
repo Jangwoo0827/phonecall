@@ -38,10 +38,18 @@ internal fun AccountRows() {
     val transparent = ListItemDefaults.colors(containerColor = Color.Transparent)
 
     if (!AccountManager.signedIn) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        ListItem(
+            colors = transparent,
+            modifier = Modifier.clickable(enabled = !AccountManager.busy) { AccountManager.startGoogleSignIn(context) },
+            headlineContent = { Text("Google로 계속하기") },
+            supportingContent = { Text("구글 계정으로 로그인합니다 (브라우저가 열렸다가 돌아옵니다)") },
+            trailingContent = { if (AccountManager.busy) CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(4.dp)) },
+        )
         ListItem(
             colors = transparent,
             modifier = Modifier.clickable { dialogOpen = true },
-            headlineContent = { Text("로그인 / 회원가입") },
+            headlineContent = { Text("이메일로 로그인 / 회원가입") },
             supportingContent = {
                 Text("로그인하면 스피드 다이얼·북마크·게임 점수·설정이 다른 폰과 동기화되고, 체크리스트에 자동 로그인됩니다. 로그인 없이도 모든 기능을 쓸 수 있습니다")
             },

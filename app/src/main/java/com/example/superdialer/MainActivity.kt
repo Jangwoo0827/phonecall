@@ -97,6 +97,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent) {
+        // The browser coming back from Google sign-in (superdialer://auth?code=...): finish the login, show the account.
+        if (AccountManager.handleOAuthCallback(intent.dataString)) {
+            requestedRoute = TopLevelDestination.Settings.route
+            return
+        }
         if (dialerViewModel.handleIntent(intent)) return
         // http(s) links, only offered by the optional ExternalLinkAlias (see Settings).
         val link = intent.data

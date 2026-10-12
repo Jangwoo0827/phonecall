@@ -45,6 +45,8 @@ object AccountManager {
     private const val KEY_LAST_SYNC = "last_sync_ms"
     private const val KEY_CHECKLIST = "checklist_id"
     private const val KEY_NICKNAME = "nickname"
+    private const val KEY_PKCE_VERIFIER = "pkce_verifier"
+    private const val KEY_PKCE_STARTED = "pkce_started_at"
     private const val MIN_AUTO_SYNC_GAP_MS = 15_000L
 
     private var appContext: Context? = null
@@ -184,6 +186,81 @@ object AccountManager {
                 post(e.userMessage)
             }
             withContext(Dispatchers.Main) { busy = false; onDone(ok) }
+        }
+    }
+
+    // --- Google sign-in (browser flow with PKCE, see GoogleSignIn) -------------------------------
+
+    /**
+     * Opens Google sign-in in the browser. First asks the server whether Google sign-in is switched on, so a project
+     * without it shows a clear message instead of an error page. The login comes back through [handleOAuthCallback].
+     */
+    fun startGoogleSignIn(context: Context) {
+        if (busy) return
+        busy = true
+        message = null
+        val app = context.applicationContext
+        val verifier = GoogleSignIn.newVerifier()
+        val challenge = GoogleSignIn.challenge(verifier)
+        scope.launch {
+            val problem = SupabaseApi.googleUnavailable(challenge)
+            withContext(Dispatchers.Main) {
+                busy = false
+                if (problem != null) {
+                    message = problem
+                    return@withContext
+                }
+                prefs?.edit()
+                    ?.putString(KEY_PKCE_VERIFIER, verifier)
+                    ?.putLong(KEY_PKCE_STARTED, System.currentTimeMillis())
+                    ?.apply()
+                try {
+                    app.startActivity(
+                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(SupabaseApi.googleAuthorizeUrl(challenge)))
+                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                } catch (e: android.content.ActivityNotFoundException) {
+                    message = "웹 브라우저를 열 수 없어요."
+                }
+            }
+        }
+    }
+
+    /**
+     * The address the browser came back with. Returns false when it is not a sign-in redirect. A code is only accepted
+     * for a sign-in this app started in the last 10 minutes (it needs the stored PKCE verifier), and only once.
+     */
+    fun handleOAuthCallback(url: String?): Boolean {
+        when (val callback = GoogleSignIn.parseCallback(url)) {
+            GoogleSignIn.Callback.NotOurs -> return false
+            is GoogleSignIn.Callback.Failure -> {
+                message = callback.message
+                return true
+            }
+            is GoogleSignIn.Callback.Code -> {
+                val p = prefs
+                val verifier = p?.getString(KEY_PKCE_VERIFIER, null)
+                val started = p?.getLong(KEY_PKCE_STARTED, 0L) ?: 0L
+                p?.edit()?.remove(KEY_PKCE_VERIFIER)?.remove(KEY_PKCE_STARTED)?.apply()
+                if (verifier == null || !GoogleSignIn.isPendingFresh(started, System.currentTimeMillis())) {
+                    message = "로그인 요청이 만료되었거나 이 앱에서 시작한 것이 아니에요. 다시 시도해 주세요."
+                    return true
+                }
+                busy = true
+                message = null
+                scope.launch {
+                    try {
+                        saveSession(SupabaseApi.exchangeCode(callback.code, verifier))
+                        post(null)
+                        runSync()
+                        GameScores.all().forEach { (game, score) -> pushScore(game, score) }
+                    } catch (e: ApiError) {
+                        post(e.userMessage)
+                    }
+                    withContext(Dispatchers.Main) { busy = false }
+                }
+                return true
+            }
         }
     }
 

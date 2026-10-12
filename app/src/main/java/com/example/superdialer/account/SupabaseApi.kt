@@ -49,6 +49,51 @@ object SupabaseApi {
         return parseSession(body, System.currentTimeMillis()) ?: throw ApiError("로그인 응답을 읽을 수 없습니다.")
     }
 
+    /** The browser address that starts Google sign-in; the server sends the login back to [GoogleSignIn.REDIRECT_URI]. */
+    fun googleAuthorizeUrl(challenge: String): String =
+        "$URL/auth/v1/authorize?provider=google" +
+            "&redirect_to=${java.net.URLEncoder.encode(GoogleSignIn.REDIRECT_URI, "UTF-8")}" +
+            "&code_challenge=$challenge&code_challenge_method=s256"
+
+    /**
+     * Null when Google sign-in is switched on for the project (the authorize address answers with a redirect to
+     * Google); otherwise a message to show. Blocking.
+     */
+    fun googleUnavailable(challenge: String): String? {
+        val connection = try {
+            URL(googleAuthorizeUrl(challenge)).openConnection() as HttpURLConnection
+        } catch (e: IOException) {
+            return "서버에 연결할 수 없습니다."
+        }
+        return try {
+            connection.instanceFollowRedirects = false
+            connection.connectTimeout = TIMEOUT_MS
+            connection.readTimeout = TIMEOUT_MS
+            connection.setRequestProperty("apikey", PUBLISHABLE_KEY)
+            val code = connection.responseCode
+            if (code in 300..399) {
+                null
+            } else {
+                val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+                googleUnavailableMessage(code, stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty())
+            }
+        } catch (e: IOException) {
+            "네트워크에 연결할 수 없습니다."
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    /** Trades the one-time code from the Google sign-in redirect for a session (PKCE: needs the original verifier). */
+    fun exchangeCode(authCode: String, verifier: String): AuthSession {
+        val (code, body) = request(
+            "POST", "/auth/v1/token?grant_type=pkce",
+            JSONObject().put("auth_code", authCode).put("code_verifier", verifier),
+        )
+        if (code !in 200..299) throw ApiError(errorMessage(code, body))
+        return parseSession(body, System.currentTimeMillis()) ?: throw ApiError("로그인 응답을 읽을 수 없습니다.")
+    }
+
     fun refresh(refreshToken: String): AuthSession {
         val (code, body) = request("POST", "/auth/v1/token?grant_type=refresh_token", JSONObject().put("refresh_token", refreshToken))
         if (code in 400..401) throw ApiError("로그인이 만료되었습니다. 다시 로그인해 주세요.", authExpired = true)
@@ -174,6 +219,14 @@ object SupabaseApi {
         }
     } catch (e: JSONException) {
         emptyList()
+    }
+
+    /** Why the authorize address did not redirect: usually the Google provider is not enabled in the Supabase project. */
+    fun googleUnavailableMessage(code: Int, body: String): String {
+        if ("not enabled" in body.lowercase()) {
+            return "구글 로그인이 아직 켜져 있지 않아요. (Supabase 대시보드 Authentication > Providers > Google 설정이 필요해요)"
+        }
+        return errorMessage(code, body)
     }
 
     /** Turns the server's error payload into a short Korean message. */

@@ -44,6 +44,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Google sign-in comes back here (see GoogleSignIn) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="superdialer" android:host="auth" />
+            </intent-filter>
+
             <!-- Long-press the launcher icon: jump straight to a tab (see MainActivity.handleIntent) -->
             <meta-data
                 android:name="android.app.shortcuts"
