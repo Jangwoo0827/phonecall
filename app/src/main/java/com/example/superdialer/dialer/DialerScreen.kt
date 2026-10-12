@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -76,7 +77,7 @@ fun DialerScreen(
     viewModel: DialerViewModel,
     modifier: Modifier = Modifier,
     suggestions: List<Suggestion> = emptyList(),
-    favorites: List<Suggestion> = emptyList(),
+    quickPicks: List<Suggestion> = emptyList(),
     onRefreshSources: () -> Unit = {},
     dtmfEnabled: Boolean = AppSettings.dtmfEnabled,
 ) {
@@ -135,7 +136,7 @@ fun DialerScreen(
         // Always the same height, so the keypad below keeps its size whether or not anything matches.
         // With nothing typed the strip shows the starred contacts; tapping one fills in its number.
         SuggestionStrip(
-            suggestions = if (number.isEmpty()) favorites else suggestions,
+            suggestions = if (number.isEmpty()) quickPicks else suggestions,
             onPick = { viewModel.replaceNumber(it.number) },
             showAddContact = number.length >= 3 && suggestions.none { it.fromContact },
             onAddContact = { context.addContact(number) },
@@ -353,6 +354,7 @@ private fun SuggestionStrip(
                 modifier = Modifier
                     .clip(RoundedCornerShape(28.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .testTag(if (suggestion.recent) "recent_chip" else "suggestion_chip")
                     .clickable { onPick(suggestion) }
                     .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -375,6 +377,14 @@ private fun SuggestionStrip(
                             maxLines = 1,
                         )
                     }
+                }
+                if (suggestion.recent) {
+                    Icon(
+                        Icons.Filled.History,
+                        contentDescription = "최근 통화",
+                        modifier = Modifier.padding(start = 8.dp).size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

@@ -1,5 +1,7 @@
 package com.example.superdialer.navigation
 
+import com.example.superdialer.calllog.numberKey
+import com.example.superdialer.dialer.recentCallSuggestions
 import com.example.superdialer.contacts.DuplicateContactsScreen
 import com.example.superdialer.contacts.ContactGroupsScreen
 import com.example.superdialer.dialer.Suggestion
@@ -81,11 +83,12 @@ fun SuperDialerApp(
         }
     }
 
-    // Starred contacts, shown on the keypad while no number is typed.
-    val favorites by remember {
+    // Shown on the keypad while no number is typed: starred contacts, then the most recent calls.
+    val quickPicks by remember {
         derivedStateOf {
-            contactsViewModel.contacts.filter { it.starred && it.numbers.isNotEmpty() }
+            val starred = contactsViewModel.contacts.filter { it.starred && it.numbers.isNotEmpty() }
                 .take(10).map { Suggestion(it.name, it.numbers.first(), fromContact = true) }
+            starred + recentCallSuggestions(callLogViewModel.entries, skip = starred.map { numberKey(it.number) }.toSet())
         }
     }
 
@@ -165,7 +168,7 @@ fun SuperDialerApp(
                 DialerScreen(
                     viewModel = dialerViewModel,
                     suggestions = suggestions,
-                    favorites = favorites,
+                    quickPicks = quickPicks,
                     onRefreshSources = {
                         if (context.hasPermission(Manifest.permission.READ_CONTACTS)) contactsViewModel.refresh()
                         if (context.hasPermission(Manifest.permission.READ_CALL_LOG)) callLogViewModel.refresh()

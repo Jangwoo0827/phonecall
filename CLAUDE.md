@@ -211,6 +211,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## 즐겨찾기 / 단축 다이얼
 - 키패드: 번호를 입력하지 않았을 때 자동완성 줄(`SuggestionStrip`)에 별표(즐겨찾기) 연락처를 칩으로 보여줌(최대 10명, 가로 스크롤). 칩을 누르면 번호만 채워지고 통화 버튼을 눌러야 걸림
+- 같은 줄 뒤쪽에 **최근 통화** 칩(시계 아이콘, 최대 8개): 번호별 1개, 최신순, 즐겨찾기와 겹치는 번호·번호 없는 비공개 발신자는 제외(`recentCallSuggestions`, 테스트 있음). 칩에 `testTag`(`suggestion_chip`/`recent_chip`). UI 테스트 `RecentCallsChipTest`가 통화 기록 한 줄을 넣고 칩 표시·탭으로 번호 채움까지 확인
 - 단축 다이얼(`dialer/QuickDials`, 설정 > 키패드 > 단축 다이얼 `settings/quickdial`): 숫자 1~9에 연락처(또는 직접 입력한 번호)를 지정, 키패드에서 그 숫자를 길게 누르면 번호가 채워짐(0 길게 = +). "길게 누르면 바로 발신" 스위치(`AppSettings.quickDialCallsDirectly`, 기본 꺼짐)를 켜면 바로 발신. 전화번호가 들어 있어서 이 폰에만 저장하고 계정과 동기화하지 않음. 테스트 `QuickDialsTest`
 
 ## 통화 메모 (calllog/CallNotes)
