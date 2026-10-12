@@ -278,6 +278,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - `app/src/androidTest/`: 에뮬레이터/폰에서 도는 계측 테스트. 실행: `ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest` (에뮬레이터가 켜져 있어야 함, 약 1~2분). 한 클래스만: `-Pandroid.testInstrumentationRunnerArguments.class=com.example.superdialer.FreshInstallTest`. GitHub Actions 릴리스는 에뮬레이터가 없어 단위 테스트(`testDebugUnitTest`)만 돌림 — 큰 변경 뒤엔 로컬에서 이것도 돌릴 것
 - `AppTestBase`: 권한을 미리 허용하고 온보딩 완료 + 업데이트 확인 건너뛰기(`update_checker.last_check`) 상태로 `MainActivity`를 띄움. `tab(라벨)`은 하단 탭(`Role.Tab`)만 집음(같은 글자가 화면 제목/목록에도 있어서), `waitFor`는 액티비티 재생성 중 compose 트리가 잠깐 없을 때도 재시도
 - `AppSmokeTest`(탭 5개/키패드 입력·포맷·지우기·0 길게=+/탭 이동), `GamesAndBrowserTest`(시작 페이지 기본 타일, 게임 4종 카드), `FreshInstallTest`(**새 설치 DB 생성+시딩** — v0.5.2 크래시를 재현해서 실제로 잡는 것까지 확인함)
+- 화면별 테스트(총 32개): `CallLogScreenTest`(통화 5건을 직접 넣고 목록·"(2)" 묶음·부재중 필터·검색·행 펼침), `ContactsScreenTest`(연락처를 직접 만들어 목록·이름/초성 검색·상세·뒤로), `SettingsScreenTest`(키패드음 스위치, 글자 크기, 차단 관리/거절 메시지 열고 닫기, 탭 재탭 복귀), `BrowserAndGamesFlowTest`(시작 페이지 링크 추가·잘못된 주소 거부·게임 열고 뒤로), `ShortcutsTest`, `RecentCallsChipTest`
+- 테스트 데이터는 `TestData`(번호 `010-7000-xxxx`, 이름 "테스트…")로 직접 넣고 `@After`에서 지움. 기기에 있는 실제 데이터와 무관하게 통과해야 함. `pressBack()`/`waitGone()`/`waitFor()` 도우미는 `AppTestBase`
+- **테스트 간 상태 누수 주의**: 앱이 브라우저/게임 세션을 프로세스에 3분 유지하고 `browser_session` prefs에도 저장해서, 앞 테스트가 연 게임 목록이 다음 테스트에 나타났음. `AppTestBase`가 매 테스트 전에 prefs를 비우고 `hubSection`/`GameSession`을 초기화함. 새 테스트가 다른 곳에 상태를 남기면 같은 방식으로 초기화할 것
+- 시작 페이지의 "추가" 타일은 글자가 아니라 위쪽 원 아이콘(접근성 설명 "추가")만 클릭됨
 - 키패드 키와 번호 표시에 `testTag`(`key_<문자>`, `number_display`)가 있음: 화면에 같은 글자("0" 키와 입력한 "0")가 둘이라 글자로는 못 집음. UI를 바꿀 땐 이 태그를 유지할 것
 - 새 화면 테스트를 추가할 땐 `AppTestBase`를 상속하고, 실제 연락처/통화 기록 내용에 의존하지 않게(기기에 있는 데이터가 달라도 통과해야 함) 쓸 것. 실기기(S23)에서는 돌리지 말 것(터치 입력이 실제 발신으로 이어질 수 있음)
 

@@ -31,6 +31,7 @@ abstract class AppTestBase {
     @get:Rule(order = 0)
     val permissions: GrantPermissionRule = GrantPermissionRule.grant(
         Manifest.permission.READ_CONTACTS,
+        Manifest.permission.WRITE_CONTACTS,
         Manifest.permission.READ_CALL_LOG,
         Manifest.permission.WRITE_CALL_LOG,
         Manifest.permission.CALL_PHONE,
@@ -54,7 +55,20 @@ abstract class AppTestBase {
         // "checked just now": the startup update check (an internet call that can open a dialog) is skipped.
         context.getSharedPreferences("update_checker", Context.MODE_PRIVATE).edit()
             .putLong("last_check", System.currentTimeMillis()).commit()
+        resetBrowserAndGameState(context)
         if (autoLaunch) launch()
+    }
+
+    /**
+     * The app keeps the browser/game session alive for a while after it is left (and saves it for the next start), so
+     * what one test leaves open (the games list, a game) would show up in the next one. Every test starts clean.
+     */
+    private fun resetBrowserAndGameState(context: Context) {
+        context.getSharedPreferences("browser_session", Context.MODE_PRIVATE).edit().clear().commit()
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            com.example.superdialer.browser.BrowserSession.peek()?.hubSection = 0
+            com.example.superdialer.games.GameSession.close()
+        }
     }
 
     protected fun launch(intent: Intent = Intent(ApplicationProvider.getApplicationContext<Context>(), MainActivity::class.java)) {
@@ -71,6 +85,13 @@ abstract class AppTestBase {
     /** The bottom bar item (the same word also appears as a screen title or row text elsewhere). */
     protected fun tabMatcher(label: String): SemanticsMatcher =
         hasText(label).and(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+
+    /** The system back gesture/button. */
+    protected fun pressBack() {
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+            .performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+        compose.waitForIdle()
+    }
 
     protected fun tab(label: String) {
         waitFor(tabMatcher(label))
@@ -92,6 +113,17 @@ abstract class AppTestBase {
             // What was on screen instead (adb logcat -s UiTestTree)
             runCatching { compose.onRoot().printToLog("UiTestTree") }
             throw e
+        }
+    }
+
+    /** Waits until nothing matches any more (e.g. the screen that was just closed has left the composition). */
+    protected fun waitGone(matcher: SemanticsMatcher, timeoutMs: Long = 15_000) {
+        compose.waitUntil(timeoutMs) {
+            try {
+                compose.onAllNodes(matcher).fetchSemanticsNodes().isEmpty()
+            } catch (e: IllegalStateException) {
+                false
+            }
         }
     }
 

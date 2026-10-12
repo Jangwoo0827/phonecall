@@ -1,5 +1,6 @@
 package com.example.superdialer.settings
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
@@ -152,7 +153,11 @@ fun SettingsScreen(
                 headlineContent = { Text("키패드음") },
                 supportingContent = { Text("번호를 누를 때 DTMF 소리를 재생합니다") },
                 trailingContent = {
-                    Switch(checked = AppSettings.dtmfEnabled, onCheckedChange = AppSettings::updateDtmfEnabled)
+                    Switch(
+                        checked = AppSettings.dtmfEnabled,
+                        onCheckedChange = AppSettings::updateDtmfEnabled,
+                        modifier = Modifier.testTag("switch_dtmf"),
+                    )
                 },
             )
         }
