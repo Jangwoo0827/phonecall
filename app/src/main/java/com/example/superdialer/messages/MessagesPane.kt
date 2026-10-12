@@ -87,15 +87,15 @@ fun MessagesPane(
             messages.isEmpty() && viewModel.loading ->
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally).padding(24.dp))
             messages.isEmpty() -> Text(
-                "주고받은 문자가 없습니다.\n(MMS와 채팅+·카카오톡 등 채팅 메시지는 표시되지 않습니다)",
+                "주고받은 문자가 없습니다.\n(채팅+(RCS)·카카오톡 등 채팅 메시지는 표시되지 않습니다)",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 16.dp),
             )
             else -> {
-                // Where the list starts, so a missing recent chat is obvious: Samsung "채팅+"/RCS and MMS chats are not readable by apps.
+                // Where the list starts, so a missing recent chat is obvious: Samsung "채팅+"/RCS chats are not readable by apps.
                 Text(
-                    "가장 최근 문자 · ${formatDateTime(messages.first().dateMillis)}\n채팅+(RCS)·MMS로 주고받은 대화는 여기에 보이지 않아요",
+                    "가장 최근 문자 · ${formatDateTime(messages.first().dateMillis)}\n채팅+(RCS)로 주고받은 대화는 여기에 보이지 않아요",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -176,9 +176,12 @@ private fun Bubble(message: SmsMessage, onRetry: () -> Unit) {
             modifier = Modifier.widthIn(max = 300.dp),
         ) {
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                Text(message.body, style = MaterialTheme.typography.bodyMedium)
+                if (message.attachments.isNotEmpty()) MmsAttachments(message.attachments)
+                if (message.body.isNotBlank() || message.attachments.isEmpty()) {
+                    Text(message.body, style = MaterialTheme.typography.bodyMedium)
+                }
                 Text(
-                    formatDateTime(message.dateMillis) + when {
+                    formatDateTime(message.dateMillis) + (if (message.isMms) " · MMS" else "") + when {
                         message.sentId != 0L && message.status == SentMessage.SENDING -> " · 보내는 중"
                         message.sentId != 0L && message.status == SentMessage.FAILED -> " · 전송 실패"
                         else -> ""

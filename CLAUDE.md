@@ -131,7 +131,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 문자 내용 보기 (messages/)
 - 연락처 상세와 통화 내역 화면에 "통화 기록 / 메시지" 전환 칩. 메시지는 말풍선(받은 문자 왼쪽, 보낸 문자 오른쪽)으로 최근 30건, 가장 최근 것이 맨 위. 폰(삼성)의 문자 제공자는 요청한 정렬/limit을 무시해 앞에서 30개(=가장 오래된 것)만 읽던 버그가 있었음 → 지금은 받은 행을 코드에서 날짜순으로 정렬해 최신 30개를 고름(`SmsRepository.newestFirst`). 아래 "문자 앱에서 이어서 보기"는 시스템 문자 앱을 `smsto:`로 엶
 - `SmsRepository`: `Telephony.Sms` 프로바이더(READ_SMS 필요)에서 최근 5000건을 훑어 `numberKey`가 같은 번호(010… = +82 10…)만 골라냄. 화면을 열 때만 읽고 저장하지 않음. `MessagesPane`이 권한 요청(허용/설정 열기)까지 처리
-- 한계: 일반 SMS만 보임. MMS, RCS(채팅+), 카카오톡 같은 채팅 메시지는 SMS 프로바이더에 없어 표시되지 않음
+- **MMS 표시**(`MmsRepository`, `MmsViews`): 사진·그룹·긴 문자도 같은 목록에 시간순으로 섞여 나옴(말풍선에 "· MMS", 사진은 썸네일, 탭하면 크게, 동영상/음성/연락처 카드는 "첨부 · 동영상" 같은 글자). 읽기만 하므로 기본 문자 앱 지정 불필요(READ_SMS). 스레드는 `content://mms-sms/canonical-addresses` + `conversations?simple=true`(`recipient_ids`)로 찾고, 못 찾으면 최근 300건을 주소 행(`content://mms/<id>/addr`)으로 훑음. MMS 날짜는 **초 단위**(SMS는 밀리초). 사진은 `content://mms/part/<id>`를 `openInputStream`으로 읽어 줄여서(`decodeSampledBitmap`) 표시. 아직 받지 않은 MMS 알림(m_type 130)은 "아직 받지 않은 멀티미디어 메시지"로 표시. 이상한 제공자가 SMS 목록을 깨지 않도록 MMS 쪽 예외는 삼키고 빈 목록. 단위 테스트 `MmsRepositoryTest`(순수 함수)
+- **한계**: RCS(채팅+)·카카오톡 같은 채팅은 시스템 문자 제공자에 아예 없어서 어떤 서드파티 앱도 읽거나 보낼 수 없음(삼성/구글 메시지 앱이 통신사 인증을 받은 앱만 RCS를 다룸). MMS **보내기**는 안 함: 기본 문자 앱이 되어야 하고 그러면 삼성 메시지의 채팅+를 쓰지 못하게 됨
+- **에뮬레이터에서 MMS 시험 데이터 만들기**(실기기엔 쓰지 말 것): `adb root` 후 `content insert --uri content://mms --bind thread_id:i:1 --bind date:l:<초> --bind msg_box:i:1 --bind m_type:i:132`로 메시지를 넣고, 주소·본문·사진 파트는 한글/공백이 `content` 명령 인자에서 깨지므로 SQL 파일을 `adb push`해서 `sqlite3 /data/data/com.android.providers.telephony/databases/mmssms.db < 파일.sql`로 넣음(`addr`: msg_id,address,type 137=보낸 사람/151=받는 사람; `part`: mid,seq,ct,text 또는 `_data`). 사진 파일은 반드시 `/data/user_de/0/com.android.providers.telephony/app_parts/`에 radio 소유로 둬야 함(다른 경로면 제공자가 `openFile ... does not start with` 오류로 거부)
 - READ_SMS는 통화기록처럼 제한된 권한이라, adb로 설치하면 허용 팝업이 뜨지만 파일 관리자 등으로 직접 설치한 APK는 막힐 수 있음(막히면 기본 전화 앱 설정 후에도 안 되면 설정 > 앱 > SuperDialer > 권한 확인)
 - 에뮬레이터 테스트: 받은 문자 `adb emu sms send 번호 "내용"`
 

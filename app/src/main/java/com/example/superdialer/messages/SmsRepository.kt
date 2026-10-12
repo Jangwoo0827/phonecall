@@ -16,11 +16,14 @@ data class SmsMessage(
     val status: Int = SentMessage.SENT,
     /** Id in [SentSms] when this message was sent from this app, else 0. */
     val sentId: Long = 0,
+    /** Pictures and other files of a multimedia message (empty for plain SMS). */
+    val attachments: List<MmsAttachment> = emptyList(),
+    val isMms: Boolean = false,
 )
 
 /**
- * Reads SMS from the system provider (needs READ_SMS). Only plain SMS lives there: MMS and RCS chat
- * messages (e.g. 채팅+, KakaoTalk) are stored elsewhere and do not show up.
+ * Reads SMS from the system provider (needs READ_SMS). Multimedia messages are read by [MmsRepository]; RCS chat
+ * messages (채팅+) and chat apps (KakaoTalk) are not in the system provider at all and cannot be shown.
  */
 class SmsRepository(private val context: Context) {
     private val resolver: ContentResolver get() = context.contentResolver

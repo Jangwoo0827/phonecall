@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 
 class MessagesViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = SmsRepository(application)
+    private val mmsRepository = MmsRepository(application)
 
     var messages by mutableStateOf<List<SmsMessage>>(emptyList())
         private set
@@ -26,7 +27,13 @@ class MessagesViewModel(application: Application) : AndroidViewModel(application
         job?.cancel()
         job = viewModelScope.launch {
             loading = true
-            messages = withContext(Dispatchers.IO) { repository.loadFor(numbers) }
+            messages = withContext(Dispatchers.IO) {
+                // text and multimedia messages in one list, newest first
+                SmsRepository.newestFirst(
+                    repository.loadFor(numbers) + mmsRepository.loadFor(numbers),
+                    SmsRepository.DEFAULT_LIMIT,
+                )
+            }
             loading = false
         }
     }
