@@ -106,13 +106,17 @@ fun SuperDialerApp(
         }
     }
 
+    // The NavHost sits inside the Scaffold, so on a cold start its graph is not set yet when these effects first run;
+    // a back stack entry exists once the start screen is up, which is when navigating is safe.
+    val navReady = backStackEntry != null
+
     // An external tel:/DIAL intent brings the keypad to the front.
-    LaunchedEffect(dialerViewModel.dialRequest) {
-        if (dialerViewModel.dialRequest > 0) navigateToTab(TopLevelDestination.Dialer.route)
+    LaunchedEffect(dialerViewModel.dialRequest, navReady) {
+        if (navReady && dialerViewModel.dialRequest > 0) navigateToTab(TopLevelDestination.Dialer.route)
     }
 
-    LaunchedEffect(requestedRoute) {
-        if (requestedRoute != null) {
+    LaunchedEffect(requestedRoute, navReady) {
+        if (navReady && requestedRoute != null) {
             navigateToTab(requestedRoute)
             onRouteHandled()
         }

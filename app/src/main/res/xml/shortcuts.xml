@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="calllog"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_history"
+        android:shortcutShortLabel="@string/shortcut_calllog"
+        android:shortcutLongLabel="@string/shortcut_calllog">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetPackage="com.example.superdialer"
+            android:targetClass="com.example.superdialer.MainActivity">
+            <extra
+                android:name="open_route"
+                android:value="calllog" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="contacts"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_contacts"
+        android:shortcutShortLabel="@string/shortcut_contacts"
+        android:shortcutLongLabel="@string/shortcut_contacts">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetPackage="com.example.superdialer"
+            android:targetClass="com.example.superdialer.MainActivity">
+            <extra
+                android:name="open_route"
+                android:value="contacts" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="games"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_games"
+        android:shortcutShortLabel="@string/shortcut_games"
+        android:shortcutLongLabel="@string/shortcut_games">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetPackage="com.example.superdialer"
+            android:targetClass="com.example.superdialer.MainActivity">
+            <extra
+                android:name="open_route"
+                android:value="games" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="browser"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_web"
+        android:shortcutShortLabel="@string/shortcut_browser"
+        android:shortcutLongLabel="@string/shortcut_browser">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetPackage="com.example.superdialer"
+            android:targetClass="com.example.superdialer.MainActivity">
+            <extra
+                android:name="open_route"
+                android:value="browser" />
+        </intent>
+    </shortcut>
+</shortcuts>

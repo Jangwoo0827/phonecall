@@ -2,7 +2,11 @@ package com.example.superdialer
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.test.ComposeTimeoutException
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.printToLog
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasTestTag
@@ -40,6 +44,9 @@ abstract class AppTestBase {
 
     private var scenario: ActivityScenario<MainActivity>? = null
 
+    /** Tests that start the app with their own intent (e.g. a launcher shortcut) turn this off and call [launch]. */
+    protected open val autoLaunch = true
+
     @Before
     fun launchApp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -47,7 +54,12 @@ abstract class AppTestBase {
         // "checked just now": the startup update check (an internet call that can open a dialog) is skipped.
         context.getSharedPreferences("update_checker", Context.MODE_PRIVATE).edit()
             .putLong("last_check", System.currentTimeMillis()).commit()
-        scenario = ActivityScenario.launch(MainActivity::class.java)
+        if (autoLaunch) launch()
+    }
+
+    protected fun launch(intent: Intent = Intent(ApplicationProvider.getApplicationContext<Context>(), MainActivity::class.java)) {
+        scenario?.close()
+        scenario = ActivityScenario.launch(intent)
         waitFor(tabMatcher("키패드"))
     }
 
@@ -68,12 +80,18 @@ abstract class AppTestBase {
 
     /** Waits until something matches; while the activity is being recreated there is no compose tree for a moment. */
     protected fun waitFor(matcher: SemanticsMatcher, timeoutMs: Long = 15_000) {
-        compose.waitUntil(timeoutMs) {
-            try {
-                compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()
-            } catch (e: IllegalStateException) {
-                false
+        try {
+            compose.waitUntil(timeoutMs) {
+                try {
+                    compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()
+                } catch (e: IllegalStateException) {
+                    false
+                }
             }
+        } catch (e: ComposeTimeoutException) {
+            // What was on screen instead (adb logcat -s UiTestTree)
+            runCatching { compose.onRoot().printToLog("UiTestTree") }
+            throw e
         }
     }
 

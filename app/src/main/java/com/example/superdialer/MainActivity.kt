@@ -105,6 +105,15 @@ class MainActivity : ComponentActivity() {
             requestedRoute = TopLevelDestination.Hub.route
             return
         }
+        // Launcher long-press shortcuts (res/xml/shortcuts.xml). Only known targets are honored: the activity is exported.
+        intent.getStringExtra(EXTRA_OPEN_ROUTE)?.let { target ->
+            when (target) {
+                SHORTCUT_GAMES -> { browserViewModel.hubSection = 1; requestedRoute = TopLevelDestination.Hub.route }
+                SHORTCUT_BROWSER -> { browserViewModel.hubSection = 0; requestedRoute = TopLevelDestination.Hub.route }
+                else -> TopLevelDestination.entries.firstOrNull { it.route == target }?.let { requestedRoute = it.route }
+            }
+            return
+        }
         val wantsCallLog = intent.getBooleanExtra(EXTRA_OPEN_CALL_LOG, false) ||
             (intent.action == Intent.ACTION_VIEW && intent.type == CallLog.Calls.CONTENT_TYPE)
         if (wantsCallLog) {
@@ -123,5 +132,10 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_OPEN_CALL_LOG = "open_call_log"
+
+        /** Tab to jump to: a [TopLevelDestination] route, or [SHORTCUT_GAMES] / [SHORTCUT_BROWSER] for the web-games tab. */
+        const val EXTRA_OPEN_ROUTE = "open_route"
+        const val SHORTCUT_GAMES = "games"
+        const val SHORTCUT_BROWSER = "browser"
     }
 }

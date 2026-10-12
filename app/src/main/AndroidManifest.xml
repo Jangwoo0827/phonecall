@@ -44,6 +44,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Long-press the launcher icon: jump straight to a tab (see MainActivity.handleIntent) -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+
             <!-- Required to be selectable as the default Phone app (ROLE_DIALER) -->
             <intent-filter>
                 <action android:name="android.intent.action.DIAL" />

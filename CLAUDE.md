@@ -280,3 +280,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - `AppSmokeTest`(탭 5개/키패드 입력·포맷·지우기·0 길게=+/탭 이동), `GamesAndBrowserTest`(시작 페이지 기본 타일, 게임 4종 카드), `FreshInstallTest`(**새 설치 DB 생성+시딩** — v0.5.2 크래시를 재현해서 실제로 잡는 것까지 확인함)
 - 키패드 키와 번호 표시에 `testTag`(`key_<문자>`, `number_display`)가 있음: 화면에 같은 글자("0" 키와 입력한 "0")가 둘이라 글자로는 못 집음. UI를 바꿀 땐 이 태그를 유지할 것
 - 새 화면 테스트를 추가할 땐 `AppTestBase`를 상속하고, 실제 연락처/통화 기록 내용에 의존하지 않게(기기에 있는 데이터가 달라도 통과해야 함) 쓸 것. 실기기(S23)에서는 돌리지 말 것(터치 입력이 실제 발신으로 이어질 수 있음)
+
+## 런처 바로가기 (아이콘 길게 누르기)
+- `res/xml/shortcuts.xml`(매니페스트의 `android.app.shortcuts` 메타데이터)에 정적 바로가기 4개: 최근기록 · 연락처 · 게임 · 브라우저(아이콘 `ic_shortcut_*`, 초록 원 + 흰 글리프, 라벨은 `strings.xml`). 각각 `MainActivity`를 `open_route` 문자열 extra와 함께 엶
+- `MainActivity.handleIntent`가 `EXTRA_OPEN_ROUTE`를 처리: `TopLevelDestination` 경로이거나 `games`/`browser`(웹·게임 탭 + `BrowserViewModel.hubSection` 설정). **알려진 값만 인정**(액티비티가 exported라 다른 앱이 보낼 수 있음) — 모르는 값은 무시하고 키패드. 새 바로가기를 추가할 땐 xml + 이 분기 + `ShortcutsTest`
+- 고친 버그: 앱이 꺼져 있을 때(콜드 스타트) 외부 인텐트로 탭을 옮기는 `LaunchedEffect`가 NavHost 그래프가 준비되기 전에 돌 수 있었음(NavHost가 Scaffold 안이라). 이제 `backStackEntry != null`(= `navReady`)이 된 뒤에만 이동. 부재중 알림·`tel:` 인텐트에도 같은 보호가 적용됨
+- 시스템 등록 확인: `adb -s emulator-5554 shell dumpsys shortcut | grep -A40 "Package: com.example.superdialer"`. 삼성 런처는 길게 눌렀을 때 최대 4개까지만 보여 줌
