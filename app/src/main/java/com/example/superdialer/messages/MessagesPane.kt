@@ -1,5 +1,11 @@
 package com.example.superdialer.messages
 
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.filled.Image
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
@@ -122,6 +128,25 @@ private fun Composer(number: String) {
     val context = LocalContext.current
     var text by rememberSaveable { mutableStateOf("") }
     var pendingSend by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    // A picture/video is not sent from here: it is copied and the phone's own message composer opens with it attached.
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { picked ->
+        if (picked == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val staged = try {
+                withContext(Dispatchers.IO) { MmsShare.stage(context, picked) }
+            } catch (e: MmsShare.TooLargeException) {
+                Toast.makeText(context, "파일이 너무 큽니다 (25MB 이하만 보낼 수 있습니다).", Toast.LENGTH_LONG).show()
+                return@launch
+            } catch (e: java.io.IOException) {
+                Toast.makeText(context, "사진을 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            if (MmsShare.send(context, number, staged, text)) text = ""
+            else Toast.makeText(context, "문자 앱을 열 수 없습니다.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     fun doSend(body: String) {
         if (SmsSender.send(context, number, body)) text = ""
@@ -146,6 +171,10 @@ private fun Composer(number: String) {
                 shape = RoundedCornerShape(24.dp),
             )
             IconButton(
+                enabled = number.isNotBlank(),
+                onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
+            ) { Icon(Icons.Filled.Image, contentDescription = "사진 보내기", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+            IconButton(
                 enabled = text.isNotBlank() && number.isNotBlank(),
                 onClick = {
                     if (context.hasPermission(Manifest.permission.SEND_SMS)) {
@@ -158,7 +187,7 @@ private fun Composer(number: String) {
             ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "보내기", tint = MaterialTheme.colorScheme.primary) }
         }
         Text(
-            "여기서 보낸 문자는 이 앱에만 기록되고 기본 문자 앱에는 나타나지 않습니다.",
+            "여기서 보낸 문자는 이 앱에만 기록되고 기본 문자 앱에는 나타나지 않습니다. 사진·동영상(MMS)은 기본 문자 앱의 작성 화면으로 넘겨서 거기서 보냅니다.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 8.dp),

@@ -22,6 +22,18 @@
         android:name="android.hardware.telephony"
         android:required="false" />
 
+    <!-- Lets the app see the phone's messaging app, to open its composer with a picture attached (MmsShare). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="smsto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="image/*" />
+        </intent>
+    </queries>
+
     <application
         android:name=".SuperDialerApplication"
         android:allowBackup="true"
@@ -110,6 +122,17 @@
                 <data android:scheme="https" />
             </intent-filter>
         </activity-alias>
+
+        <!-- A picture chosen in a conversation is copied to the cache and handed to the messaging app through this. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <activity
             android:name=".incall.InCallActivity"
