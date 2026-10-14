@@ -128,9 +128,12 @@ abstract class BrowserDatabase : RoomDatabase() {
         const val CHECKLIST_TITLE = "체크리스트"
         const val CHECKLIST_URL = "https://jangwoo0827.github.io/checklist_summarizer/"
 
-        /** The shared drawing board (onlinedraw, GitHub Pages): friends join a room by link and draw together. */
+        /**
+         * The shared drawing board (onlinedraw, GitHub Pages). The address names a fixed room, so everyone who opens it
+         * from this app lands on the same canvas (without `?room=` the site makes a new private room each time).
+         */
         const val DRAW_TITLE = "같이 그리기"
-        const val DRAW_URL = "https://jangwoo0827.github.io/onlinedraw/"
+        const val DRAW_URL = "https://jangwoo0827.github.io/onlinedraw/?room=superdialer"
 
         /** Insert used on a fresh install; must name every NOT NULL column of [SpeedDial] (see BrowserDatabaseSeedTest). */
         internal const val SEED_INSERT_SQL =

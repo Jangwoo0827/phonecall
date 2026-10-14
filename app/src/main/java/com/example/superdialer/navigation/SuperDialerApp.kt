@@ -1,5 +1,6 @@
 package com.example.superdialer.navigation
 
+import com.example.superdialer.messages.MessagesScreen
 import com.example.superdialer.calllog.numberKey
 import com.example.superdialer.dialer.recentCallSuggestions
 import com.example.superdialer.contacts.DuplicateContactsScreen
@@ -54,6 +55,8 @@ import com.example.superdialer.settings.RejectMessagesScreen
 import com.example.superdialer.settings.SettingsScreen
 
 private const val ENTRY_ID_ARG = "entryId"
+private const val THREAD_NUMBER_ARG = "number"
+private const val THREAD_ROUTE = "calllog/thread/{$THREAD_NUMBER_ARG}"
 private const val HISTORY_TAB_ARG = "tab"
 private const val HISTORY_TAB_MESSAGES = "messages"
 private const val CALL_HISTORY_ROUTE = "calllog/{$ENTRY_ID_ARG}?$HISTORY_TAB_ARG={$HISTORY_TAB_ARG}"
@@ -186,6 +189,7 @@ fun SuperDialerApp(
                     viewModel = callLogViewModel,
                     onOpenHistory = { id -> navController.navigate("calllog/$id") },
                     onOpenMessages = { id -> navController.navigate("calllog/$id?$HISTORY_TAB_ARG=$HISTORY_TAB_MESSAGES") },
+                    onOpenThread = { number -> navController.navigate("calllog/thread/${android.net.Uri.encode(number)}") },
                     onOpenContact = { id -> navController.navigate("contacts/$id") },
                     onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
                 )
@@ -205,6 +209,15 @@ fun SuperDialerApp(
             }
             composable(REJECT_ROUTE) {
                 RejectMessagesScreen(onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = THREAD_ROUTE,
+                arguments = listOf(navArgument(THREAD_NUMBER_ARG) { type = NavType.StringType }),
+            ) { entry ->
+                MessagesScreen(
+                    number = entry.arguments?.getString(THREAD_NUMBER_ARG).orEmpty(),
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable(
                 route = CALL_HISTORY_ROUTE,

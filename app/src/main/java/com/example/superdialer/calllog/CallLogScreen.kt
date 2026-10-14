@@ -1,5 +1,6 @@
 package com.example.superdialer.calllog
 
+import com.example.superdialer.messages.ConversationsList
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -106,6 +107,7 @@ fun CallLogScreen(
     viewModel: CallLogViewModel,
     onOpenHistory: (entryId: Long) -> Unit,
     onOpenMessages: (entryId: Long) -> Unit,
+    onOpenThread: (number: String) -> Unit,
     onOpenContact: (contactId: Long) -> Unit,
     onOpenBlocked: () -> Unit,
     modifier: Modifier = Modifier,
@@ -116,7 +118,7 @@ fun CallLogScreen(
         rationale = "최근 통화 기록을 보려면 통화 기록 권한이 필요합니다.\n연락처 권한을 허용하면 저장된 이름도 표시됩니다.",
         modifier = modifier,
     ) {
-        CallLogList(viewModel, onOpenHistory, onOpenMessages, onOpenContact, onOpenBlocked, modifier)
+        CallLogList(viewModel, onOpenHistory, onOpenMessages, onOpenThread, onOpenContact, onOpenBlocked, modifier)
     }
 }
 
@@ -125,12 +127,15 @@ private fun CallLogList(
     viewModel: CallLogViewModel,
     onOpenHistory: (Long) -> Unit,
     onOpenMessages: (Long) -> Unit,
+    onOpenThread: (String) -> Unit,
     onOpenContact: (Long) -> Unit,
     onOpenBlocked: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val dial = rememberDialAction()
+    // The "문자" chip swaps the calls for the text conversations (same search box).
+    var showMessages by rememberSaveable { mutableStateOf(false) }
 
     LifecycleResumeEffect(Unit) {
         viewModel.refresh()
@@ -219,11 +224,20 @@ private fun CallLogList(
                 onDeleteAll = { confirmDeleteAll = true },
                 onOpenBlocked = onOpenBlocked,
             )
-            FilterRow(selected = viewModel.filter, onSelect = viewModel::onFilterChange)
+            FilterRow(
+                selected = viewModel.filter,
+                messagesSelected = showMessages,
+                onSelect = { showMessages = false; viewModel.onFilterChange(it) },
+                onMessages = { showMessages = true },
+            )
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
             when {
+                showMessages -> ConversationsList(
+                    query = viewModel.query,
+                    onOpen = { onOpenThread(it.number) },
+                )
                 groups.isNotEmpty() -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                     days.forEach { dayGroups ->
                         item(key = "day-${dayGroups.first().id}") {
@@ -333,24 +347,26 @@ private fun SearchBar(
 }
 
 @Composable
-private fun FilterRow(selected: CallFilter, onSelect: (CallFilter) -> Unit) {
+private fun FilterRow(selected: CallFilter, messagesSelected: Boolean, onSelect: (CallFilter) -> Unit, onMessages: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        val colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
         CallFilter.entries.forEach { filter ->
             FilterChip(
-                selected = filter == selected,
+                selected = filter == selected && !messagesSelected,
                 onClick = { onSelect(filter) },
                 label = { Text(filter.label) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
+                colors = colors,
             )
         }
+        FilterChip(selected = messagesSelected, onClick = onMessages, label = { Text("문자") }, colors = colors)
     }
 }
 

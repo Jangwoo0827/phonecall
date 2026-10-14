@@ -98,4 +98,16 @@ class CallLogScreenTest : AppTestBase() {
         pressBack()
         waitFor(hasText(missed))
     }
+
+    @Test
+    fun theMessagesChipSwitchesToTheConversationList() {
+        compose.onNodeWithText("문자").performClick()
+        // either the device has text conversations (a list) or it says there are none
+        waitFor(hasTag("conversation_list").or(hasText("문자 대화가 없습니다.")))
+        // the call rows are gone while the conversations are shown
+        compose.onAllNodesWithText(incoming).assertCountEquals(0)
+
+        compose.onAllNodesWithText("전체")[0].performClick()
+        waitFor(hasText(incoming))
+    }
 }

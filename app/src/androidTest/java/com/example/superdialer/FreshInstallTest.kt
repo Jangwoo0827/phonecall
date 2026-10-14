@@ -33,7 +33,8 @@ class FreshInstallTest {
             val tiles = db.speedDialDao().getAll()
             assertEquals(8, tiles.size)
             assertEquals("체크리스트", tiles.first().title)
-            assertTrue(tiles.any { it.title == "같이 그리기" })
+            // everyone who opens the drawing board from this app joins the same fixed room
+            assertTrue(tiles.first { it.title == "같이 그리기" }.url.endsWith("?room=superdialer"))
             assertTrue(tiles.none { it.isFolder })
             assertTrue(tiles.all { it.parentId == 0L })
             // the other tables work on a fresh database too

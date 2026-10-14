@@ -127,7 +127,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 보안: file/content 접근 차단, 혼합 콘텐츠 차단, 팝업 창 차단, 서드파티 쿠키 차단, Safe Browsing on, JS 브릿지(addJavascriptInterface) 없음, 웹 페이지가 여는 file:/content:/intent: 링크는 무시(tel:/mailto:/sms:만 외부 앱으로). 카메라·마이크·위치 권한 요청은 거부(기본 동작)
 - 앱 전체 `usesCleartextTraffic=true`: 브라우저가 http:// 사이트를 열 수 있게 하려는 것 (이 앱의 네트워크 사용은 브라우저뿐)
 - **외부 링크 옵션**: 매니페스트의 `ExternalLinkAlias`(http/https VIEW 필터)는 기본 비활성. 설정 탭 "외부 링크를 이 브라우저로 열기"로 켜고 끔(`settings/ExternalLinks`, `PackageManager.setComponentEnabledSetting`). 켜면 다른 앱 링크가 `BrowserViewModel.openExternal` → 새 탭으로 열림. 기본을 꺼 둔 이유: 켜는 순간 폰의 모든 웹 링크 "다음으로 열기" 선택지에 이 앱이 나타나 기본 브라우저가 될 수 있는데, 이 브라우저는 파일 업로드(<input type=file>)·인증서 오류 화면·비밀번호 저장 같은 일반 브라우저 기능이 없는 가벼운 인앱 브라우저라서
-- **"같이 그리기" 타일**(`BrowserDatabase.DRAW_URL` = `https://jangwoo0827.github.io/onlinedraw/`, 별도 repo `Jangwoo0827/onlinedraw`: Vite+TS+Canvas+Firebase 실시간 DB, 링크의 `?room=` 으로 같은 방에 입장): 새 설치는 시드 8개 중 두 번째, 기존 폰은 DB v5 마이그레이션 4→5가 맨 끝에 추가(사용자가 정리해 둔 순서를 건드리지 않음). 앱 안 브라우저에서 연결·그리기 확인함(에뮬레이터). 친구가 보낸 방 링크를 이 앱으로 열려면 설정의 "외부 링크를 이 브라우저로 열기"를 켜거나 주소창에 붙여 넣기. 게임 탭이 아니라 웹사이트 타일인 이유: 오프라인 번들이 아니라 네트워크·Firebase가 필요하고 방 링크로 공유하는 웹앱이라서
+- **"같이 그리기" 타일**(`BrowserDatabase.DRAW_URL` = `https://jangwoo0827.github.io/onlinedraw/?room=superdialer` — **방을 고정**해서 이 앱으로 여는 모든 사람이 같은 캔버스로 들어감(`?room=` 이 없으면 사이트가 열 때마다 새 방을 만듦; 방 이름 규칙 `[A-Za-z0-9_-]{6,40}`. 방을 바꾸려면 이 상수와 타일을 같이 고칠 것), 별도 repo `Jangwoo0827/onlinedraw`: Vite+TS+Canvas+Firebase 실시간 DB, 링크의 `?room=` 으로 같은 방에 입장): 새 설치는 시드 8개 중 두 번째, 기존 폰은 DB v5 마이그레이션 4→5가 맨 끝에 추가(사용자가 정리해 둔 순서를 건드리지 않음). 앱 안 브라우저에서 연결·그리기 확인함(에뮬레이터). 친구가 보낸 방 링크를 이 앱으로 열려면 설정의 "외부 링크를 이 브라우저로 열기"를 켜거나 주소창에 붙여 넣기. 게임 탭이 아니라 웹사이트 타일인 이유: 오프라인 번들이 아니라 네트워크·Firebase가 필요하고 방 링크로 공유하는 웹앱이라서
 - 미구현: 비공개 모드 (파일 업로드·탭 영구 저장은 구현됨, 아래 참고)
 
 ## 문자 내용 보기 (messages/)
@@ -306,3 +306,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - `docs/index.html`(홈페이지: 설명 + 최신 APK 링크)와 `docs/privacy.html`(개인정보처리방침, 한국어 + 영어 요약)을 GitHub Pages로 공개: 저장소 Settings > Pages > Source "Deploy from a branch" > `main` / `/docs` 로 켠다(사용자가 직접). 주소 `https://jangwoo0827.github.io/phonecall/` , `.../privacy.html`. 앱의 설정 > 앱 정보 > "개인정보처리방침"이 `PRIVACY_POLICY_URL`을 연다. **앱이 하는 일(수집·저장·외부 서비스·권한)이 바뀌면 이 페이지도 같이 고칠 것**(구글 OAuth 심사와 신뢰의 근거 문서)
 - 구글 OAuth 동의 화면의 "앱 홈페이지"와 "개인정보처리방침 링크"에 위 두 주소를 넣고, 게시(프로덕션) 상태로 바꾸면 테스트 사용자로 등록하지 않은 친구도 구글로 로그인할 수 있음. `github.io`는 공개 접미사 도메인이라 "승인된 도메인" 입력에서 거부될 수 있음(그러면 커스텀 도메인이 필요)
 - **계정 삭제**: 설정 > 계정 > "계정 삭제"(확인 창) → `SupabaseApi.deleteAccount` → RPC `superdialer_delete_account()`. 서버 함수는 `supabase/delete_account.sql`(로그인한 본인 계정만 지움: 랭킹·동기화·체크리스트 데이터·`auth.users`, 외래키에 cascade가 없어서 이 순서). **서버에 적용하려면 Supabase 대시보드 SQL Editor에서 그 파일을 실행해야 함**(이 세션에서 MCP `apply_migration`은 권한 거부되어 적용하지 않음). 적용 전에 앱에서 누르면 "서버에 계정 삭제 기능이 아직 설치되지 않았어요" 안내가 나옴. 삭제 후엔 로그아웃되고 폰의 로컬 데이터는 남음
+
+## 문자 대화 목록 (최근기록 > "문자" 칩)
+- 최근기록 필터 줄 맨 끝 "문자" 칩: 통화 목록 대신 문자 대화 목록(`ConversationsList`, `ConversationRepository`)을 보여 줌. 같은 검색창이 이름/번호/마지막 메시지 글에 적용됨. 스레드는 `content://mms-sms/conversations?simple=true`(`recipient_ids`) + `canonical-addresses`, 정렬은 코드에서 날짜순(제공자 정렬을 믿지 않음). 안 읽은 대화는 굵게 + 점. READ_SMS 필요(`PermissionGate`)
+- 대화를 누르면 `calllog/thread/{번호}`(`MessagesScreen`): 이름·번호·발신 버튼 + 문자/MMS 말풍선 + 보내기 칸. 통화 기록이 없는 번호도 열림(그래서 통화 내역 화면과 별개). 단위 테스트 `ConversationRepositoryTest`, UI 테스트 `CallLogScreenTest.theMessagesChipSwitchesToTheConversationList`
+- 에뮬레이터 주의: 오래 켜 두면 화면 그리기가 깨져(겹쳐 보임, 접근성 정보와 화면이 다름) 스크린샷이 믿을 수 없게 됨 → `adb emu kill` 후 다시 부팅
