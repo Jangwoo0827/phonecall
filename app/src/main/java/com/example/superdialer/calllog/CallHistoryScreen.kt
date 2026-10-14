@@ -53,6 +53,8 @@ fun CallHistoryScreen(
     onBack: () -> Unit,
     onOpenContact: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    /** Opens on the messages instead of the calls (the "메시지" action of a call-log row). */
+    startOnMessages: Boolean = false,
 ) {
     val context: Context = LocalContext.current
     val dial = rememberDialAction()
@@ -122,7 +124,7 @@ fun CallHistoryScreen(
         }
         HorizontalDivider()
 
-        var showMessages by rememberSaveable { mutableStateOf(false) }
+        var showMessages by rememberSaveable { mutableStateOf(startOnMessages) }
         var memoEntry by remember { mutableStateOf<CallLogEntry?>(null) }
         memoEntry?.let { target ->
             NoteDialog(

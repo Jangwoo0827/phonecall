@@ -87,4 +87,15 @@ class CallLogScreenTest : AppTestBase() {
         // still on the call log: nothing was dialed, no in-call screen replaced the app
         compose.onNodeWithText(missed).assertIsDisplayed()
     }
+
+    @Test
+    fun theMessageActionOpensTheMessagesInsideTheApp() {
+        compose.onNodeWithText(missed).performClick()
+        waitFor(hasText("메시지"))
+        compose.onNodeWithText("메시지").performClick()
+        // the history screen of that number, already on its messages: the compose box is there
+        waitFor(hasText("문자 보내기"))
+        pressBack()
+        waitFor(hasText(missed))
+    }
 }

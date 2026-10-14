@@ -1,5 +1,8 @@
 package com.example.superdialer.calllog
 
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.animation.shrinkVertically
@@ -102,6 +105,7 @@ internal const val UNKNOWN_NUMBER = "번호정보 없음"
 fun CallLogScreen(
     viewModel: CallLogViewModel,
     onOpenHistory: (entryId: Long) -> Unit,
+    onOpenMessages: (entryId: Long) -> Unit,
     onOpenContact: (contactId: Long) -> Unit,
     onOpenBlocked: () -> Unit,
     modifier: Modifier = Modifier,
@@ -112,7 +116,7 @@ fun CallLogScreen(
         rationale = "최근 통화 기록을 보려면 통화 기록 권한이 필요합니다.\n연락처 권한을 허용하면 저장된 이름도 표시됩니다.",
         modifier = modifier,
     ) {
-        CallLogList(viewModel, onOpenHistory, onOpenContact, onOpenBlocked, modifier)
+        CallLogList(viewModel, onOpenHistory, onOpenMessages, onOpenContact, onOpenBlocked, modifier)
     }
 }
 
@@ -120,6 +124,7 @@ fun CallLogScreen(
 private fun CallLogList(
     viewModel: CallLogViewModel,
     onOpenHistory: (Long) -> Unit,
+    onOpenMessages: (Long) -> Unit,
     onOpenContact: (Long) -> Unit,
     onOpenBlocked: () -> Unit,
     modifier: Modifier = Modifier,
@@ -180,7 +185,19 @@ private fun CallLogList(
         )
     }
 
-    val groups = viewModel.groups
+    // Computed here from the states themselves (see CallLogViewModel.groups), cached while none of them changes.
+    val groups = remember(viewModel.entries, viewModel.filter, viewModel.query) { viewModel.groups }
+    // A list keeps showing the item it was on when items appear above it, so a call that arrives while the user is
+    // looking at the top (or never scrolled) would sit just out of view. Until the user scrolls, stay on the newest.
+    val listState = rememberLazyListState()
+    var userScrolled by remember { mutableStateOf(false) }
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }.collect { if (it) userScrolled = true }
+    }
+    val newestId = groups.firstOrNull()?.id
+    LaunchedEffect(newestId) {
+        if (!userScrolled) listState.scrollToItem(0)
+    }
     val days = remember(groups) {
         val zone = ZoneId.systemDefault()
         groups.groupBy { Instant.ofEpochMilli(it.latest.dateMillis).atZone(zone).toLocalDate() }.values.toList()
@@ -207,7 +224,7 @@ private fun CallLogList(
 
         Box(modifier = Modifier.fillMaxSize()) {
             when {
-                groups.isNotEmpty() -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                groups.isNotEmpty() -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                     days.forEach { dayGroups ->
                         item(key = "day-${dayGroups.first().id}") {
                             DayHeader(formatDayHeader(dayGroups.first().latest.dateMillis))
@@ -229,7 +246,7 @@ private fun CallLogList(
                                     val id = group.latest.contactId
                                     if (id != null) onOpenContact(id) else context.addContact(group.latest.number)
                                 },
-                                onMessage = { context.sendSms(group.latest.number) },
+                                onMessage = { onOpenMessages(group.latest.id) },
                                 onMemo = { memoEntry = group.latest },
                                 onSelect = { viewModel.startSelecting(group.id) },
                                 onDelete = { withWritePermission { viewModel.deleteGroup(group, ::onDeleted) } },

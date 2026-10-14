@@ -113,7 +113,7 @@ interface SpeedDialDao {
 
 @Database(
     entities = [Bookmark::class, HistoryItem::class, SpeedDial::class],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class BrowserDatabase : RoomDatabase() {
@@ -128,12 +128,17 @@ abstract class BrowserDatabase : RoomDatabase() {
         const val CHECKLIST_TITLE = "체크리스트"
         const val CHECKLIST_URL = "https://jangwoo0827.github.io/checklist_summarizer/"
 
+        /** The shared drawing board (onlinedraw, GitHub Pages): friends join a room by link and draw together. */
+        const val DRAW_TITLE = "같이 그리기"
+        const val DRAW_URL = "https://jangwoo0827.github.io/onlinedraw/"
+
         /** Insert used on a fresh install; must name every NOT NULL column of [SpeedDial] (see BrowserDatabaseSeedTest). */
         internal const val SEED_INSERT_SQL =
             "INSERT INTO speed_dials (title, url, position, parentId, isFolder) VALUES (?, ?, ?, 0, 0)"
 
         private val DEFAULT_TILES = listOf(
             CHECKLIST_TITLE to CHECKLIST_URL,
+            DRAW_TITLE to DRAW_URL,
             "네이버" to "https://m.naver.com",
             "구글" to "https://www.google.com",
             "유튜브" to "https://m.youtube.com",
@@ -192,6 +197,19 @@ abstract class BrowserDatabase : RoomDatabase() {
             }
         }
 
+        // v4 -> v5: the drawing board tile, added at the end so a start page the user has arranged is left alone.
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val exists = db.query("SELECT 1 FROM speed_dials WHERE url = ?", arrayOf<Any>(DRAW_URL)).use { it.moveToFirst() }
+                if (exists) return
+                db.execSQL(
+                    "INSERT INTO speed_dials (title, url, position, parentId, isFolder) " +
+                        "SELECT ?, ?, COALESCE(MAX(position), -1) + 1, 0, 0 FROM speed_dials WHERE parentId = 0",
+                    arrayOf<Any>(DRAW_TITLE, DRAW_URL),
+                )
+            }
+        }
+
         fun get(context: Context): BrowserDatabase = instance ?: synchronized(this) {
             instance ?: build(context, "browser.db").also { instance = it }
         }
@@ -199,7 +217,7 @@ abstract class BrowserDatabase : RoomDatabase() {
         /** The real database setup (migrations + fresh-install seed); a separate [name] lets tests start from nothing. */
         internal fun build(context: Context, name: String): BrowserDatabase =
             Room.databaseBuilder(context.applicationContext, BrowserDatabase::class.java, name)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .addCallback(object : Callback() {
                     // Fresh installs only; upgraded databases are seeded by the migration.
                     override fun onCreate(db: SupportSQLiteDatabase) = seed(db)

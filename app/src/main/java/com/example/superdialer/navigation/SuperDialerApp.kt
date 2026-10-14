@@ -54,7 +54,9 @@ import com.example.superdialer.settings.RejectMessagesScreen
 import com.example.superdialer.settings.SettingsScreen
 
 private const val ENTRY_ID_ARG = "entryId"
-private const val CALL_HISTORY_ROUTE = "calllog/{$ENTRY_ID_ARG}"
+private const val HISTORY_TAB_ARG = "tab"
+private const val HISTORY_TAB_MESSAGES = "messages"
+private const val CALL_HISTORY_ROUTE = "calllog/{$ENTRY_ID_ARG}?$HISTORY_TAB_ARG={$HISTORY_TAB_ARG}"
 private const val BLOCKED_ROUTE = "settings/blocked"
 private const val REJECT_ROUTE = "settings/reject"
 private const val QUICK_DIAL_ROUTE = "settings/quickdial"
@@ -183,6 +185,7 @@ fun SuperDialerApp(
                 CallLogScreen(
                     viewModel = callLogViewModel,
                     onOpenHistory = { id -> navController.navigate("calllog/$id") },
+                    onOpenMessages = { id -> navController.navigate("calllog/$id?$HISTORY_TAB_ARG=$HISTORY_TAB_MESSAGES") },
                     onOpenContact = { id -> navController.navigate("contacts/$id") },
                     onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
                 )
@@ -205,13 +208,17 @@ fun SuperDialerApp(
             }
             composable(
                 route = CALL_HISTORY_ROUTE,
-                arguments = listOf(navArgument(ENTRY_ID_ARG) { type = NavType.LongType }),
+                arguments = listOf(
+                    navArgument(ENTRY_ID_ARG) { type = NavType.LongType },
+                    navArgument(HISTORY_TAB_ARG) { type = NavType.StringType; defaultValue = "" },
+                ),
             ) { entry ->
                 CallHistoryScreen(
                     viewModel = callLogViewModel,
                     entryId = entry.arguments?.getLong(ENTRY_ID_ARG) ?: 0L,
                     onBack = { navController.popBackStack() },
                     onOpenContact = { id -> navController.navigate("contacts/$id") },
+                    startOnMessages = entry.arguments?.getString(HISTORY_TAB_ARG) == HISTORY_TAB_MESSAGES,
                 )
             }
             composable(TopLevelDestination.Contacts.route) {

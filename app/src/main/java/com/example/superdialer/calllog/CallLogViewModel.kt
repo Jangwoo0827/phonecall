@@ -1,7 +1,6 @@
 package com.example.superdialer.calllog
 
 import android.app.Application
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateSetOf
@@ -28,10 +27,13 @@ class CallLogViewModel(application: Application) : AndroidViewModel(application)
     var filter by mutableStateOf(CallFilter.All)
         private set
 
-    /** Entries after filter + search, merged into per-contact groups. */
-    val groups: List<CallGroup> by derivedStateOf {
-        groupCalls(entries.filter { filter.accepts(it) && matchesCallQuery(it, query) })
-    }
+    /**
+     * Entries after filter + search, merged into per-contact groups. A plain getter on purpose: it reads the three
+     * states every time, so a composable that calls it is invalidated by each of them. (As a `derivedStateOf` kept in
+     * the view model it could stay stale after a refresh: the new call was loaded but the list did not show it.)
+     */
+    val groups: List<CallGroup>
+        get() = groupCalls(entries.filter { filter.accepts(it) && matchesCallQuery(it, query) })
 
     // Multi-select mode: holds [CallGroup.id]s.
     var selecting by mutableStateOf(false)

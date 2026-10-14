@@ -66,6 +66,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 최근기록 (calllog/) — 에이닷 전화 스타일
 - 날짜 구분선(오늘/어제 + 날짜·요일), 행: 종류 아이콘 · 아바타 · 이름/번호 · 시각·종류·통화시간 · 초록 발신 버튼
 - **행을 탭하면 발신하지 않고 펼쳐짐**(기록/연락처/메시지). 발신은 초록 버튼만. 길게 누르기 = 삭제/번호 복사/차단
+- 펼친 행의 **"메시지"는 앱 안**에서 연다(시스템 문자 앱 아님): `calllog/{id}?tab=messages` 경로로 `CallHistoryScreen(startOnMessages = true)` — 그 번호의 문자·MMS 말풍선과 보내기 칸. 새 통화가 생겨도 사용자가 스크롤하기 전까지는 목록 맨 위(최신)에 머묾(`CallLogList`의 `userScrolled` + `scrollToItem(0)`; 이게 없으면 LazyColumn이 보던 항목을 따라가서 새 통화가 화면 위쪽 밖으로 밀려 보이지 않았음)
 - 기록 → `CallHistoryScreen`(같은 번호 통화 내역, `numberKey`로 +82/010 동일 취급). 연락처 → 저장된 번호면 연락처 상세, 아니면 시스템 연락처 추가 화면
 - `CallLogRepository`(CallLog.Calls + PhoneLookup), `CallLogViewModel`(코루틴 IO, 화면 resume 때 refresh). 삭제는 WRITE_CALL_LOG 필요
 - 이름 없는 번호 표기는 "번호정보 없음"
@@ -126,6 +127,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 보안: file/content 접근 차단, 혼합 콘텐츠 차단, 팝업 창 차단, 서드파티 쿠키 차단, Safe Browsing on, JS 브릿지(addJavascriptInterface) 없음, 웹 페이지가 여는 file:/content:/intent: 링크는 무시(tel:/mailto:/sms:만 외부 앱으로). 카메라·마이크·위치 권한 요청은 거부(기본 동작)
 - 앱 전체 `usesCleartextTraffic=true`: 브라우저가 http:// 사이트를 열 수 있게 하려는 것 (이 앱의 네트워크 사용은 브라우저뿐)
 - **외부 링크 옵션**: 매니페스트의 `ExternalLinkAlias`(http/https VIEW 필터)는 기본 비활성. 설정 탭 "외부 링크를 이 브라우저로 열기"로 켜고 끔(`settings/ExternalLinks`, `PackageManager.setComponentEnabledSetting`). 켜면 다른 앱 링크가 `BrowserViewModel.openExternal` → 새 탭으로 열림. 기본을 꺼 둔 이유: 켜는 순간 폰의 모든 웹 링크 "다음으로 열기" 선택지에 이 앱이 나타나 기본 브라우저가 될 수 있는데, 이 브라우저는 파일 업로드(<input type=file>)·인증서 오류 화면·비밀번호 저장 같은 일반 브라우저 기능이 없는 가벼운 인앱 브라우저라서
+- **"같이 그리기" 타일**(`BrowserDatabase.DRAW_URL` = `https://jangwoo0827.github.io/onlinedraw/`, 별도 repo `Jangwoo0827/onlinedraw`: Vite+TS+Canvas+Firebase 실시간 DB, 링크의 `?room=` 으로 같은 방에 입장): 새 설치는 시드 8개 중 두 번째, 기존 폰은 DB v5 마이그레이션 4→5가 맨 끝에 추가(사용자가 정리해 둔 순서를 건드리지 않음). 앱 안 브라우저에서 연결·그리기 확인함(에뮬레이터). 친구가 보낸 방 링크를 이 앱으로 열려면 설정의 "외부 링크를 이 브라우저로 열기"를 켜거나 주소창에 붙여 넣기. 게임 탭이 아니라 웹사이트 타일인 이유: 오프라인 번들이 아니라 네트워크·Firebase가 필요하고 방 링크로 공유하는 웹앱이라서
 - 미구현: 비공개 모드 (파일 업로드·탭 영구 저장은 구현됨, 아래 참고)
 
 ## 문자 내용 보기 (messages/)

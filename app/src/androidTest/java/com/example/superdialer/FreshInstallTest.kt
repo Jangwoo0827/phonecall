@@ -31,8 +31,9 @@ class FreshInstallTest {
         val db = BrowserDatabase.build(context, name)
         try {
             val tiles = db.speedDialDao().getAll()
-            assertEquals(7, tiles.size)
+            assertEquals(8, tiles.size)
             assertEquals("체크리스트", tiles.first().title)
+            assertTrue(tiles.any { it.title == "같이 그리기" })
             assertTrue(tiles.none { it.isFolder })
             assertTrue(tiles.all { it.parentId == 0L })
             // the other tables work on a fresh database too
