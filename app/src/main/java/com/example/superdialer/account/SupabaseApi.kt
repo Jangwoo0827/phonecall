@@ -101,6 +101,16 @@ object SupabaseApi {
         return parseSession(body, System.currentTimeMillis()) ?: throw ApiError("로그인 응답을 읽을 수 없습니다.", authExpired = true)
     }
 
+    /**
+     * Deletes this account and everything stored for it on the server (the `superdialer_delete_account` function,
+     * see supabase/delete_account.sql). The data on this phone is not touched.
+     */
+    fun deleteAccount(accessToken: String) {
+        val (code, body) = request("POST", "/rest/v1/rpc/superdialer_delete_account", JSONObject(), accessToken)
+        if (code == 401) throw ApiError("로그인이 만료되었습니다. 다시 로그인한 뒤 시도해 주세요.", authExpired = true)
+        if (code !in 200..299) throw ApiError(deleteAccountErrorMessage(code, body))
+    }
+
     fun sendPasswordReset(email: String) {
         val (code, body) = request("POST", "/auth/v1/recover", JSONObject().put("email", email))
         if (code !in 200..299) throw ApiError(errorMessage(code, body))
@@ -220,6 +230,14 @@ object SupabaseApi {
     } catch (e: JSONException) {
         emptyList()
     }
+
+    /** The function is missing on a server where the SQL file was not run yet; say so instead of a raw error. */
+    fun deleteAccountErrorMessage(code: Int, body: String): String =
+        if (code == 404 || "could not find the function" in body.lowercase()) {
+            "서버에 계정 삭제 기능이 아직 설치되지 않았어요. 개발자에게 알려 주세요."
+        } else {
+            errorMessage(code, body)
+        }
 
     /** Why the authorize address did not redirect: usually the Google provider is not enabled in the Supabase project. */
     fun googleUnavailableMessage(code: Int, body: String): String {

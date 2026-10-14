@@ -81,6 +81,31 @@ internal fun AccountRows() {
             Button(onClick = AccountManager::syncNow, enabled = !AccountManager.busy) { Text("지금 동기화") }
             OutlinedButton(onClick = AccountManager::signOut) { Text("로그아웃") }
         }
+        var confirmDelete by rememberSaveable { mutableStateOf(false) }
+        TextButton(
+            onClick = { confirmDelete = true },
+            enabled = !AccountManager.busy,
+            modifier = Modifier.padding(horizontal = 8.dp),
+        ) { Text("계정 삭제", color = MaterialTheme.colorScheme.error) }
+        if (confirmDelete) {
+            AlertDialog(
+                onDismissRequest = { confirmDelete = false },
+                title = { Text("계정을 삭제할까요?") },
+                text = {
+                    Text(
+                        "서버에 저장된 이 계정의 데이터(시작 페이지 링크, 북마크, 게임 점수와 랭킹, 설정, 거절 메시지)와 " +
+                            "로그인 정보가 모두 지워지고, 같은 계정을 쓰는 체크리스트 노트의 데이터도 함께 지워집니다. " +
+                            "되돌릴 수 없습니다.\n\n이 폰에 있는 데이터는 그대로 남습니다."
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { confirmDelete = false; AccountManager.deleteAccount { } }) {
+                        Text("삭제", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("취소") } },
+            )
+        }
     }
     AccountManager.message?.let {
         Text(

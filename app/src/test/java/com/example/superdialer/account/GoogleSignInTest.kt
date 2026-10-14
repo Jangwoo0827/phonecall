@@ -80,4 +80,11 @@ class GoogleSignInTest {
         assertTrue("아직 켜져 있지 않" in off)
         assertEquals("서버에 문제가 있습니다. 잠시 후 다시 시도해 주세요.", SupabaseApi.googleUnavailableMessage(503, ""))
     }
+
+    @Test fun deleteAccountExplainsAMissingServerFunction() {
+        val missing = SupabaseApi.deleteAccountErrorMessage(404, """{"code":"PGRST202","message":"Could not find the function public.superdialer_delete_account"}""")
+        assertTrue("아직 설치되지 않았" in missing)
+        // other failures use the normal Korean error text
+        assertEquals("서버에 문제가 있습니다. 잠시 후 다시 시도해 주세요.", SupabaseApi.deleteAccountErrorMessage(503, ""))
+    }
 }

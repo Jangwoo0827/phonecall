@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SuperDialer 개인정보처리방침</title>
+<meta name="description" content="SuperDialer(안드로이드 전화 앱)가 어떤 정보를 어디에 저장하는지, 계정을 어떻게 지우는지 설명합니다.">
+<style>
+  :root { --bg:#fafafa; --card:#ffffff; --text:#1c2421; --muted:#5b6762; --accent:#1fa463; --line:#e3e8e5; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1210; --card:#161d1a; --text:#e6ece9; --muted:#9aa8a1; --accent:#3ddc97; --line:#25302b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); line-height:1.7;
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR","Malgun Gothic",sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { font-size:1.6rem; margin:8px 0 4px; }
+  h2 { font-size:1.15rem; margin:32px 0 8px; padding-top:8px; border-top:1px solid var(--line); }
+  p, li { color:var(--text); }
+  .muted { color:var(--muted); font-size:.92rem; }
+  a { color:var(--accent); }
+  table { width:100%; border-collapse:collapse; font-size:.95rem; background:var(--card); }
+  th, td { text-align:left; vertical-align:top; padding:8px 10px; border:1px solid var(--line); }
+  th { color:var(--muted); font-weight:600; }
+  .box { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 16px; }
+  code { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:.9em; }
+</style>
+</head>
+<body>
+<main>
+  <p class="muted"><a href="./">← SuperDialer</a></p>
+  <h1>SuperDialer 개인정보처리방침</h1>
+  <p class="muted">시행일: 2026년 10월 14일 · 최종 수정: 2026년 10월 14일 · English summary at the bottom</p>
+
+  <div class="box">
+    <p><strong>한 줄 요약</strong> — 통화 기록·연락처·문자는 <strong>폰 밖으로 나가지 않습니다.</strong>
+    계정을 만들면(선택) 이메일과 앱 설정·북마크·게임 점수만 서버에 저장되고, <strong>앱 안에서 언제든 계정을 삭제</strong>할 수 있습니다.
+    광고·분석·추적은 없습니다.</p>
+  </div>
+
+  <h2>1. 이 앱은 무엇인가요</h2>
+  <p>SuperDialer는 개인이 만든 안드로이드 전화 앱입니다(전화·최근기록·연락처·내장 웹브라우저·내장 게임).
+  스토어에 올리지 않고 GitHub에서 APK로 배포합니다. 개발자: GitHub <code>Jangwoo0827</code>.</p>
+
+  <h2>2. 폰 안에서만 다루는 정보 (서버로 보내지 않음)</h2>
+  <table>
+    <tr><th>정보</th><th>쓰는 이유</th><th>어디에 있나</th></tr>
+    <tr><td>연락처</td><td>이름 표시, 검색, 자동완성, 그룹·중복 정리</td><td>폰의 연락처 저장소를 읽기만 함(즐겨찾기·병합을 직접 누른 경우에만 수정)</td></tr>
+    <tr><td>통화 기록</td><td>최근기록 화면, 삭제</td><td>폰의 통화 기록 저장소</td></tr>
+    <tr><td>문자·MMS</td><td>연락처/통화 내역 화면에서 대화 보기, 문자 보내기</td><td>폰의 문자 저장소를 읽음. 앱에서 보낸 문자의 기록은 앱 안에만 저장</td></tr>
+    <tr><td>통화 메모, 단축 다이얼, 연락처 그룹</td><td>사용자가 직접 입력한 메모와 설정</td><td>앱 내부 저장소(이 폰에만)</td></tr>
+    <tr><td>통화 녹음(마이크)</td><td>사용자가 녹음 버튼을 눌렀을 때만</td><td>폰의 <code>음악/SuperDialer</code> 폴더. 녹음 관련 법을 확인하고 사용하세요</td></tr>
+    <tr><td>브라우저 기록·북마크·탭</td><td>내장 브라우저 기능</td><td>앱 내부 저장소. 로그인하면 북마크와 시작 페이지 링크만 동기화(아래 3번)</td></tr>
+    <tr><td>오류 기록</td><td>앱이 멈췄을 때 원인 확인</td><td>폰 안에만 저장(시각·앱 버전·기기 모델·오류 내용). 설정에서 보고 지울 수 있음</td></tr>
+  </table>
+  <p class="muted">비밀번호는 앱이 저장하지 않습니다(폰의 자동 완성 서비스가 처리).</p>
+
+  <h2>3. 계정을 만들면 서버에 저장되는 정보 (선택)</h2>
+  <p>계정은 <strong>선택</strong>입니다. 로그인하지 않아도 모든 기능을 쓸 수 있습니다. 로그인하면 다음이 저장됩니다.</p>
+  <ul>
+    <li><strong>계정 정보</strong>: 이메일 주소, 계정 고유 ID, 로그인 방식(이메일/비밀번호 또는 Google). Google로 로그인하면 Google이 알려 주는 이메일과 이름(프로필)을 받습니다. 비밀번호는 암호화되어 저장됩니다.</li>
+    <li><strong>동기화 데이터</strong>: 시작 페이지 링크, 북마크, 게임 최고 점수, 화면 설정(테마·글자 크기·키패드음), 거절 메시지 문구.</li>
+    <li><strong>랭킹</strong>: 닉네임과 게임별 최고 점수. 이 둘은 <strong>로그인한 다른 사용자에게 보입니다.</strong> 이메일은 보이지 않습니다. 닉네임은 설정에서 바꿀 수 있습니다.</li>
+    <li><strong>체크리스트 노트</strong>(같은 계정으로 쓰는 별도 웹앱): 사용자가 쓴 체크리스트 데이터.</li>
+  </ul>
+  <p><strong>통화 기록·연락처·문자·통화 메모·녹음은 계정에 올리지 않습니다.</strong></p>
+
+  <h2>4. 정보를 맡아 주는 외부 서비스</h2>
+  <table>
+    <tr><th>서비스</th><th>역할</th></tr>
+    <tr><td>Supabase (서버: 서울 리전)</td><td>로그인, 동기화 데이터·랭킹 저장</td></tr>
+    <tr><td>Google 로그인</td><td>“Google로 계속하기”를 눌렀을 때만. 기본 프로필(이메일·이름)만 요청합니다</td></tr>
+    <tr><td>GitHub</td><td>새 버전 확인과 APK 내려받기(공개 릴리스 주소로 요청을 보냄. 일반적인 웹 요청처럼 IP 주소가 전달됨)</td></tr>
+    <tr><td>사용자가 여는 웹사이트</td><td>내장 브라우저로 여는 사이트는 각 사이트의 정책을 따릅니다. 링크 아이콘은 그 사이트에서 직접 받습니다(제3자 아이콘 서비스를 쓰지 않음)</td></tr>
+    <tr><td>같이 그리기 (<code>jangwoo0827.github.io/onlinedraw</code>)</td><td>시작 페이지의 링크 중 하나로 연결되는 별도 웹앱입니다. 같은 방 링크를 가진 사람끼리 그림을 공유하며 Firebase(Google)에 익명 로그인과 그림 데이터가 저장됩니다. 이 앱 계정과는 연결되지 않습니다</td></tr>
+  </table>
+  <p>개인정보를 판매하지 않고, 광고·분석 도구나 추적 기능을 쓰지 않습니다. 법령에 따른 요청이 있는 경우를 제외하고 제3자에게 제공하지 않습니다.</p>
+  <p class="muted">SuperDialer가 Google API로 받은 정보를 사용하고 다른 앱으로 전달하는 것은, 제한적 사용(Limited Use) 요건을 포함해
+  <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API 서비스 사용자 데이터 정책</a>을 따릅니다.
+  Google에서 받은 정보는 로그인과 계정 식별에만 쓰고 광고나 다른 목적에 쓰지 않습니다.</p>
+
+  <h2>5. 앱이 요청하는 권한</h2>
+  <ul>
+    <li>전화(<code>CALL_PHONE</code>, 기본 전화 앱 역할): 전화 걸기·받기·통화 화면, 번호 차단</li>
+    <li>통화 기록 읽기/쓰기, 연락처 읽기/쓰기, 문자 읽기/보내기: 위 2번의 기능들</li>
+    <li>마이크: 통화 녹음 버튼을 눌렀을 때만</li>
+    <li>알림·전체 화면 알림: 수신 전화와 부재중 알림, 새 버전 알림</li>
+    <li>인터넷: 내장 브라우저, 계정 동기화, 업데이트 확인</li>
+    <li>앱 설치 요청: 앱 안에서 새 버전을 받아 설치할 때(사용자가 허용한 경우)</li>
+  </ul>
+  <p>모든 권한은 해당 기능을 처음 쓸 때 요청하며, 거부해도 나머지 기능은 그대로 쓸 수 있습니다.</p>
+
+  <h2>6. 보관 기간과 삭제</h2>
+  <ul>
+    <li><strong>계정 삭제</strong>: 앱의 <code>설정 &gt; 계정 &gt; 계정 삭제</code>를 누르면 서버에 있는 계정과 위 3번의 데이터(동기화 데이터, 랭킹, 체크리스트 노트, 로그인 정보)가 즉시 지워집니다. 되돌릴 수 없습니다.</li>
+    <li><strong>로그아웃</strong>만 하면 서버의 데이터는 남습니다. 완전히 지우려면 계정 삭제를 하세요.</li>
+    <li><strong>폰 안의 데이터</strong>는 앱을 삭제하거나 <code>설정 &gt; 앱 &gt; SuperDialer &gt; 저장공간 &gt; 데이터 삭제</code>로 지울 수 있습니다. 통화 녹음 파일은 파일 앱에서 직접 지웁니다.</li>
+    <li>앱을 쓸 수 없는 상황이면 아래 문의로 계정 삭제를 요청해 주세요.</li>
+  </ul>
+
+  <h2>7. 이용자의 권리</h2>
+  <p>이용자는 자신의 정보를 보고, 고치고, 지우고, 처리를 멈추도록 요구할 수 있습니다. 대부분은 앱 안에서 직접 할 수 있고(닉네임 변경, 계정 삭제, 로그아웃),
+  그 밖의 요청은 아래 문의로 보내 주세요.</p>
+
+  <h2>8. 어린이</h2>
+  <p>만 14세 미만은 법정대리인의 동의 없이 계정을 만들 수 없습니다. 계정 없이도 모든 기능을 쓸 수 있습니다.
+  어린이의 정보임을 알게 되면 해당 계정을 삭제합니다.</p>
+
+  <h2>9. 보안</h2>
+  <p>서버와의 통신은 HTTPS로 하고, 서버 데이터는 계정별 접근 제한(행 단위 보안 규칙)으로 본인만 읽고 쓸 수 있습니다(랭킹의 닉네임·점수는 예외).
+  앱은 웹 페이지가 앱 기능을 호출할 수 있는 통로를 열지 않으며, 내장 게임은 앱에 들어 있는 파일만 불러옵니다.</p>
+
+  <h2>10. 방침이 바뀔 때</h2>
+  <p>내용이 바뀌면 이 페이지의 날짜를 고치고, 중요한 변경은 앱 업데이트 안내에 적습니다.</p>
+
+  <h2>11. 문의</h2>
+  <p>GitHub 이슈: <a href="https://github.com/Jangwoo0827/phonecall/issues">github.com/Jangwoo0827/phonecall/issues</a><br>
+  (이슈는 공개로 보이므로 이메일 등 개인정보는 적지 말고 “계정 삭제 요청” 같은 제목으로 남겨 주세요. 개인 연락 방법을 안내해 드립니다.)</p>
+
+  <h2>English summary</h2>
+  <p>SuperDialer is a hobby Android phone app distributed as an APK from GitHub. Your call log, contacts, text messages, call notes and recordings stay on your phone and are never uploaded.
+  An account is optional. If you sign in (email/password or Google), the app stores on Supabase (Seoul): your email, an account ID, and synced app data (start-page links, bookmarks, best game scores, display settings, reject-message texts).
+  Your nickname and best scores are visible to other signed-in users on the leaderboard; your email is not.
+  We use Google sign-in only to identify you (email and name), and our use of Google user data follows the Google API Services User Data Policy, including the Limited Use requirements.
+  No ads, analytics or tracking; no sale of data. You can delete your account and all server-side data at any time in the app: <em>Settings &gt; Account &gt; Delete account</em>.
+  Contact: <a href="https://github.com/Jangwoo0827/phonecall/issues">GitHub Issues</a>.</p>
+</main>
+</body>
+</html>

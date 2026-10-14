@@ -219,6 +219,15 @@ fun SettingsScreen(
                 headlineContent = { Text("버전") },
                 supportingContent = { Text(appVersion(context)) },
             )
+            Clickable("개인정보처리방침", "어떤 정보가 어디에 저장되는지, 계정 삭제 방법") {
+                try {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                } catch (e: android.content.ActivityNotFoundException) {
+                    Toast.makeText(context, "웹 브라우저를 열 수 없습니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
             ListItem(
                 colors = transparentListItem(),
                 headlineContent = { Text("통화 녹음") },
@@ -286,3 +295,6 @@ private fun appVersion(context: Context): String = try {
 } catch (e: Exception) {
     "-"
 }
+
+/** The privacy policy page (docs/privacy.html of the repository, served by GitHub Pages). */
+const val PRIVACY_POLICY_URL = "https://jangwoo0827.github.io/phonecall/privacy.html"

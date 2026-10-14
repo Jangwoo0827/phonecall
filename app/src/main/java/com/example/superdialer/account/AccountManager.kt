@@ -282,6 +282,36 @@ object AccountManager {
         }
     }
 
+    /**
+     * Deletes the account and its server-side data, then logs out here. Local data on the phone is kept. [onDone] runs
+     * on the main thread with true when the account is gone.
+     */
+    fun deleteAccount(onDone: (Boolean) -> Unit) {
+        if (!signedIn || busy) return
+        busy = true
+        message = null
+        scope.launch {
+            var ok = false
+            try {
+                val session = freshSession()
+                if (session != null) {
+                    SupabaseApi.deleteAccount(session.accessToken)
+                    ok = true
+                }
+            } catch (e: ApiError) {
+                post(e.userMessage)
+            }
+            withContext(Dispatchers.Main) {
+                busy = false
+                if (ok) {
+                    signOut()
+                    message = "계정을 삭제했습니다. 서버에 있던 동기화 데이터와 로그인 정보가 지워졌고, 이 폰의 데이터는 그대로 남아 있습니다."
+                }
+                onDone(ok)
+            }
+        }
+    }
+
     /** Logs out on this phone. The data stays on the phone and in the account. */
     fun signOut() {
         prefs?.edit()?.clear()?.apply()
