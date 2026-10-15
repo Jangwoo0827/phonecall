@@ -27,7 +27,10 @@ object TestData {
         context.contentResolver.delete(CallLog.Calls.CONTENT_URI, "${CallLog.Calls.NUMBER} LIKE ?", arrayOf("$PREFIX%"))
     }
 
-    fun addContact(context: Context, name: String, number: String) {
+    /** A custom data row on a contact (what an app like KakaoTalk adds): media type, DATA1 and the DATA3 label. */
+    class ExtraRow(val mimeType: String, val data1: String = "", val label: String = "")
+
+    fun addContact(context: Context, name: String, number: String, extraRows: List<ExtraRow> = emptyList()) {
         val ops = arrayListOf(
             ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
                 .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
@@ -45,6 +48,14 @@ object TestData {
                 .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
                 .build(),
         )
+        extraRows.forEach { row ->
+            ops += ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                .withValue(ContactsContract.Data.MIMETYPE, row.mimeType)
+                .withValue(ContactsContract.Data.DATA1, row.data1)
+                .withValue(ContactsContract.Data.DATA3, row.label)
+                .build()
+        }
         context.contentResolver.applyBatch(ContactsContract.AUTHORITY, ops)
     }
 

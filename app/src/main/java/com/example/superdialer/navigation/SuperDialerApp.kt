@@ -1,5 +1,6 @@
 package com.example.superdialer.navigation
 
+import com.example.superdialer.kakao.KakaoRoomScreen
 import com.example.superdialer.messages.MessagesScreen
 import com.example.superdialer.calllog.numberKey
 import com.example.superdialer.dialer.recentCallSuggestions
@@ -55,6 +56,8 @@ import com.example.superdialer.settings.RejectMessagesScreen
 import com.example.superdialer.settings.SettingsScreen
 
 private const val ENTRY_ID_ARG = "entryId"
+private const val KAKAO_ROOM_ARG = "room"
+private const val KAKAO_ROOM_ROUTE = "calllog/kakao/{$KAKAO_ROOM_ARG}"
 private const val THREAD_NUMBER_ARG = "number"
 private const val THREAD_ROUTE = "calllog/thread/{$THREAD_NUMBER_ARG}"
 private const val HISTORY_TAB_ARG = "tab"
@@ -190,6 +193,7 @@ fun SuperDialerApp(
                     onOpenHistory = { id -> navController.navigate("calllog/$id") },
                     onOpenMessages = { id -> navController.navigate("calllog/$id?$HISTORY_TAB_ARG=$HISTORY_TAB_MESSAGES") },
                     onOpenThread = { number -> navController.navigate("calllog/thread/${android.net.Uri.encode(number)}") },
+                    onOpenKakao = { room -> navController.navigate("calllog/kakao/${android.net.Uri.encode(room)}") },
                     onOpenContact = { id -> navController.navigate("contacts/$id") },
                     onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
                 )
@@ -209,6 +213,15 @@ fun SuperDialerApp(
             }
             composable(REJECT_ROUTE) {
                 RejectMessagesScreen(onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = KAKAO_ROOM_ROUTE,
+                arguments = listOf(navArgument(KAKAO_ROOM_ARG) { type = NavType.StringType }),
+            ) { entry ->
+                KakaoRoomScreen(
+                    room = entry.arguments?.getString(KAKAO_ROOM_ARG).orEmpty(),
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable(
                 route = THREAD_ROUTE,

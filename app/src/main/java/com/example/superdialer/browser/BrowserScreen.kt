@@ -1,5 +1,7 @@
 package com.example.superdialer.browser
 
+import androidx.compose.material.icons.filled.Share
+import com.example.superdialer.kakao.KakaoLinks
 import androidx.compose.material.icons.filled.Download
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -392,7 +394,13 @@ private fun WebTopBar(
                     tint = if (bookmarked) Color(0xFFF9A825) else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            OverflowMenu(onNewTab, onOpenBookmarks, onOpenHistory, onOpenDownloads, onMenuOpenChange)
+            val context = LocalContext.current
+            OverflowMenu(
+                onNewTab, onOpenBookmarks, onOpenHistory, onOpenDownloads, onMenuOpenChange,
+                onShareKakao = {
+                    KakaoLinks.share(context, if (tab.title.isNotBlank()) "${tab.title}\n${tab.url}" else tab.url)
+                },
+            )
         }
     }
 }
@@ -442,6 +450,8 @@ private fun OverflowMenu(
     onOpenHistory: () -> Unit,
     onOpenDownloads: () -> Unit,
     onOpenChange: (Boolean) -> Unit = {},
+    /** Shown only while a page is open: sends its address to KakaoTalk. */
+    onShareKakao: (() -> Unit)? = null,
 ) {
     var open by remember { mutableStateOf(false) }
     LaunchedEffect(open) { onOpenChange(open) }
@@ -468,6 +478,13 @@ private fun OverflowMenu(
                 leadingIcon = { Icon(Icons.Filled.Download, contentDescription = null) },
                 onClick = { open = false; onOpenDownloads() },
             )
+            if (onShareKakao != null) {
+                DropdownMenuItem(
+                    text = { Text("카카오톡으로 공유") },
+                    leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+                    onClick = { open = false; onShareKakao() },
+                )
+            }
         }
     }
 }

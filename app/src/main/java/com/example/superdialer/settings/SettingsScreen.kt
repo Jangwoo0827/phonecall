@@ -1,5 +1,9 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.kakao.openNotificationAccessSettings
+import com.example.superdialer.kakao.notificationAccessGranted
+import com.example.superdialer.kakao.KakaoLinks
+import com.example.superdialer.kakao.KakaoInbox
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
@@ -132,6 +136,28 @@ fun SettingsScreen(
             Clickable("차단 관리", "차단한 번호 보기·추가·해제", onOpenBlocked)
             Clickable("거절 메시지", "수신 거절 시 보낼 문구 관리", onOpenRejectMessages)
             Clickable("착신전환·통화 부가서비스", "통신사 통화 설정 열기 (착신전환 등)") { openCallSettings(context) }
+        }
+
+        SettingsGroup("카카오톡") {
+            ListItem(
+                colors = transparentListItem(),
+                headlineContent = { Text("카톡 알림 모아 보기") },
+                supportingContent = {
+                    Text("켜고 알림 접근을 허용하면 카톡 알림(보낸 사람·미리보기)을 이 폰 안에 모아 최근기록 > 카톡에서 보여 줍니다. 서버로 보내지 않습니다")
+                },
+                trailingContent = {
+                    Switch(
+                        checked = KakaoInbox.enabled,
+                        onCheckedChange = {
+                            KakaoInbox.switchCollecting(it)
+                            if (it && !notificationAccessGranted(context)) openNotificationAccessSettings(context)
+                        },
+                        modifier = Modifier.testTag("switch_kakao_inbox"),
+                    )
+                },
+            )
+            Clickable("알림 접근 설정", "시스템에서 SuperDialer의 알림 접근을 켜고 끕니다") { openNotificationAccessSettings(context) }
+            Clickable("카카오톡 열기", "카카오톡 앱을 엽니다") { KakaoLinks.openApp(context) }
         }
 
         SettingsGroup("화면") {

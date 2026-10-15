@@ -32,6 +32,8 @@
             <action android:name="android.intent.action.SEND" />
             <data android:mimeType="image/*" />
         </intent>
+        <!-- KakaoTalk, to open its chat / 보이스톡 / 페이스톡 entries of a contact and to share to it (kakao/) -->
+        <package android:name="com.kakao.talk" />
     </queries>
 
     <application
@@ -143,6 +145,17 @@
             android:taskAffinity=""
             android:turnScreenOn="true"
             android:theme="@style/Theme.SuperDialer" />
+
+        <!-- Notification access (the user switches it on in the system settings): collects KakaoTalk's notifications, see kakao/KakaoInbox -->
+        <service
+            android:name=".kakao.KakaoNotificationService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <receiver
             android:name=".messages.SmsSentReceiver"

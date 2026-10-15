@@ -86,10 +86,12 @@ abstract class AppTestBase {
     protected fun tabMatcher(label: String): SemanticsMatcher =
         hasText(label).and(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
 
-    /** The system back gesture/button. */
+    /**
+     * The back button, as the activity sees it. (Not the accessibility "back" action: that one stopped working once
+     * another test had used the shell through UiAutomation in the same run, and tests failed only in the full suite.)
+     */
     protected fun pressBack() {
-        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
-            .performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+        scenario?.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
     }
 

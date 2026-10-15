@@ -1,5 +1,6 @@
 package com.example.superdialer.contacts
 
+import com.example.superdialer.kakao.KakaoActions
 import com.example.superdialer.ui.theme.starColor
 import com.example.superdialer.ui.theme.callGreen
 import com.example.superdialer.ui.groupShape
@@ -206,6 +207,7 @@ fun ContactDetailScreen(
                     },
                 )
             }
+            item { KakaoActions(contactId) }
             item {
                 HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
                 ActivityChips(showMessages = showMessages, callCount = history.size, onSelect = { showMessages = it })

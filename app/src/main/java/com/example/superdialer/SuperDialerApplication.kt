@@ -1,5 +1,6 @@
 package com.example.superdialer
 
+import com.example.superdialer.kakao.KakaoInbox
 import com.example.superdialer.update.WhatsNew
 import com.example.superdialer.crash.CrashLog
 import com.example.superdialer.messages.SentSms
@@ -28,6 +29,7 @@ class SuperDialerApplication : Application() {
         CallNotes.init(this)
         ContactGroups.init(this)
         SentSms.init(this)
+        KakaoInbox.init(this)
         CallNotifications.ensureChannels(this)
     }
 }

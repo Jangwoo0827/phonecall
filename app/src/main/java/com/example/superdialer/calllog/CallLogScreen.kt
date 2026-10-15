@@ -1,5 +1,8 @@
 package com.example.superdialer.calllog
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import com.example.superdialer.kakao.KakaoRoomsList
 import com.example.superdialer.messages.ConversationsList
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.LaunchedEffect
@@ -108,6 +111,7 @@ fun CallLogScreen(
     onOpenHistory: (entryId: Long) -> Unit,
     onOpenMessages: (entryId: Long) -> Unit,
     onOpenThread: (number: String) -> Unit,
+    onOpenKakao: (room: String) -> Unit,
     onOpenContact: (contactId: Long) -> Unit,
     onOpenBlocked: () -> Unit,
     modifier: Modifier = Modifier,
@@ -118,7 +122,7 @@ fun CallLogScreen(
         rationale = "최근 통화 기록을 보려면 통화 기록 권한이 필요합니다.\n연락처 권한을 허용하면 저장된 이름도 표시됩니다.",
         modifier = modifier,
     ) {
-        CallLogList(viewModel, onOpenHistory, onOpenMessages, onOpenThread, onOpenContact, onOpenBlocked, modifier)
+        CallLogList(viewModel, onOpenHistory, onOpenMessages, onOpenThread, onOpenKakao, onOpenContact, onOpenBlocked, modifier)
     }
 }
 
@@ -128,6 +132,7 @@ private fun CallLogList(
     onOpenHistory: (Long) -> Unit,
     onOpenMessages: (Long) -> Unit,
     onOpenThread: (String) -> Unit,
+    onOpenKakao: (String) -> Unit,
     onOpenContact: (Long) -> Unit,
     onOpenBlocked: () -> Unit,
     modifier: Modifier = Modifier,
@@ -136,6 +141,8 @@ private fun CallLogList(
     val dial = rememberDialAction()
     // The "문자" chip swaps the calls for the text conversations (same search box).
     var showMessages by rememberSaveable { mutableStateOf(false) }
+    // ... and the "카톡" chip shows the chats collected from KakaoTalk's notifications.
+    var showKakao by rememberSaveable { mutableStateOf(false) }
 
     LifecycleResumeEffect(Unit) {
         viewModel.refresh()
@@ -227,13 +234,16 @@ private fun CallLogList(
             FilterRow(
                 selected = viewModel.filter,
                 messagesSelected = showMessages,
-                onSelect = { showMessages = false; viewModel.onFilterChange(it) },
-                onMessages = { showMessages = true },
+                kakaoSelected = showKakao,
+                onSelect = { showMessages = false; showKakao = false; viewModel.onFilterChange(it) },
+                onMessages = { showMessages = true; showKakao = false },
+                onKakao = { showKakao = true; showMessages = false },
             )
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
             when {
+                showKakao -> KakaoRoomsList(onOpenRoom = onOpenKakao)
                 showMessages -> ConversationsList(
                     query = viewModel.query,
                     onOpen = { onOpenThread(it.number) },
@@ -347,10 +357,18 @@ private fun SearchBar(
 }
 
 @Composable
-private fun FilterRow(selected: CallFilter, messagesSelected: Boolean, onSelect: (CallFilter) -> Unit, onMessages: () -> Unit) {
+private fun FilterRow(
+    selected: CallFilter,
+    messagesSelected: Boolean,
+    kakaoSelected: Boolean,
+    onSelect: (CallFilter) -> Unit,
+    onMessages: () -> Unit,
+    onKakao: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -360,13 +378,14 @@ private fun FilterRow(selected: CallFilter, messagesSelected: Boolean, onSelect:
         )
         CallFilter.entries.forEach { filter ->
             FilterChip(
-                selected = filter == selected && !messagesSelected,
+                selected = filter == selected && !messagesSelected && !kakaoSelected,
                 onClick = { onSelect(filter) },
                 label = { Text(filter.label) },
                 colors = colors,
             )
         }
         FilterChip(selected = messagesSelected, onClick = onMessages, label = { Text("문자") }, colors = colors)
+        FilterChip(selected = kakaoSelected, onClick = onKakao, label = { Text("카톡") }, colors = colors)
     }
 }
 
