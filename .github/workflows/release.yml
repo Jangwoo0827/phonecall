@@ -1,6 +1,8 @@
 name: Release APK
 
-# Pushing a tag like v0.2.0 builds a signed release APK and attaches it to a GitHub Release.
+# Pushing a tag like v0.2.0 first runs the emulator UI tests (ui-tests.yml, about 15 minutes) and, only when they pass,
+# builds a signed release APK and attaches it to a GitHub Release. A red UI test therefore never reaches the phone.
+# A flaky failure: open the run in the Actions tab and press "Re-run failed jobs".
 on:
   push:
     tags:
@@ -10,7 +12,11 @@ permissions:
   contents: write # needed to create the release and upload the APK
 
 jobs:
+  ui-tests:
+    uses: ./.github/workflows/ui-tests.yml
+
   release:
+    needs: ui-tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out

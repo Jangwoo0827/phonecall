@@ -2,7 +2,7 @@ name: UI tests
 
 # Runs the emulator tests (app/src/androidTest) on every push to main. They catch things the unit tests cannot: a crash on
 # a fresh install, a screen that no longer opens, a button that stopped working. Takes about 15 minutes.
-# This does not block releases (release.yml is separate); it shows red/green on the commit.
+# It also runs as the gate of a release: release.yml calls it (workflow_call) and only builds the APK when it is green.
 on:
   push:
     branches: [main]
@@ -11,6 +11,7 @@ on:
       - "**.md"
       - "supabase/**"
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: ui-tests-${{ github.ref }}
