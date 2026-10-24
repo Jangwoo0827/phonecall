@@ -263,9 +263,10 @@ private fun WebPage(
     onOpenHistory: () -> Unit,
     onOpenDownloads: () -> Unit,
 ) {
-    var topBarVisible by remember(tab.id) { mutableStateOf(true) }
-    // Navigating always brings the bar back so the new address is visible.
-    LaunchedEffect(tab.id, tab.url) { topBarVisible = true }
+    // The bar stays hidden: it neither appears when a site opens or changes, nor when the top of the screen is touched.
+    // Only pulling down while the page is already at its very top brings it out (like Naver's app).
+    var topBarVisible by remember(tab.id) { mutableStateOf(false) }
+    LaunchedEffect(tab.id, tab.url) { topBarVisible = false }
 
     Column(modifier = Modifier.fillMaxSize()) {
         WebArea(
@@ -304,8 +305,8 @@ private fun WebArea(
     onOpenDownloads: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // The bar appears on navigation or a touch at the top edge (not on scroll, so feeds like Shorts stay clean)
-    // and goes away again after 2 s without a touch on it, unless the address is being edited or a menu is open.
+    // The bar comes out when the page is pulled down at its very top (see WebViewHost), goes away when the page is
+    // scrolled up/away or after 2 s without a touch on it, unless the address is being edited or a menu is open.
     var touchStamp by remember { mutableIntStateOf(0) }
     var barFocused by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
@@ -321,7 +322,7 @@ private fun WebArea(
             tab = tab,
             modifier = Modifier.fillMaxSize(),
             onScrollDown = { onTopBarVisible(false) },
-            onTouchTop = { touchStamp++; onTopBarVisible(true) },
+            onPullDownAtTop = { touchStamp++; onTopBarVisible(true) },
         )
         AnimatedVisibility(
             visible = topBarVisible,
@@ -548,16 +549,16 @@ private fun WebViewHost(
     tab: BrowserTab,
     modifier: Modifier = Modifier,
     onScrollDown: () -> Unit,
-    onTouchTop: () -> Unit,
+    onPullDownAtTop: () -> Unit,
 ) {
     val activity = LocalContext.current
     val density = LocalDensity.current
-    val topZonePx = with(density) { 56.dp.toPx() }
     val thresholdPx = with(density) { 24.dp.toPx() }
+    val pullPx = with(density) { 56.dp.toPx() }
     val webView = viewModel.webViewFor(tab)
 
     val latestDown by rememberUpdatedState(onScrollDown)
-    val latestTop by rememberUpdatedState(onTouchTop)
+    val latestPull by rememberUpdatedState(onPullDownAtTop)
     val drag = remember { DragTracker() }
 
     LifecycleResumeEffect(webView) {
@@ -578,12 +579,14 @@ private fun WebViewHost(
                     FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
                 )
             }
-            webView.setOnTouchListener { _, event ->
+            webView.setOnTouchListener { view, event ->
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
                         drag.lastY = event.y
                         drag.accumulated = 0f
-                        if (event.y < topZonePx) latestTop()
+                        // Only a drag that STARTS with the page at its very top can pull the bar out: scrolling up to
+                        // the top and carrying on does not (lift the finger and pull again, as in Naver's app).
+                        drag.startedAtTop = !view.canScrollVertically(-1)
                     }
                     MotionEvent.ACTION_MOVE -> {
                         val dy = event.y - drag.lastY
@@ -594,6 +597,11 @@ private fun WebViewHost(
                         if (drag.accumulated < -thresholdPx) {
                             latestDown()
                             drag.accumulated = 0f
+                            drag.startedAtTop = false
+                        } else if (drag.startedAtTop && drag.accumulated > pullPx && !view.canScrollVertically(-1)) {
+                            latestPull()
+                            drag.accumulated = 0f
+                            drag.startedAtTop = false
                         }
                     }
                 }
@@ -615,4 +623,5 @@ private const val BAR_AUTO_HIDE_MS = 2000L
 private class DragTracker {
     var lastY = 0f
     var accumulated = 0f
+    var startedAtTop = false
 }

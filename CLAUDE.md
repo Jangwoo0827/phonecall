@@ -120,7 +120,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - `BrowserViewModel`(activity 스코프)이 탭별 `WebView`를 보관 → 탭/화면 전환·회전에도 페이지 상태 유지. `MutableContextWrapper`로 화면에 붙을 때만 Activity 컨텍스트를 물려 누수 방지(`WebViewHost`). MainActivity는 `configChanges`로 회전 시 재생성하지 않음
 - 주소창: `UrlResolver`가 입력 해석 (URL/호스트면 https://, localhost·IPv4는 http://, 그 외는 구글 검색). `javascript:`/`file:` 등은 URL로 취급하지 않음
 - **시작 화면(스피드 다이얼)**: 새 탭/나가기/홈은 시작 화면. 링크 타일 격자(4열), 탭하면 열기, 길게 누르면 수정/삭제, "+"로 추가(최대 24개). Room `speed_dials`(DB v2, 마이그레이션 1→2가 기본 타일 6개 시딩: 네이버/구글/유튜브/다음/쿠팡/위키백과)
-- **웹 화면(몰입형)**: 사이트가 열려 있거나 게임을 실행 중이면(게임은 `GameSession.playingId != null`, 헤더의 뒤로 화살표로 나감)(`BrowserViewModel.immersive`) 위쪽 "브라우저/게임" 전환 바와 앱 하단 탭 바를 숨겨 페이지가 전체 화면을 씀. 상단 바(왼쪽 나가기 X · 주소 · 북마크 · ⋮)는 아래로 스크롤하면 숨고 위로 스크롤하거나 화면 위쪽 56dp를 터치하면 나타남(터치 이동량만 감지, 이벤트는 소비하지 않음). 로딩 진행선은 항상 맨 위. 하단 사이트 이동 바(뒤로/앞으로/새로고침/시작 페이지/탭)는 항상 표시. 뒤로가기는 페이지 기록 → 더 갈 곳이 없으면 시작 화면
+- **웹 화면(몰입형)**: 사이트가 열려 있거나 게임을 실행 중이면(게임은 `GameSession.playingId != null`, 헤더의 뒤로 화살표로 나감)(`BrowserViewModel.immersive`) 위쪽 "브라우저/게임" 전환 바와 앱 하단 탭 바를 숨겨 페이지가 전체 화면을 씀. 상단 바(왼쪽 나가기 X · 주소 · 북마크 · ⋮)는 **기본으로 숨겨져 있고**, 사이트가 열리거나 바뀔 때·화면 위쪽을 터치할 때는 나오지 않음. **페이지가 맨 위에 있는 상태에서 시작한 드래그를 아래로 56dp 넘게 당길 때만** 나타남(네이버 앱처럼; 중간까지 스크롤해 올라와 맨 위에 닿은 뒤 이어서 당기는 것은 안 되고, 손을 떼고 다시 당겨야 함). 나타난 뒤엔 위로 스크롤하면 바로, 아니면 2초 무터치 후 사라짐(터치 이동량만 감지, 이벤트는 소비하지 않음). 로딩 진행선은 항상 맨 위. 하단 사이트 이동 바(뒤로/앞으로/새로고침/시작 페이지/탭)는 항상 표시. 뒤로가기는 페이지 기록 → 더 갈 곳이 없으면 시작 화면
 - `hubSection`(0 브라우저, 1 게임)은 `BrowserViewModel`에 있어 앱이 하단 바 숨김 여부를 판단할 수 있음
 - 북마크·방문 기록: Room(`browser/data/BrowserDatabase`, KSP). 방문 기록은 페이지 로드 완료 시 저장, 개별/전체 삭제
 - 다운로드: `DownloadListener` → 확인 다이얼로그 → `DownloadManager`(다운로드 폴더). 풀스크린 동영상: `onShowCustomView`를 시스템 바 위 전체 화면 Dialog로 표시
@@ -176,7 +176,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - `browser/BrowserSession`이 `BrowserViewModel`(탭·WebView)을 Activity가 아닌 앱 수준에서 보관. `MainActivity.onStop`에서 3분 타이머 시작, `onStart`에서 취소. 만료되면 `release()`로 WebView 해제(+`GameSession.release()`), 이미 만료된 뒤 멈춰 있던 Activity가 돌아오면 `recreate()`
 - `games/GameSession`: 열린 게임 id(`playingId`)와 게임 WebView 보관. 게임 목록으로 돌아가면(`close()`) 그 게임은 종료
 - 프로세스가 죽은 경우 대비: 나갈 때 탭 주소·선택 탭·웹/게임 섹션·열린 게임 id를 SharedPreferences(`browser_session`)에 저장, 3분 이내에 다시 열면 복원(페이지는 다시 로드, 스크롤·게임 판은 초기화)
-- 브라우저 상단 바: 사이트 진입/화면 맨 위 터치 때만 나타나고 2초(`BAR_AUTO_HIDE_MS`) 무터치면 사라짐. 주소 입력 중·메뉴 열림 중엔 유지. 스크롤 올림으로는 안 뜸
+- 브라우저 상단 바: 페이지 맨 위에서 아래로 당길 때만 나타나고(`WebViewHost`의 `startedAtTop` + `canScrollVertically(-1)`), 2초(`BAR_AUTO_HIDE_MS`) 무터치면 사라짐. 주소 입력 중·메뉴 열림 중엔 유지. 사이트가 바뀌면(`tab.url`) 숨김
 
 ## 키패드 레이아웃 (고정 높이)
 - 자동완성은 `SuggestionStrip`(가로 한 줄, 높이 68dp 고정 슬롯)로 표시해서 제안 유무와 상관없이 키패드 크기가 변하지 않음 (예전엔 제안이 늘면 키가 줄어 글자/영문이 잘렸음). 키 안의 숫자/영문 크기는 키 지름에 비례해 조정
