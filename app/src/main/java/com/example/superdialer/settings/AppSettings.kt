@@ -38,6 +38,7 @@ object AppSettings {
     private const val PREFS = "app_settings"
     private const val KEY_DTMF = "dtmf_enabled"
     private const val KEY_ONBOARDING = "onboarding_done"
+    private const val KEY_PERMISSION_GUIDE = "permission_guide_done"
     private const val KEY_DYNAMIC_COLOR = "dynamic_color"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_ACCENT = "accent"
@@ -81,6 +82,7 @@ object AppSettings {
         prefs = p
         dtmfEnabled = p.getBoolean(KEY_DTMF, true)
         onboardingDone = p.getBoolean(KEY_ONBOARDING, false)
+        permissionGuideDone = p.getBoolean(KEY_PERMISSION_GUIDE, false)
         dynamicColor = p.getBoolean(KEY_DYNAMIC_COLOR, false)
         themeMode = ThemeMode.fromKey(p.getString(KEY_THEME_MODE, null))
         accent = AccentColor.fromKey(p.getString(KEY_ACCENT, null))
@@ -127,5 +129,14 @@ object AppSettings {
     fun markOnboardingDone() {
         onboardingDone = true
         prefs?.edit()?.putBoolean(KEY_ONBOARDING, true)?.apply()
+    }
+
+    /** Whether the first-run "which permissions and why" screen has been dealt with. */
+    var permissionGuideDone by mutableStateOf(false)
+        private set
+
+    fun markPermissionGuideDone() {
+        permissionGuideDone = true
+        prefs?.edit()?.putBoolean(KEY_PERMISSION_GUIDE, true)?.apply()
     }
 }

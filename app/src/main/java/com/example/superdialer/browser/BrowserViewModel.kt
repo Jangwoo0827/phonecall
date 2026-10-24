@@ -45,6 +45,9 @@ class BrowserTab(val id: Int) {
     var canGoBack by mutableStateOf(false)
     var canGoForward by mutableStateOf(false)
 
+    /** "PC 사이트 보기": this tab asks sites for their desktop version (see [UserAgents]). Resets when the tab returns to the start page. */
+    var desktopMode by mutableStateOf(false)
+
     /** True while the tab shows the speed-dial start page instead of a website. */
     var isStart by mutableStateOf(true)
     internal var lastRecordedUrl: String? = null
@@ -141,6 +144,37 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /** The phone's own (mobile) user agent, read once; the desktop one is derived from it. */
+    private val defaultUserAgent: String by lazy { WebSettings.getDefaultUserAgent(getApplication<Application>()) }
+
+    /** Switches the tab between the mobile and the desktop version of sites and reloads the page. */
+    fun setDesktopMode(tab: BrowserTab, on: Boolean) {
+        tab.desktopMode = on
+        val view = webViewFor(tab)
+        view.settings.userAgentString = if (on) UserAgents.desktop(defaultUserAgent) else null // null = the default again
+        view.reload()
+    }
+
+    // --- Find in page -------------------------------------------------------------------------
+
+    /** Highlights every match of [query] in the page (nothing for an empty one). Results arrive through [setFindListener]. */
+    fun findInPage(tab: BrowserTab, query: String) {
+        val view = webViewFor(tab)
+        if (query.isBlank()) view.clearMatches() else view.findAllAsync(query)
+    }
+
+    fun findNext(tab: BrowserTab, forward: Boolean) = webViewFor(tab).findNext(forward)
+
+    fun setFindListener(tab: BrowserTab, listener: WebView.FindListener?) = webViewFor(tab).setFindListener(listener)
+
+    /** Removes the highlights. */
+    fun clearFind(tab: BrowserTab) {
+        webViews[tab.id]?.apply {
+            clearMatches()
+            setFindListener(null)
+        }
+    }
+
     fun webViewFor(tab: BrowserTab): WebView = webViews.getOrPut(tab.id) {
         createWebView(tab).also { view ->
             tab.pendingUrl?.let { view.loadUrl(it) }
@@ -176,6 +210,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         val tab = selected ?: return
         webViews.remove(tab.id)?.let(::destroy)
         tab.isStart = true
+        tab.desktopMode = false
         tab.url = ""
         tab.title = ""
         tab.loading = false
@@ -352,6 +387,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             useWideViewPort = true
             loadWithOverviewMode = true
         }
+        if (tab.desktopMode) webView.settings.userAgentString = UserAgents.desktop(defaultUserAgent)
         // Lets the phone's autofill service (Samsung Pass, Google, ...) offer to save and fill logins in pages.
         webView.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_YES
         CookieManager.getInstance().apply {

@@ -1,5 +1,8 @@
 package com.example.superdialer.browser
 
+import androidx.compose.material.icons.filled.DesktopWindows
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import com.example.superdialer.kakao.KakaoLinks
 import androidx.compose.material.icons.filled.Download
@@ -310,6 +313,18 @@ private fun WebArea(
     var touchStamp by remember { mutableIntStateOf(0) }
     var barFocused by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
+    // Find in page: its own bar over the page; the top bar stays out of the way while it is open.
+    var findOpen by remember(tab.id) { mutableStateOf(false) }
+    var findActive by remember(tab.id) { mutableIntStateOf(0) }
+    var findTotal by remember(tab.id) { mutableIntStateOf(0) }
+    fun closeFind() {
+        findOpen = false
+        findActive = 0
+        findTotal = 0
+        viewModel.clearFind(tab)
+    }
+    BackHandler(enabled = findOpen) { closeFind() }
+    LaunchedEffect(tab.url) { if (findOpen) closeFind() } // another page: the matches are gone anyway
     LaunchedEffect(topBarVisible, touchStamp, barFocused, menuOpen, tab.url) {
         if (topBarVisible && !barFocused && !menuOpen) {
             delay(BAR_AUTO_HIDE_MS)
@@ -322,8 +337,18 @@ private fun WebArea(
             tab = tab,
             modifier = Modifier.fillMaxSize(),
             onScrollDown = { onTopBarVisible(false) },
-            onPullDownAtTop = { touchStamp++; onTopBarVisible(true) },
+            onPullDownAtTop = { if (!findOpen) { touchStamp++; onTopBarVisible(true) } },
         )
+        if (findOpen) {
+            FindBar(
+                active = findActive,
+                total = findTotal,
+                onQuery = { viewModel.findInPage(tab, it) },
+                onNext = { viewModel.findNext(tab, it) },
+                onClose = ::closeFind,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        }
         AnimatedVisibility(
             visible = topBarVisible,
             modifier = Modifier
@@ -351,6 +376,15 @@ private fun WebArea(
                 onOpenHistory = onOpenHistory,
                 onOpenDownloads = onOpenDownloads,
                 onMenuOpenChange = { menuOpen = it },
+                onFind = {
+                    viewModel.setFindListener(tab) { active, total, _ ->
+                        findActive = active + 1 // the listener counts from 0
+                        findTotal = total
+                    }
+                    findOpen = true
+                    onTopBarVisible(false)
+                },
+                onToggleDesktop = { viewModel.setDesktopMode(tab, !tab.desktopMode) },
             )
         }
         if (tab.loading) {
@@ -376,6 +410,8 @@ private fun WebTopBar(
     onOpenHistory: () -> Unit,
     onOpenDownloads: () -> Unit,
     onMenuOpenChange: (Boolean) -> Unit,
+    onFind: () -> Unit,
+    onToggleDesktop: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -401,6 +437,9 @@ private fun WebTopBar(
                 onShareKakao = {
                     KakaoLinks.share(context, if (tab.title.isNotBlank()) "${tab.title}\n${tab.url}" else tab.url)
                 },
+                onFind = onFind,
+                desktopMode = tab.desktopMode,
+                onToggleDesktop = onToggleDesktop,
             )
         }
     }
@@ -453,12 +492,32 @@ private fun OverflowMenu(
     onOpenChange: (Boolean) -> Unit = {},
     /** Shown only while a page is open: sends its address to KakaoTalk. */
     onShareKakao: (() -> Unit)? = null,
+    /** Shown only while a page is open: find text in the page. */
+    onFind: (() -> Unit)? = null,
+    /** Shown only while a page is open: null hides the item; the flag tells whether desktop mode is on. */
+    desktopMode: Boolean = false,
+    onToggleDesktop: (() -> Unit)? = null,
 ) {
     var open by remember { mutableStateOf(false) }
     LaunchedEffect(open) { onOpenChange(open) }
     Box {
         IconButton(onClick = { open = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "더보기") }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            if (onFind != null) {
+                DropdownMenuItem(
+                    text = { Text("페이지에서 찾기") },
+                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                    onClick = { open = false; onFind() },
+                )
+            }
+            if (onToggleDesktop != null) {
+                DropdownMenuItem(
+                    text = { Text("PC 사이트 보기") },
+                    leadingIcon = { Icon(Icons.Filled.DesktopWindows, contentDescription = null) },
+                    trailingIcon = { if (desktopMode) Icon(Icons.Filled.Check, contentDescription = "켜짐") },
+                    onClick = { open = false; onToggleDesktop() },
+                )
+            }
             DropdownMenuItem(
                 text = { Text("새 탭") },
                 leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },

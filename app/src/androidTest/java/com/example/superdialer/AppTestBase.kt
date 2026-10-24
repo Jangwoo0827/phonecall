@@ -52,6 +52,7 @@ abstract class AppTestBase {
     fun launchApp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         AppSettings.markOnboardingDone()
+        AppSettings.markPermissionGuideDone()
         // "checked just now": the startup update check (an internet call that can open a dialog) is skipped.
         context.getSharedPreferences("update_checker", Context.MODE_PRIVATE).edit()
             .putLong("last_check", System.currentTimeMillis()).commit()

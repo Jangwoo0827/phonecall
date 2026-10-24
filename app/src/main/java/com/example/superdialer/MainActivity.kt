@@ -25,7 +25,9 @@ import com.example.superdialer.browser.UrlResolver
 import com.example.superdialer.dialer.DialerViewModel
 import com.example.superdialer.navigation.SuperDialerApp
 import com.example.superdialer.navigation.TopLevelDestination
+import com.example.superdialer.onboarding.CorePermissions
 import com.example.superdialer.onboarding.DefaultDialerOnboarding
+import com.example.superdialer.onboarding.PermissionGuide
 import com.example.superdialer.settings.AppSettings
 import com.example.superdialer.ui.isDefaultDialer
 import com.example.superdialer.ui.hasPermission
@@ -53,10 +55,19 @@ class MainActivity : ComponentActivity() {
             SuperDialerTheme {
                 // First run: offer the default-phone-app role before showing the app.
                 var onboarding by remember { mutableStateOf(!AppSettings.onboardingDone && !isDefaultDialer()) }
+                // Then, once, explain the permissions and ask for them together (skipped when they are all granted already).
+                var guide by remember {
+                    mutableStateOf(!AppSettings.permissionGuideDone && CorePermissions.missing { hasPermission(it) }.isNotEmpty())
+                }
                 if (onboarding) {
                     DefaultDialerOnboarding(onFinished = {
                         AppSettings.markOnboardingDone()
                         onboarding = false
+                    })
+                } else if (guide) {
+                    PermissionGuide(onFinished = {
+                        AppSettings.markPermissionGuideDone()
+                        guide = false
                     })
                 } else {
                     SuperDialerApp(
