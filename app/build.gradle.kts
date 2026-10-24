@@ -36,7 +36,10 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release")
-            isMinifyEnabled = false
+            // R8: shrinks code and resources and renames classes (rules in proguard-rules.pro). Only the release build is
+            // minified, so every bug it could cause shows up only there: check a release build on a fresh install.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

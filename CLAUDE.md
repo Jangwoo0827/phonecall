@@ -155,6 +155,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 버전: `VERSION_NAME`(태그에서 v 제거), `VERSION_CODE`(워크플로 실행 번호) 환경변수, 없으면 0.1.0 / 1
 - keystore 만들기·base64 변환·Secrets 등록·태그 푸시 절차는 README.md "릴리스 배포" 참고. **Secrets 등록과 태그 푸시는 사용자가 직접 함** (로컬에서는 임시 키로 서명 빌드·`apksigner verify`까지 검증함)
 - 릴리스 키와 디버그 키가 달라 폰에 디버그 빌드가 있으면 지우고(데이터 삭제) 릴리스를 설치해야 함
+- **R8 코드·리소스 축소가 릴리스 빌드에 켜져 있음**(`isMinifyEnabled`/`isShrinkResources`, 규칙 `app/proguard-rules.pro`): APK 42.9MB → 약 3.4MB. 디버그 빌드는 축소하지 않으므로 **R8 때문에 생기는 버그는 릴리스에서만 나타남** → 코드를 크게 바꾼 뒤엔 릴리스를 새로 설치해서 확인할 것. 규칙에 넣은 것: 크래시 로그용 줄 번호/소스 이름 보존, 게임 JS 브릿지(`@JavascriptInterface`, `GameBridge`)의 이름 보존. 리플렉션(`Class.forName` 등)은 앱 코드에 없고 Room·Compose·코루틴은 라이브러리 자체 규칙이 있음. 새로 리플렉션/JS 브릿지/직렬화를 쓰면 여기에 keep 규칙을 추가할 것
+- 로컬에서 릴리스 검증하는 법: 임시 키스토어를 만들어(`keytool -genkeypair ... -keystore localtest.jks`, 저장소에 넣지 말 것) `KEYSTORE_FILE`·`KEYSTORE_PASSWORD`·`KEY_ALIAS`·`KEY_PASSWORD` 환경변수와 함께 `./gradlew assembleRelease`(약 10분), 에뮬레이터에서 `adb install -g app/build/outputs/apk/release/app-release.apk` 후 화면을 훑고 `adb logcat -d -b crash`가 비어 있는지 확인(디버그 앱이 깔려 있으면 서명이 달라 먼저 지워야 함). 확인한 범위: 모든 탭, 문자·MMS 사진, 카톡 설정, 게임 실행·점수 저장(JS 브릿지), 웹 로드, 업데이트 확인, 수신 통화 알림
+- 릴리스마다 `mapping-<태그>.txt.gz`(R8 이름 대응표)가 APK 옆에 올라감(실패해도 릴리스는 막지 않음). 폰의 오류 기록(설정 > 앱 정보)은 이제 이름이 바뀐 스택이라 읽으려면 이 파일로 retrace: `gunzip` 후 `$ANDROID_HOME/cmdline-tools/latest/bin/retrace mapping.txt trace.txt`(줄 번호는 보존됨)
+- **CI UI 테스트**: `.github/workflows/ui-tests.yml`이 `main`에 푸시될 때마다 에뮬레이터(API 34, `reactivecircus/android-emulator-runner`)에서 `connectedDebugAndroidTest`를 돌림(약 15분, 릴리스를 막지는 않음 — `release.yml`과 별개). 결과는 GitHub Actions 탭이나 공개 API(`/repos/Jangwoo0827/phonecall/actions/runs`)로 확인, 실패하면 리포트가 `ui-test-report` 아티팩트로 남음. 초록이 안정적으로 유지되면 `release.yml`에 `needs`로 연결해 릴리스 전 관문으로 삼을 수 있음
 - `.gitattributes`로 `gradlew`는 LF 고정, `gradlew`는 git에서 실행 권한(100755)으로 저장됨 (리눅스 러너용)
 
 ## 디자인 시스템 (UI 개편)

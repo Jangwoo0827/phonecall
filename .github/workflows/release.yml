@@ -78,6 +78,12 @@ jobs:
       - name: Name the APK after the tag
         run: cp app/build/outputs/apk/release/app-release.apk "SuperDialer-${GITHUB_REF_NAME}.apk"
 
+      # R8 renames classes, so a crash trace copied from the phone (Settings > App info > Error log) is unreadable on its
+      # own. This map turns it back into real names (retrace). It is only a convenience: a failure here never blocks the release.
+      - name: Keep the R8 mapping next to the APK
+        continue-on-error: true
+        run: gzip -c app/build/outputs/mapping/release/mapping.txt > "mapping-${GITHUB_REF_NAME}.txt.gz"
+
       - name: Write release notes
         run: |
           # The commit subjects since the previous tag (direct pushes have no pull requests for GitHub to list).
@@ -98,6 +104,8 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: SuperDialer-${{ github.ref_name }}.apk
+          files: |
+            SuperDialer-${{ github.ref_name }}.apk
+            mapping-${{ github.ref_name }}.txt.gz
           body_path: ${{ runner.temp }}/release-notes.md
           generate_release_notes: true
