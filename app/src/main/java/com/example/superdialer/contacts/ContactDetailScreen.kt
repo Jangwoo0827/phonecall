@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -58,10 +59,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.superdialer.calllog.CallLogViewModel
 import com.example.superdialer.calllog.CallType
+import com.example.superdialer.calllog.NoteDialog
 import com.example.superdialer.calllog.formatDateTime
 import com.example.superdialer.calllog.formatDuration
 import com.example.superdialer.calllog.icon
@@ -208,6 +211,7 @@ fun ContactDetailScreen(
                 )
             }
             item { KakaoActions(contactId) }
+            item { ContactMemoCard(detail.numbers.map { it.number }) }
             item {
                 HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
                 ActivityChips(showMessages = showMessages, callCount = history.size, onSelect = { showMessages = it })
@@ -237,6 +241,34 @@ fun ContactDetailScreen(
                 }
             }
         }
+    }
+}
+
+/** The contact's memo (or an "add memo" row); tapping opens the editor. Kept on this phone only. */
+@Composable
+private fun ContactMemoCard(numbers: List<String>) {
+    var editing by remember { mutableStateOf(false) }
+    val memo = ContactMemos.forNumbers(numbers)
+    ListItem(
+        modifier = Modifier
+            .padding(start = 12.dp, end = 12.dp, top = 8.dp)
+            .clip(MaterialTheme.shapes.large)
+            .clickable { editing = true }
+            .testTag("contact_memo"),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        leadingContent = { Icon(Icons.Filled.EditNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+        headlineContent = {
+            Text(if (memo.isEmpty()) "메모 추가" else memo, color = if (memo.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified)
+        },
+        supportingContent = if (memo.isEmpty()) null else ({ Text("눌러서 수정", color = MaterialTheme.colorScheme.onSurfaceVariant) }),
+    )
+    if (editing) {
+        NoteDialog(
+            title = "연락처 메모",
+            initial = memo,
+            onSave = { ContactMemos.setFor(numbers, it) },
+            onDismiss = { editing = false },
+        )
     }
 }
 

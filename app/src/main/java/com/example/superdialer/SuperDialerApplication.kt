@@ -5,6 +5,7 @@ import com.example.superdialer.update.WhatsNew
 import com.example.superdialer.crash.CrashLog
 import com.example.superdialer.messages.SentSms
 import com.example.superdialer.contacts.ContactGroups
+import com.example.superdialer.contacts.ContactMemos
 import com.example.superdialer.calllog.CallNotes
 import com.example.superdialer.dialer.QuickDials
 import android.app.Application
@@ -27,6 +28,7 @@ class SuperDialerApplication : Application() {
         AccountManager.init(this)
         QuickDials.init(this)
         CallNotes.init(this)
+        ContactMemos.init(this)
         ContactGroups.init(this)
         SentSms.init(this)
         KakaoInbox.init(this)

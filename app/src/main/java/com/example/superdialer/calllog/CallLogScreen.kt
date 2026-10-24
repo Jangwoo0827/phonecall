@@ -114,6 +114,7 @@ fun CallLogScreen(
     onOpenKakao: (room: String) -> Unit,
     onOpenContact: (contactId: Long) -> Unit,
     onOpenBlocked: () -> Unit,
+    onOpenStats: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     PermissionGate(
@@ -122,7 +123,7 @@ fun CallLogScreen(
         rationale = "최근 통화 기록을 보려면 통화 기록 권한이 필요합니다.\n연락처 권한을 허용하면 저장된 이름도 표시됩니다.",
         modifier = modifier,
     ) {
-        CallLogList(viewModel, onOpenHistory, onOpenMessages, onOpenThread, onOpenKakao, onOpenContact, onOpenBlocked, modifier)
+        CallLogList(viewModel, onOpenHistory, onOpenMessages, onOpenThread, onOpenKakao, onOpenContact, onOpenBlocked, onOpenStats, modifier)
     }
 }
 
@@ -135,6 +136,7 @@ private fun CallLogList(
     onOpenKakao: (String) -> Unit,
     onOpenContact: (Long) -> Unit,
     onOpenBlocked: () -> Unit,
+    onOpenStats: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -230,6 +232,7 @@ private fun CallLogList(
                 onSelect = { groups.firstOrNull()?.let { viewModel.startSelecting(it.id) } },
                 onDeleteAll = { confirmDeleteAll = true },
                 onOpenBlocked = onOpenBlocked,
+                onOpenStats = onOpenStats,
             )
             FilterRow(
                 selected = viewModel.filter,
@@ -312,6 +315,7 @@ private fun SearchBar(
     onSelect: () -> Unit,
     onDeleteAll: () -> Unit,
     onOpenBlocked: () -> Unit,
+    onOpenStats: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     Row(
@@ -350,6 +354,7 @@ private fun SearchBar(
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(text = { Text("선택 삭제") }, onClick = { menuOpen = false; onSelect() })
                 DropdownMenuItem(text = { Text("전체 삭제") }, onClick = { menuOpen = false; onDeleteAll() })
+                DropdownMenuItem(text = { Text("통화 통계") }, onClick = { menuOpen = false; onOpenStats() })
                 DropdownMenuItem(text = { Text("차단 관리") }, onClick = { menuOpen = false; onOpenBlocked() })
             }
         }

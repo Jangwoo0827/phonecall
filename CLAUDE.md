@@ -331,9 +331,13 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 에뮬레이터 주의: 이번 세션에선 에뮬레이터가 `emulator-5556`으로 떠서 `ANDROID_SERIAL=emulator-5556`, adb에 `-s emulator-5556`을 썼음(5554가 비어 있을 때만 5554). `adb devices`로 확인
 
 - **UI 테스트의 뒤로가기**: `AppTestBase.pressBack()`은 접근성 `GLOBAL_ACTION_BACK`이 아니라 `scenario.onActivity { onBackPressedDispatcher.onBackPressed() }`를 쓴다. 접근성 방식은 같은 실행에서 다른 테스트가 `UiAutomation`으로 셸 명령을 쓴 뒤에 먹통이 돼서, 단독으론 통과하던 뒤로가기 테스트가 전체 실행에서만 실패했음. 토스트를 띄우는 코드를 테스트에서 직접 부를 땐 `runOnMainSync` 안에서 부를 것(계측 스레드엔 Looper가 없음)
-- 전체 UI 테스트 45개(약 8~9분)
+- 전체 UI 테스트 47개(약 8~9분)
 
 ## 첫 실행 권한 안내 / 페이지 내 검색 / PC 사이트 보기 (v0.8.0)
 - 권한 안내(`onboarding/PermissionGuide`, `CorePermissions`): 기본 전화 앱 안내 다음에 한 번, 전화·통화 기록·연락처·문자 권한이 왜 필요한지 보여 주고 "권한 허용"으로 한꺼번에 요청(시스템 창이 차례로 뜸). 이미 모두 허용돼 있으면 건너뜀. "나중에"/요청 끝 = `AppSettings.permissionGuideDone`. 허용 안 해도 각 화면이 필요할 때 다시 물어봄(기존 `PermissionGate`/`DialAction` 그대로). 권한을 추가하면 `CorePermissions.all`에도 넣을 것(테스트 `CorePermissionsTest`). `AppTestBase`가 이 플래그를 완료로 만들어 둠. 에뮬레이터에서 새 설치부터 허용까지 확인
 - 페이지 내 검색(`browser/FindBar`): 사이트가 열려 있을 때 ⋮ > "페이지에서 찾기". `WebView.findAllAsync/findNext/clearMatches` + `FindListener`(결과 "2/7"/"결과 없음", `findLabel` 테스트 있음). 뒤로가기·X·다른 페이지로 이동하면 닫히고 강조 제거. 검색 중엔 위쪽 당김으로 상단 바가 나오지 않음
 - PC 사이트 보기(`browser/UserAgents`, `BrowserTab.desktopMode`): ⋮ > "PC 사이트 보기"(켜지면 체크). 폰 WebView의 크롬 버전을 읽어 Linux 데스크톱 크롬 User-Agent로 바꾸고 새로고침, 다시 누르면 기본값(`userAgentString = null`). 탭마다 따로, 시작 화면으로 나가면 꺼짐. 에뮬레이터에서 위키백과 데스크톱 레이아웃으로 바뀌는 것 확인
+
+## 연락처 메모 / 통화 통계 (v0.9.0)
+- 연락처 메모(`contacts/ContactMemos`): 연락처 상세의 "메모 추가"(있으면 메모 내용 + "눌러서 수정") → 기존 `NoteDialog`. 폰 연락처에는 앱이 추가 권한 없이 쓸 수 있는 칸이 없어서 SharedPreferences(`contact_memos`, 최대 500개)에 **전화번호 키**(`numberKey`)로 저장 → 연락처가 합쳐지거나 다시 만들어져도 번호가 같으면 유지. 한 연락처 = 메모 하나(첫 번호에 저장, 다른 번호의 옛 메모는 지움). 이 폰에만 저장, 동기화 안 함. 테스트 `ContactMemosTest`, UI `ContactsScreenTest.aMemoCanBeAddedToTheContactAndShowsOnItsDetail`
+- 통화 통계(`calllog/CallStats`, `CallStatsScreen`, 경로 `calllog/tools/stats`): 최근기록 ⋮ > "통화 통계". 기간 칩(지난 7일/30일/전체), 총 통화 수·통화한 시간, 수신/발신/부재중/거절·차단 개수, "자주 통화한 사람" 상위 5명(번호 키로 묶음 — +82/010 같은 사람, 통화 수 → 통화 시간 순, 번호 없는 비공개 발신자는 개수에는 들어가지만 순위에서는 제외). 순수 계산은 `CallStatsCalculator`(테스트 `CallStatsTest`), 화면은 이미 읽어 둔 `CallLogViewModel.entries`만 쓰고 서버로 보내지 않음. UI 테스트 `CallLogScreenTest.theStatisticsScreen...`

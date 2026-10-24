@@ -50,6 +50,7 @@ import com.example.superdialer.contacts.ContactsViewModel
 import com.example.superdialer.dialer.DialerScreen
 import com.example.superdialer.dialer.DialerViewModel
 import com.example.superdialer.hub.WebGamesScreen
+import com.example.superdialer.calllog.CallStatsScreen
 import com.example.superdialer.settings.BlockedNumbersScreen
 import com.example.superdialer.settings.BlockedNumbersViewModel
 import com.example.superdialer.settings.RejectMessagesScreen
@@ -64,6 +65,7 @@ private const val HISTORY_TAB_ARG = "tab"
 private const val HISTORY_TAB_MESSAGES = "messages"
 private const val CALL_HISTORY_ROUTE = "calllog/{$ENTRY_ID_ARG}?$HISTORY_TAB_ARG={$HISTORY_TAB_ARG}"
 private const val BLOCKED_ROUTE = "settings/blocked"
+private const val CALL_STATS_ROUTE = "calllog/tools/stats"
 private const val REJECT_ROUTE = "settings/reject"
 private const val QUICK_DIAL_ROUTE = "settings/quickdial"
 private const val CONTACT_GROUPS_ROUTE = "contacts/tools/groups"
@@ -196,7 +198,11 @@ fun SuperDialerApp(
                     onOpenKakao = { room -> navController.navigate("calllog/kakao/${android.net.Uri.encode(room)}") },
                     onOpenContact = { id -> navController.navigate("contacts/$id") },
                     onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
+                    onOpenStats = { navController.navigate(CALL_STATS_ROUTE) },
                 )
+            }
+            composable(CALL_STATS_ROUTE) {
+                CallStatsScreen(callLogViewModel, onBack = { navController.popBackStack() })
             }
             composable(TopLevelDestination.Settings.route) {
                 SettingsScreen(

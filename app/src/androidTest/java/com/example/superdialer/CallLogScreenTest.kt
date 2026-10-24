@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -109,5 +110,19 @@ class CallLogScreenTest : AppTestBase() {
 
         compose.onAllNodesWithText("전체")[0].performClick()
         waitFor(hasText(incoming))
+    }
+
+    @Test
+    fun theStatisticsScreenCountsTheInsertedCallsAndRanksTheRepeatedNumberFirst() {
+        compose.onNodeWithContentDescription("더보기").performClick()
+        compose.onNodeWithText("통화 통계").performClick()
+        waitFor(hasText("자주 통화한 사람"))
+        // the repeated number (2 calls) tops the ranking; the other test calls have one each
+        waitFor(hasText("통화 2번", substring = true))
+        compose.onNodeWithText("1위").assertIsDisplayed()
+        compose.onNodeWithText("지난 7일").assertIsDisplayed()
+
+        pressBack()
+        waitFor(hasText("이름, 초성, 번호 검색"))
     }
 }

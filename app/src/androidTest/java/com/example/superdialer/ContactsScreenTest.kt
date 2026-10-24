@@ -34,6 +34,7 @@ class ContactsScreenTest : AppTestBase() {
     @After
     fun removeContact() {
         TestData.removeContact(context, name)
+        com.example.superdialer.contacts.ContactMemos.setFor(listOf(number), "")
     }
 
     @Test
@@ -72,5 +73,16 @@ class ContactsScreenTest : AppTestBase() {
         pressBack()
         waitFor(hasText("이름, 초성, 번호 검색"))
         compose.onNodeWithText(name).assertIsDisplayed()
+    }
+
+    @Test
+    fun aMemoCanBeAddedToTheContactAndShowsOnItsDetail() {
+        compose.onNodeWithText(name).performClick()
+        waitFor(hasText(shown))
+        compose.onNodeWithText("메모 추가").performClick()
+        compose.onNodeWithText("메모").performTextInput("저녁 약속 잡기")
+        compose.onNodeWithText("저장").performClick()
+        waitFor(hasText("저녁 약속 잡기"))
+        compose.onNodeWithText("눌러서 수정").assertIsDisplayed()
     }
 }
