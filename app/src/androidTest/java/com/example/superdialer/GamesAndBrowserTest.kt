@@ -2,6 +2,8 @@ package com.example.superdialer
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -16,7 +18,8 @@ class GamesAndBrowserTest : AppTestBase() {
     fun startPageShowsTheDefaultTiles() {
         tab("웹·게임")
         waitFor(hasText("네이버"))
-        listOf("체크리스트", "네이버", "구글", "유튜브").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
+        // "구글" is also the name of the chosen search engine shown in the address field, so more than one node may match
+        listOf("체크리스트", "네이버", "구글", "유튜브").forEach { compose.onAllNodesWithText(it).onFirst().assertIsDisplayed() }
     }
 
     @Test

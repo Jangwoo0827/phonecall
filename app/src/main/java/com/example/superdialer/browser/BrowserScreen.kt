@@ -1,5 +1,16 @@
 package com.example.superdialer.browser
 
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Lock
+import com.example.superdialer.settings.AppSettings
+import androidx.compose.foundation.background
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.DesktopWindows
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
@@ -115,6 +126,20 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
             viewModel.finishFileChooser(null)
         }
     }
+    // Web page dark mode follows its setting, the app theme and the phone's dark mode.
+    val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+    LaunchedEffect(AppSettings.webDarkMode, AppSettings.themeMode, systemDark) { viewModel.refreshDarkMode(systemDark) }
+
+    // A page asked for the camera/microphone/location and the user allowed it: Android still needs its own yes.
+    val osPermissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        viewModel.finishOsPermissionRequest()
+    }
+    val osRequest = viewModel.osPermissionRequest
+    LaunchedEffect(osRequest) { osRequest?.let { osPermissions.launch(it.osPermissions.toTypedArray()) } }
+    viewModel.pendingPermission?.let { request ->
+        SitePermissionSheet(request, onAnswer = viewModel::answerPermission)
+    }
+
     val tab = viewModel.selected ?: return
     val bookmarks by viewModel.bookmarks.collectAsState()
     val bookmarked = !tab.isStart && bookmarks.any { it.url == tab.url }
@@ -140,8 +165,9 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
         if (isStart) {
             StartPage(
                 viewModel = viewModel,
+                isPrivate = tab.isPrivate,
                 tabCount = viewModel.tabs.size,
-                onOpenTabs = { panel = Panel.Tabs },
+                onOpenTabs = { viewModel.captureThumbnail(tab); panel = Panel.Tabs },
                 onOpenBookmarks = { panel = Panel.Bookmarks },
                 onOpenHistory = { panel = Panel.History },
                 onOpenDownloads = { panel = Panel.Downloads },
@@ -151,7 +177,10 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
                 viewModel = viewModel,
                 tab = tab,
                 bookmarked = bookmarked,
-                onOpenTabs = { panel = if (panel == Panel.Tabs) Panel.None else Panel.Tabs },
+                onOpenTabs = {
+                    if (panel != Panel.Tabs) viewModel.captureThumbnail(tab)
+                    panel = if (panel == Panel.Tabs) Panel.None else Panel.Tabs
+                },
                 onOpenBookmarks = { panel = Panel.Bookmarks },
                 onOpenHistory = { panel = Panel.History },
                 onOpenDownloads = { panel = Panel.Downloads },
@@ -175,9 +204,11 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
             Panel.Tabs -> TabsPanel(
                 tabs = viewModel.tabs,
                 selectedId = viewModel.selectedId,
+                initialPrivate = tab.isPrivate,
                 onSelect = { viewModel.selectTab(it); panel = Panel.None },
                 onClose = viewModel::closeTab,
-                onNewTab = { viewModel.newTab(); panel = Panel.None },
+                onCloseAll = viewModel::closeAllTabs,
+                onNewTab = { private -> viewModel.newTab(private = private); panel = Panel.None },
                 onBack = { panel = Panel.None },
             )
             Panel.Bookmarks -> BookmarksPanel(
@@ -219,6 +250,7 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
 @Composable
 private fun StartPage(
     viewModel: BrowserViewModel,
+    isPrivate: Boolean,
     tabCount: Int,
     onOpenTabs: () -> Unit,
     onOpenBookmarks: () -> Unit,
@@ -226,6 +258,8 @@ private fun StartPage(
     onOpenDownloads: () -> Unit,
 ) {
     val dials by viewModel.speedDials.collectAsState()
+    PrivateTheme(isPrivate) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -237,10 +271,19 @@ private fun StartPage(
                 initial = "",
                 onSubmit = viewModel::load,
                 modifier = Modifier.weight(1f),
+                privateTab = isPrivate,
+                showEngine = true,
             )
             TabCountButton(tabCount, onOpenTabs)
-            OverflowMenu(viewModel::newTab, onOpenBookmarks, onOpenHistory, onOpenDownloads)
+            OverflowMenu(
+                onNewTab = { viewModel.newTab() },
+                onNewPrivateTab = { viewModel.newTab(private = true) },
+                onOpenBookmarks = onOpenBookmarks,
+                onOpenHistory = onOpenHistory,
+                onOpenDownloads = onOpenDownloads,
+            )
         }
+        if (isPrivate) PrivateBanner()
         SpeedDialGrid(
             dials = dials,
             onOpen = { viewModel.load(it.url) },
@@ -251,6 +294,33 @@ private fun StartPage(
             onMove = viewModel::moveSpeedDial,
             onReorder = viewModel::reorderSpeedDials,
         )
+    }
+    }
+    }
+}
+
+/** On the start page of a private tab: what this tab does and does not keep. */
+@Composable
+private fun PrivateBanner() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .testTag("private_banner"),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Filled.VisibilityOff, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Column(modifier = Modifier.padding(start = 12.dp)) {
+            Text("비공개 탭", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(
+                "방문 기록과 쿠키를 남기지 않아요. 탭을 모두 닫으면 사이트 데이터도 지워져요.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -271,6 +341,7 @@ private fun WebPage(
     var topBarVisible by remember(tab.id) { mutableStateOf(false) }
     LaunchedEffect(tab.id, tab.url) { topBarVisible = false }
 
+    PrivateTheme(tab.isPrivate) {
     Column(modifier = Modifier.fillMaxSize()) {
         WebArea(
             viewModel = viewModel,
@@ -292,6 +363,7 @@ private fun WebPage(
             onHome = viewModel::exitToStart,
             onTabs = onOpenTabs,
         )
+    }
     }
 }
 
@@ -372,6 +444,7 @@ private fun WebArea(
                 onSubmit = viewModel::load,
                 onToggleBookmark = viewModel::toggleBookmark,
                 onNewTab = { viewModel.newTab() },
+                onNewPrivateTab = { viewModel.newTab(private = true) },
                 onOpenBookmarks = onOpenBookmarks,
                 onOpenHistory = onOpenHistory,
                 onOpenDownloads = onOpenDownloads,
@@ -406,6 +479,7 @@ private fun WebTopBar(
     onSubmit: (String) -> Unit,
     onToggleBookmark: () -> Unit,
     onNewTab: () -> Unit,
+    onNewPrivateTab: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenHistory: () -> Unit,
     onOpenDownloads: () -> Unit,
@@ -423,7 +497,7 @@ private fun WebTopBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onExit) { Icon(Icons.Filled.Close, contentDescription = "나가기") }
-            AddressField(initial = tab.url, resetKey = tab.id, onSubmit = onSubmit, modifier = Modifier.weight(1f))
+            AddressField(initial = tab.url, resetKey = tab.id, onSubmit = onSubmit, modifier = Modifier.weight(1f), privateTab = tab.isPrivate, pageMode = true)
             IconButton(onClick = onToggleBookmark) {
                 Icon(
                     if (bookmarked) Icons.Filled.Star else Icons.Filled.StarBorder,
@@ -433,7 +507,7 @@ private fun WebTopBar(
             }
             val context = LocalContext.current
             OverflowMenu(
-                onNewTab, onOpenBookmarks, onOpenHistory, onOpenDownloads, onMenuOpenChange,
+                onNewTab, onNewPrivateTab, onOpenBookmarks, onOpenHistory, onOpenDownloads, onMenuOpenChange,
                 onShareKakao = {
                     KakaoLinks.share(context, if (tab.title.isNotBlank()) "${tab.title}\n${tab.url}" else tab.url)
                 },
@@ -447,31 +521,66 @@ private fun WebTopBar(
 
 // --- Shared pieces -------------------------------------------------------------------------------
 
-/** Address / search field. Shows [initial] and resets when it changes; keeps what you type otherwise. */
+/**
+ * Address / search field. With [pageMode] (the bar over an open page) it shows just the site name and a lock until it is
+ * tapped; then the full address appears, selected, ready to be replaced. On the start page it keeps what you type.
+ */
 @Composable
 private fun AddressField(
     initial: String,
     onSubmit: (String) -> Unit,
     modifier: Modifier = Modifier,
     resetKey: Any? = null,
+    /** A private tab shows a small "hidden" icon in the field. */
+    privateTab: Boolean = false,
+    /** The start page's field names the search engine that typed text goes to. */
+    showEngine: Boolean = false,
+    pageMode: Boolean = false,
 ) {
     val focus = LocalFocusManager.current
-    var text by remember(initial, resetKey) { mutableStateOf(initial) }
+    var field by remember(initial, resetKey) { mutableStateOf(TextFieldValue(initial)) }
+    var focused by remember(resetKey) { mutableStateOf(false) }
+    val compact = pageMode && !focused
+    val secure = initial.startsWith("https://", ignoreCase = true)
     TextField(
-        value = text,
-        onValueChange = { text = it },
-        modifier = modifier,
+        value = if (compact) TextFieldValue(UrlResolver.compact(initial)) else field,
+        onValueChange = { if (!compact) field = it },
+        modifier = modifier.onFocusChanged { state ->
+            if (pageMode && state.isFocused && !focused) field = TextFieldValue(initial, selection = TextRange(0, initial.length))
+            focused = state.isFocused
+        },
         singleLine = true,
         placeholder = { Text("주소 또는 검색어") },
+        leadingIcon = when {
+            privateTab -> ({ Icon(Icons.Filled.VisibilityOff, contentDescription = "비공개 탭", tint = MaterialTheme.colorScheme.primary) })
+            pageMode -> ({
+                Icon(
+                    if (secure) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                    contentDescription = if (secure) "보안 연결" else "보안되지 않은 연결",
+                    modifier = Modifier.size(18.dp),
+                    tint = if (secure) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                )
+            })
+            showEngine -> ({
+                Text(
+                    AppSettings.searchEngine.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 16.dp, end = 4.dp),
+                )
+            })
+            else -> null
+        },
         trailingIcon = {
-            if (text.isNotEmpty()) {
-                IconButton(onClick = { text = "" }) { Icon(Icons.Filled.Close, contentDescription = "지우기") }
+            if (!compact && field.text.isNotEmpty()) {
+                IconButton(onClick = { field = TextFieldValue("") }) { Icon(Icons.Filled.Close, contentDescription = "지우기") }
             }
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
         keyboardActions = KeyboardActions(onGo = {
             focus.clearFocus()
-            onSubmit(text)
+            onSubmit(field.text)
         }),
         shape = RoundedCornerShape(24.dp),
         colors = TextFieldDefaults.colors(
@@ -486,6 +595,7 @@ private fun AddressField(
 @Composable
 private fun OverflowMenu(
     onNewTab: () -> Unit,
+    onNewPrivateTab: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenHistory: () -> Unit,
     onOpenDownloads: () -> Unit,
@@ -503,6 +613,7 @@ private fun OverflowMenu(
     Box {
         IconButton(onClick = { open = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "더보기") }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            // This page
             if (onFind != null) {
                 DropdownMenuItem(
                     text = { Text("페이지에서 찾기") },
@@ -518,11 +629,21 @@ private fun OverflowMenu(
                     onClick = { open = false; onToggleDesktop() },
                 )
             }
+            if (onFind != null || onToggleDesktop != null) HorizontalDivider()
+            // Tabs
             DropdownMenuItem(
                 text = { Text("새 탭") },
                 leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
                 onClick = { open = false; onNewTab() },
             )
+            DropdownMenuItem(
+                text = { Text("새 비공개 탭") },
+                leadingIcon = { Icon(Icons.Filled.VisibilityOff, contentDescription = null) },
+                onClick = { open = false; onNewPrivateTab() },
+                modifier = Modifier.testTag("menu_new_private_tab"),
+            )
+            HorizontalDivider()
+            // Library
             DropdownMenuItem(
                 text = { Text("북마크") },
                 leadingIcon = { Icon(Icons.Filled.Bookmarks, contentDescription = null) },
@@ -539,6 +660,7 @@ private fun OverflowMenu(
                 onClick = { open = false; onOpenDownloads() },
             )
             if (onShareKakao != null) {
+                HorizontalDivider()
                 DropdownMenuItem(
                     text = { Text("카카오톡으로 공유") },
                     leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
@@ -551,7 +673,7 @@ private fun OverflowMenu(
 
 @Composable
 private fun TabCountButton(count: Int, onClick: () -> Unit) {
-    IconButton(onClick = onClick) {
+    IconButton(onClick = onClick, modifier = Modifier.testTag("tab_count")) {
         Box(
             modifier = Modifier
                 .size(22.dp)
@@ -632,7 +754,7 @@ private fun WebViewHost(
             if (frame.getChildAt(0) !== webView) {
                 frame.removeAllViews()
                 (webView.parent as? ViewGroup)?.removeView(webView)
-                webView.attachTo(activity)
+                webView.attachTo(activity, viewModel.darkWanted)
                 frame.addView(
                     webView,
                     FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),

@@ -1,18 +1,14 @@
 package com.example.superdialer.browser
 
-import java.net.URLEncoder
-
-/** Turns whatever the user typed in the address bar into a URL to load. */
+/** Turns whatever the user typed in the address bar into a URL to load; text that is no address becomes a search on [SearchEngine]. */
 object UrlResolver {
-    const val HOME_URL = "https://www.google.com"
-    private const val SEARCH_URL = "https://www.google.com/search?q="
 
     // host[:port][/path|?query|#fragment] — no scheme, no whitespace.
     private val hostLike = Regex("""^([^\s/:?#]+)(:\d{1,5})?([/?#]\S*)?$""")
     private val ipv4 = Regex("""^\d{1,3}(\.\d{1,3}){3}$""")
 
     /** Returns null for blank input. */
-    fun resolve(input: String): String? {
+    fun resolve(input: String, engine: SearchEngine = SearchEngine.GOOGLE): String? {
         val text = input.trim()
         if (text.isEmpty()) return null
 
@@ -30,17 +26,26 @@ object UrlResolver {
             if (host.contains('.') && !host.startsWith('.') && !host.endsWith('.')) return "https://$text"
         }
 
-        return SEARCH_URL + URLEncoder.encode(text, "UTF-8")
+        return engine.searchUrl(text)
     }
 
     /** Like [resolve], but null when the text is not an address (it would only turn into a search). */
     fun resolveAddress(input: String): String? {
         val url = resolve(input) ?: return null
         val typedUrl = input.trim().startsWith("http", ignoreCase = true)
-        return if (url.startsWith(SEARCH_URL) && !typedUrl) null else url
+        return if (SearchEngine.isAnySearchUrl(url) && !typedUrl) null else url
     }
 
     /** Schemes the in-app browser loads itself. Everything else is handed off or blocked. */
     fun isWebScheme(scheme: String?): Boolean =
         scheme.equals("http", ignoreCase = true) || scheme.equals("https", ignoreCase = true)
+
+    /** What the address field shows while it is not being edited: just the site ("www.example.com" -> "example.com"). */
+    fun compact(url: String): String {
+        val uri = try { java.net.URI(url.trim()) } catch (e: Exception) { return url }
+        val host = uri.host ?: return url
+        val shown = host.removePrefix("www.")
+        val port = if (uri.port == -1) "" else ":${uri.port}"
+        return shown + port
+    }
 }

@@ -77,14 +77,14 @@ object WhatsNew {
     fun shouldShow(seenVersion: String?, current: String): Boolean = seenVersion != null && current.isNotEmpty() && seenVersion != current
 
     /** The change list of a release body: only the "- ..." lines of the "변경 내용" part, without links and boilerplate. */
-    fun cleanNotes(body: String): List<String> {
+    fun cleanNotes(body: String, limit: Int = 15): List<String> {
         val lines = body.lines().map { it.trim() }
         val start = lines.indexOfFirst { it.startsWith("## 변경") }
         val section = if (start >= 0) lines.drop(start + 1).takeWhile { !it.startsWith("## ") } else lines
         return section.filter { it.startsWith("- ") || it.startsWith("* ") }
             .map { it.drop(2).trim() }
             .filter { it.isNotEmpty() && !it.startsWith("**Full Changelog**") && !it.contains("github.com/") }
-            .take(15)
+            .take(limit)
     }
 }
 

@@ -11,6 +11,8 @@ import android.os.Environment
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
+import android.webkit.GeolocationPermissions
+import android.webkit.PermissionRequest
 import android.webkit.URLUtil
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -24,7 +26,13 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewModelScope
+import androidx.webkit.ProfileStore
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import com.example.superdialer.browser.data.Bookmark
 import com.example.superdialer.browser.data.BrowserDatabase
 import com.example.superdialer.browser.data.HistoryItem
@@ -36,8 +44,14 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
-/** UI-visible state of one browser tab. The matching [WebView] lives in [BrowserViewModel]. */
-class BrowserTab(val id: Int) {
+/**
+ * UI-visible state of one browser tab. The matching [WebView] lives in [BrowserViewModel]. A [isPrivate] tab runs in
+ * its own WebView profile (separate cookies, storage and cache), leaves no history, and is never saved or restored.
+ */
+class BrowserTab(val id: Int, val isPrivate: Boolean = false) {
+    /** A small picture of the page, taken when the tab is left or the tab list opens (only kept in memory). */
+    var thumbnail by mutableStateOf<ImageBitmap?>(null)
+
     var url by mutableStateOf("")
     var title by mutableStateOf("")
     var progress by mutableIntStateOf(0)
@@ -62,7 +76,29 @@ class FileChooserRequest(
     val params: WebChromeClient.FileChooserParams,
 )
 
-data class DownloadRequest(val url: String, val userAgent: String?, val mimeType: String?, val fileName: String)
+data class DownloadRequest(
+    val url: String,
+    val userAgent: String?,
+    val mimeType: String?,
+    val fileName: String,
+    /** The cookies of the tab it came from (a private tab has its own jar). */
+    val cookie: String? = null,
+)
+
+/**
+ * A page asked for the camera, microphone or location. [grant] answers with the permissions that are allowed (the page
+ * gets nothing for the rest), [deny] refuses all of it. Exactly one of them must be called.
+ */
+class SitePermissionRequest(
+    val origin: String,
+    val permissions: List<SitePermission>,
+    val isPrivate: Boolean,
+    val grant: (List<SitePermission>) -> Unit,
+    val deny: () -> Unit,
+)
+
+/** Android permissions to ask the user for before [request] can be granted. */
+class OsPermissionRequest(val request: SitePermissionRequest, val osPermissions: List<String>)
 
 class BrowserViewModel(application: Application) : AndroidViewModel(application) {
     private val db = BrowserDatabase.get(application)
@@ -107,6 +143,31 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private val webViews = HashMap<Int, WebView>()
     private var nextId = 1
 
+    /** Non-null while a page waits for the user's answer about camera, microphone or location. */
+    var pendingPermission by mutableStateOf<SitePermissionRequest?>(null)
+        private set
+
+    /** Non-null while Android's own permission dialog has to be shown for an allowed site permission. */
+    var osPermissionRequest by mutableStateOf<OsPermissionRequest?>(null)
+        private set
+
+    private val privatePrefs = application.getSharedPreferences("browser_private", Context.MODE_PRIVATE)
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    /** Pages are shown dark now (see [refreshDarkMode]). Read by the screen when it attaches a WebView. */
+    var darkWanted = false
+        private set
+
+    init {
+        darkWanted = WebDark.wanted(
+            com.example.superdialer.settings.AppSettings.webDarkMode,
+            com.example.superdialer.settings.AppSettings.themeMode,
+            isSystemDark(),
+        )
+        // A private profile left behind by an earlier run (the process was killed with private tabs open) is erased.
+        // (posted: it must run after the whole object is constructed, as it uses properties declared further down)
+        if (privatePrefs.getBoolean(KEY_PRIVATE_DIRTY, false)) handler.post { wipePrivateProfile() }
+    }
+
     // --- Tabs ---------------------------------------------------------------------------------
 
     /** The browser always has at least one tab. Called when the browser screen first appears. */
@@ -114,12 +175,27 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         if (tabs.isEmpty()) newTab()
     }
 
-    fun newTab(url: String? = null): BrowserTab {
+    /** Whether this phone's WebView can keep a separate profile, which private tabs need to be truly private. */
+    val privateSupported: Boolean by lazy {
+        try {
+            WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun newTab(url: String? = null, private: Boolean = false): BrowserTab {
+        if (private && !privateSupported) {
+            // Never pretend: without a separate profile a "private" tab would share cookies with the normal ones.
+            Toast.makeText(getApplication(), "이 폰의 웹뷰 버전에서는 비공개 탭을 쓸 수 없어요. Android System WebView를 업데이트해 주세요.", Toast.LENGTH_LONG).show()
+            return selected ?: newTab(url)
+        }
         if (tabs.size >= MAX_TABS) {
             Toast.makeText(getApplication(), "탭은 최대 ${MAX_TABS}개까지 열 수 있습니다.", Toast.LENGTH_SHORT).show()
             return selected ?: tabs.last()
         }
-        val tab = BrowserTab(nextId++)
+        selected?.let(::captureThumbnail)
+        val tab = BrowserTab(nextId++, private)
         tabs += tab
         selectedId = tab.id
         if (url != null) {
@@ -130,17 +206,155 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun selectTab(id: Int) {
+        if (selectedId != id) selected?.let(::captureThumbnail)
         if (tabs.any { it.id == id }) selectedId = id
     }
 
     fun closeTab(id: Int) {
         val index = tabs.indexOfFirst { it.id == id }
         if (index < 0) return
+        val closing = tabs[index]
         webViews.remove(id)?.let(::destroy)
         tabs.removeAt(index)
+        if (closing.isPrivate && tabs.none { it.isPrivate }) wipePrivateProfile()
         when {
             tabs.isEmpty() -> newTab()
-            selectedId == id -> selectedId = tabs[index.coerceAtMost(tabs.lastIndex)].id
+            selectedId == id -> {
+                // stay in the same kind of tabs where possible: closing the last private tab leaves private browsing
+                val sameKind = tabs.filter { it.isPrivate == closing.isPrivate }
+                val next = sameKind.firstOrNull { tabs.indexOf(it) >= index } ?: sameKind.lastOrNull() ?: tabs.first()
+                selectedId = next.id
+            }
+        }
+        ensureNormalTab()
+    }
+
+    /** Closes every private tab (true) or every normal tab (false); the normal ones are replaced by one empty tab. */
+    fun closeAllTabs(private: Boolean) {
+        val doomed = tabs.filter { it.isPrivate == private }
+        if (doomed.isEmpty()) return
+        doomed.forEach { webViews.remove(it.id)?.let(::destroy) }
+        tabs.removeAll(doomed)
+        if (private) wipePrivateProfile()
+        ensureNormalTab()
+        if (tabs.none { it.id == selectedId }) selectedId = tabs.first { !it.isPrivate }.id
+    }
+
+    /** The browser always keeps at least one normal tab, even while only private ones are open. */
+    private fun ensureNormalTab() {
+        if (tabs.none { !it.isPrivate }) {
+            val blank = BrowserTab(nextId++)
+            tabs += blank
+            if (tabs.none { it.id == selectedId }) selectedId = blank.id
+        }
+    }
+
+    // --- Private browsing ---------------------------------------------------------------------
+
+    /** Erases the cookies, storage and cache of private tabs. Only possible while no WebView uses the profile. */
+    private fun wipePrivateProfile(retry: Boolean = true) {
+        if (!privateSupported) return
+        try {
+            ProfileStore.getInstance().deleteProfile(PRIVATE_PROFILE)
+            privatePrefs.edit().putBoolean(KEY_PRIVATE_DIRTY, false).apply()
+        } catch (e: Exception) {
+            // still in use (a WebView takes a moment to let go): try once more shortly; at the latest the next start does
+            if (retry) handler.postDelayed({ if (tabs.none { it.isPrivate }) wipePrivateProfile(retry = false) }, 1500)
+        }
+    }
+
+    private fun cookieManagerFor(tab: BrowserTab): CookieManager =
+        if (tab.isPrivate) ProfileStore.getInstance().getOrCreateProfile(PRIVATE_PROFILE).cookieManager else CookieManager.getInstance()
+
+    // --- Tab pictures -------------------------------------------------------------------------
+
+    /** Takes a small picture of the page for the tab list. Quietly does nothing when the page cannot be drawn. */
+    fun captureThumbnail(tab: BrowserTab) {
+        if (tab.isStart) {
+            tab.thumbnail = null
+            return
+        }
+        val view = webViews[tab.id] ?: return
+        if (view.width <= 0 || view.height <= 0 || view.parent == null) return
+        try {
+            val scale = THUMB_WIDTH.toFloat() / view.width
+            val bitmap = Bitmap.createBitmap(THUMB_WIDTH, (view.height * scale).toInt().coerceAtLeast(1), Bitmap.Config.RGB_565)
+            val canvas = android.graphics.Canvas(bitmap)
+            canvas.scale(scale, scale)
+            view.draw(canvas)
+            tab.thumbnail = bitmap.asImageBitmap()
+        } catch (e: Throwable) {
+            // no picture: the tab card shows the site's icon instead
+        }
+    }
+
+    // --- Dark pages ---------------------------------------------------------------------------
+
+    /** Applies the "web page dark mode" setting to all open pages; called when it or the phone's theme changes. */
+    fun refreshDarkMode(systemDark: Boolean) {
+        darkWanted = WebDark.wanted(com.example.superdialer.settings.AppSettings.webDarkMode, com.example.superdialer.settings.AppSettings.themeMode, systemDark)
+        webViews.values.forEach {
+            it.retheme(darkWanted)
+            WebDark.apply(it, darkWanted)
+        }
+    }
+
+    private fun isSystemDark(): Boolean =
+        (getApplication<Application>().resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+    // --- Camera, microphone, location asked by a page -------------------------------------------
+
+    private fun askSitePermission(request: SitePermissionRequest) {
+        // a newer question replaces an unanswered older one
+        pendingPermission?.deny?.invoke()
+        pendingPermission = null
+        val remembered = if (request.isPrivate) emptyList() else request.permissions.map { SitePermissions.decision(request.origin, it) }
+        when {
+            remembered.any { it == SiteDecision.Deny } -> request.deny()
+            remembered.isNotEmpty() && remembered.all { it == SiteDecision.Allow } -> proceedAfterAllowed(request)
+            else -> pendingPermission = request
+        }
+    }
+
+    /** The user's answer to the question shown for [pendingPermission]. [remember] only counts outside private tabs. */
+    fun answerPermission(allow: Boolean, remember: Boolean) {
+        val request = pendingPermission ?: return
+        pendingPermission = null
+        if (remember && !request.isPrivate) {
+            SitePermissions.set(request.origin, request.permissions, if (allow) SiteDecision.Allow else SiteDecision.Deny)
+        }
+        if (allow) proceedAfterAllowed(request) else request.deny()
+    }
+
+    private fun proceedAfterAllowed(request: SitePermissionRequest) {
+        val app = getApplication<Application>()
+        val granted = { p: String -> ContextCompat.checkSelfPermission(app, p) == android.content.pm.PackageManager.PERMISSION_GRANTED }
+        val missing = SitePermissions.missingOsPermissions(request.permissions, granted)
+        if (missing.isEmpty()) request.grant(request.permissions) else osPermissionRequest = OsPermissionRequest(request, missing)
+    }
+
+    /** Android's dialog was answered: whatever it granted goes to the page, the rest is refused. */
+    fun finishOsPermissionRequest() {
+        val pending = osPermissionRequest ?: return
+        osPermissionRequest = null
+        val app = getApplication<Application>()
+        val granted = SitePermissions.grantedByOs(pending.request.permissions) {
+            ContextCompat.checkSelfPermission(app, it) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+        if (granted.isEmpty()) {
+            Toast.makeText(app, "폰의 앱 권한에서 허용해야 사이트가 쓸 수 있어요.", Toast.LENGTH_LONG).show()
+            pending.request.deny()
+        } else {
+            pending.request.grant(granted)
+        }
+    }
+
+    private fun dropPendingPermissionsOf(webView: WebView) {
+        // a page that is gone cannot be answered any more
+        pendingPermission?.takeIf { it.origin == SitePermissions.normalizeOrigin(webView.url.orEmpty()) }?.let {
+            pendingPermission = null
+            it.deny()
         }
     }
 
@@ -199,7 +413,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     // --- Navigation ---------------------------------------------------------------------------
 
     fun load(input: String) {
-        val url = UrlResolver.resolve(input) ?: return
+        val url = UrlResolver.resolve(input, com.example.superdialer.settings.AppSettings.searchEngine) ?: return
         val tab = selected ?: return
         tab.isStart = false
         webViewFor(tab).loadUrl(url)
@@ -208,8 +422,9 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     /** Leaves the website and returns to the start page (the X button / back at the first page). */
     fun exitToStart() {
         val tab = selected ?: return
-        webViews.remove(tab.id)?.let(::destroy)
+        webViews.remove(tab.id)?.let { dropPendingPermissionsOf(it); destroy(it) }
         tab.isStart = true
+        tab.thumbnail = null
         tab.desktopMode = false
         tab.url = ""
         tab.title = ""
@@ -347,7 +562,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         val manager = context.getSystemService(DownloadManager::class.java)
         val download = DownloadManager.Request(Uri.parse(request.url)).apply {
             request.mimeType?.let(::setMimeType)
-            CookieManager.getInstance().getCookie(request.url)?.let { addRequestHeader("Cookie", it) }
+            request.cookie?.let { addRequestHeader("Cookie", it) }
             request.userAgent?.let { addRequestHeader("User-Agent", it) }
             setTitle(request.fileName)
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
@@ -367,6 +582,12 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private fun createWebView(tab: BrowserTab): WebView {
         // The context is swapped to the visible Activity while attached, see WebViewHost.
         val webView = WebView(android.content.MutableContextWrapper(getApplication<Application>()))
+        if (tab.isPrivate) {
+            // Must be the very first call on the view. If this fails the tab must not run at all: falling back to the
+            // normal profile would silently share cookies with normal tabs.
+            privatePrefs.edit().putBoolean(KEY_PRIVATE_DIRTY, true).apply()
+            WebViewCompat.setProfile(webView, PRIVATE_PROFILE)
+        }
         with(webView.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -389,11 +610,13 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
         if (tab.desktopMode) webView.settings.userAgentString = UserAgents.desktop(defaultUserAgent)
         // Lets the phone's autofill service (Samsung Pass, Google, ...) offer to save and fill logins in pages.
-        webView.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_YES
-        CookieManager.getInstance().apply {
+        webView.importantForAutofill = if (tab.isPrivate) View.IMPORTANT_FOR_AUTOFILL_NO else View.IMPORTANT_FOR_AUTOFILL_YES
+        cookieManagerFor(tab).apply {
             setAcceptCookie(true)
             setAcceptThirdPartyCookies(webView, false)
         }
+        webView.retheme(darkWanted)
+        WebDark.apply(webView, darkWanted)
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
@@ -403,7 +626,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             }
 
             override fun onPageFinished(view: WebView, url: String?) {
-                ChecklistLink.onPageFinished(view, url, tab)
+                if (!tab.isPrivate) ChecklistLink.onPageFinished(view, url, tab)
                 tab.loading = false
                 tab.title = view.title.orEmpty()
                 syncNavigation(tab, view)
@@ -430,7 +653,66 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
             override fun onReceivedIcon(view: WebView, icon: Bitmap?) {
                 val pageUrl = view.url ?: return
-                if (icon != null) faviconStore.put(pageUrl, icon)
+                if (icon != null && !tab.isPrivate) faviconStore.put(pageUrl, icon)
+            }
+
+            override fun onPermissionRequest(request: PermissionRequest) {
+                val origin = SitePermissions.normalizeOrigin(request.origin.toString())
+                val wanted = request.resources.mapNotNull {
+                    when (it) {
+                        PermissionRequest.RESOURCE_VIDEO_CAPTURE -> SitePermission.Camera
+                        PermissionRequest.RESOURCE_AUDIO_CAPTURE -> SitePermission.Microphone
+                        else -> null
+                    }
+                }.distinct()
+                // only secure pages may ask, and only for the camera and microphone (not DRM keys or MIDI)
+                if (origin == null || wanted.isEmpty() || !SitePermissions.isSecureOrigin(origin)) {
+                    request.deny()
+                    return
+                }
+                askSitePermission(
+                    SitePermissionRequest(
+                        origin = origin,
+                        permissions = wanted,
+                        isPrivate = tab.isPrivate,
+                        grant = { allowed ->
+                            val resources = allowed.mapNotNull {
+                                when (it) {
+                                    SitePermission.Camera -> PermissionRequest.RESOURCE_VIDEO_CAPTURE
+                                    SitePermission.Microphone -> PermissionRequest.RESOURCE_AUDIO_CAPTURE
+                                    else -> null
+                                }
+                            }
+                            if (resources.isEmpty()) request.deny() else request.grant(resources.toTypedArray())
+                        },
+                        deny = { request.deny() },
+                    )
+                )
+            }
+
+            override fun onPermissionRequestCanceled(request: PermissionRequest) {
+                pendingPermission?.takeIf { it.origin == SitePermissions.normalizeOrigin(request.origin.toString()) }?.let { pendingPermission = null }
+            }
+
+            override fun onGeolocationPermissionsShowPrompt(origin: String, callback: GeolocationPermissions.Callback) {
+                val normalized = SitePermissions.normalizeOrigin(origin)
+                if (normalized == null || !SitePermissions.isSecureOrigin(normalized)) {
+                    callback.invoke(origin, false, false)
+                    return
+                }
+                askSitePermission(
+                    SitePermissionRequest(
+                        origin = normalized,
+                        permissions = listOf(SitePermission.Location),
+                        isPrivate = tab.isPrivate,
+                        grant = { callback.invoke(origin, true, false) },
+                        deny = { callback.invoke(origin, false, false) },
+                    )
+                )
+            }
+
+            override fun onGeolocationPermissionsHidePrompt() {
+                pendingPermission?.takeIf { SitePermission.Location in it.permissions }?.let { pendingPermission = null }
             }
 
             override fun onShowFileChooser(
@@ -459,7 +741,10 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
 
         webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
-            pendingDownload = DownloadRequest(url, userAgent, mimeType, URLUtil.guessFileName(url, contentDisposition, mimeType))
+            pendingDownload = DownloadRequest(
+                url, userAgent, mimeType, URLUtil.guessFileName(url, contentDisposition, mimeType),
+                cookie = cookieManagerFor(tab).getCookie(url),
+            )
         }
         return webView
     }
@@ -470,6 +755,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun recordVisit(tab: BrowserTab, view: WebView) {
+        if (tab.isPrivate) return // private tabs leave no history
         val url = view.url ?: return
         if (!UrlResolver.isWebScheme(Uri.parse(url).scheme) || tab.lastRecordedUrl == url) return
         tab.lastRecordedUrl = url
@@ -501,9 +787,15 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     /** Frees the WebViews and stops observing; the instance is dropped afterwards (see [BrowserSession]). */
     fun release() {
+        pendingPermission?.deny?.invoke()
+        pendingPermission = null
+        osPermissionRequest?.request?.deny?.invoke()
+        osPermissionRequest = null
+        val hadPrivate = tabs.any { it.isPrivate }
         webViews.values.forEach(::destroy)
         webViews.clear()
         tabs.clear()
+        if (hadPrivate) wipePrivateProfile()
         viewModelScope.cancel()
     }
 
@@ -512,12 +804,29 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private companion object {
         const val MAX_TABS = 20
         const val HISTORY_LIMIT = 500
+        const val THUMB_WIDTH = 360
+        const val PRIVATE_PROFILE = "private"
+        const val KEY_PRIVATE_DIRTY = "dirty"
     }
 }
 
+/**
+ * The WebView only darkens pages when the theme of its context is dark, and the app's Android theme is light (the
+ * app draws its own dark palette). So while pages should be dark the WebView gets a dark-themed view of the context.
+ */
+private class DarkThemeContext(val original: Context) :
+    android.view.ContextThemeWrapper(original, android.R.style.Theme_Material_NoActionBar)
+
 /** Points the WebView's context at [context] while it is on screen, and back at the app afterwards. */
-internal fun WebView.attachTo(context: Context) {
-    (this.context as? android.content.MutableContextWrapper)?.baseContext = context
+internal fun WebView.attachTo(context: Context, dark: Boolean = false) {
+    (this.context as? android.content.MutableContextWrapper)?.baseContext = if (dark) DarkThemeContext(context) else context
+}
+
+/** Switches the context the WebView currently has between the dark and the normal theme. */
+internal fun WebView.retheme(dark: Boolean) {
+    val wrapper = this.context as? android.content.MutableContextWrapper ?: return
+    val raw = (wrapper.baseContext as? DarkThemeContext)?.original ?: wrapper.baseContext
+    wrapper.baseContext = if (dark) DarkThemeContext(raw) else raw
 }
 
 internal fun WebView.detachFromActivity() {

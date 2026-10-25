@@ -29,6 +29,7 @@ class SuperDialerApplication : Application() {
         QuickDials.init(this)
         CallNotes.init(this)
         ContactMemos.init(this)
+        com.example.superdialer.browser.SitePermissions.init(this)
         ContactGroups.init(this)
         SentSms.init(this)
         KakaoInbox.init(this)

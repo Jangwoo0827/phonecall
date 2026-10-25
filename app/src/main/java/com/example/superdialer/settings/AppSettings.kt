@@ -15,6 +15,15 @@ enum class ThemeMode(val key: String, val label: String) {
     }
 }
 
+/** Whether web pages are shown in a dark version. FOLLOW_APP: dark while the app itself is dark. */
+enum class WebDarkMode(val key: String, val label: String) {
+    OFF("off", "끔"), FOLLOW_APP("follow", "앱 따라가기"), ON("on", "항상");
+
+    companion object {
+        fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: OFF
+    }
+}
+
 /** App text size on top of the phone's own font size setting. */
 enum class TextSize(val key: String, val label: String, val scale: Float) {
     SMALL("small", "작게", 0.9f), NORMAL("normal", "보통", 1f), LARGE("large", "크게", 1.15f), HUGE("huge", "최대", 1.3f);
@@ -45,6 +54,8 @@ object AppSettings {
     private const val KEY_QUICK_DIRECT = "quick_dial_direct"
     private const val KEY_AUTO_UPDATE = "auto_download_updates"
     private const val KEY_TEXT_SIZE = "text_size"
+    private const val KEY_SEARCH_ENGINE = "search_engine"
+    private const val KEY_WEB_DARK = "web_dark_mode"
 
     private var prefs: SharedPreferences? = null
 
@@ -63,6 +74,13 @@ object AppSettings {
         private set
 
     var textSize by mutableStateOf(TextSize.NORMAL)
+        private set
+
+    /** What the browser's address bar searches with. */
+    var searchEngine by mutableStateOf(com.example.superdialer.browser.SearchEngine.GOOGLE)
+        private set
+
+    var webDarkMode by mutableStateOf(WebDarkMode.OFF)
         private set
 
     /** Fetch a newer release in the background (on Wi-Fi) so installing it is one tap. */
@@ -89,6 +107,18 @@ object AppSettings {
         quickDialCallsDirectly = p.getBoolean(KEY_QUICK_DIRECT, false)
         autoDownloadUpdates = p.getBoolean(KEY_AUTO_UPDATE, false)
         textSize = TextSize.fromKey(p.getString(KEY_TEXT_SIZE, null))
+        searchEngine = com.example.superdialer.browser.SearchEngine.fromKey(p.getString(KEY_SEARCH_ENGINE, null))
+        webDarkMode = WebDarkMode.fromKey(p.getString(KEY_WEB_DARK, null))
+    }
+
+    fun updateSearchEngine(engine: com.example.superdialer.browser.SearchEngine) {
+        searchEngine = engine
+        prefs?.edit()?.putString(KEY_SEARCH_ENGINE, engine.key)?.apply()
+    }
+
+    fun updateWebDarkMode(mode: WebDarkMode) {
+        webDarkMode = mode
+        prefs?.edit()?.putString(KEY_WEB_DARK, mode.key)?.apply()
     }
 
     fun updateTextSize(size: TextSize) {

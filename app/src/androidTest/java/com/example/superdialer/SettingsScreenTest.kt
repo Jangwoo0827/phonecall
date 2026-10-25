@@ -84,4 +84,13 @@ class SettingsScreenTest : AppTestBase() {
         waitGone(hasText("기본 문구로 되돌리기"))
         waitFor(hasText("계정"))
     }
+
+    @Test
+    fun thePatchNotesScreenOpensFromTheAppInfoAndGoesBack() {
+        compose.onNodeWithText("패치노트").performScrollTo().performClick()
+        // with a network the list shows, without one the error text does: either way the screen is up
+        waitFor(hasTag("patch_notes").or(hasTag("patch_notes_error")), timeoutMs = 20_000)
+        pressBack()
+        waitFor(hasText("계정"))
+    }
 }

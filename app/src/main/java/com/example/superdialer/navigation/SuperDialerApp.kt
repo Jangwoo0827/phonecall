@@ -68,6 +68,8 @@ private const val BLOCKED_ROUTE = "settings/blocked"
 private const val CALL_STATS_ROUTE = "calllog/tools/stats"
 private const val REJECT_ROUTE = "settings/reject"
 private const val QUICK_DIAL_ROUTE = "settings/quickdial"
+private const val SITE_PERMISSIONS_ROUTE = "settings/sitepermissions"
+private const val PATCH_NOTES_ROUTE = "settings/patchnotes"
 private const val CONTACT_GROUPS_ROUTE = "contacts/tools/groups"
 private const val CONTACT_DUPLICATES_ROUTE = "contacts/tools/duplicates"
 private const val CONTACT_ID_ARG = "contactId"
@@ -209,7 +211,15 @@ fun SuperDialerApp(
                     onOpenBlocked = { navController.navigate(BLOCKED_ROUTE) },
                     onOpenRejectMessages = { navController.navigate(REJECT_ROUTE) },
                     onOpenQuickDial = { navController.navigate(QUICK_DIAL_ROUTE) },
+                    onOpenSitePermissions = { navController.navigate(SITE_PERMISSIONS_ROUTE) },
+                    onOpenPatchNotes = { navController.navigate(PATCH_NOTES_ROUTE) },
                 )
+            }
+            composable(PATCH_NOTES_ROUTE) {
+                com.example.superdialer.settings.PatchNotesScreen(onBack = { navController.popBackStack() })
+            }
+            composable(SITE_PERMISSIONS_ROUTE) {
+                com.example.superdialer.browser.SitePermissionsScreen(onBack = { navController.popBackStack() })
             }
             composable(QUICK_DIAL_ROUTE) {
                 QuickDialScreen(contactsViewModel, onBack = { navController.popBackStack() })

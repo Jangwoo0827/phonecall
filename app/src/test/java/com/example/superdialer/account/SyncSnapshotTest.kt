@@ -16,6 +16,8 @@ class SyncSnapshotTest {
         themeMode = "dark",
         accent = "purple",
         textSize = "large",
+        searchEngine = "naver",
+        webDarkMode = "follow",
         rejectMessages = listOf("회의 중입니다.", "나중에 연락드릴게요."),
         checklistId = "jangwoo",
     )

@@ -18,6 +18,8 @@ data class SyncSnapshot(
     val themeMode: String = "system",
     val accent: String = "green",
     val textSize: String = "normal",
+    val searchEngine: String = "google",
+    val webDarkMode: String = "off",
     val rejectMessages: List<String> = emptyList(),
     val checklistId: String? = null,
 ) {
@@ -34,6 +36,8 @@ data class SyncSnapshot(
         put("themeMode", themeMode)
         put("accent", accent)
         put("textSize", textSize)
+        put("searchEngine", searchEngine)
+        put("webDarkMode", webDarkMode)
         put("rejectMessages", JSONArray(rejectMessages))
         if (checklistId != null) put("checklistId", checklistId)
     }
@@ -58,6 +62,8 @@ data class SyncSnapshot(
             themeMode = json.optString("themeMode", "system"),
             accent = json.optString("accent", "green"),
             textSize = json.optString("textSize", "normal"),
+            searchEngine = json.optString("searchEngine", "google"),
+            webDarkMode = json.optString("webDarkMode", "off"),
             rejectMessages = stringsFrom(json.optJSONArray("rejectMessages")),
             checklistId = json.optString("checklistId", "").takeIf { isValidChecklistId(it) },
         )

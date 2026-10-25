@@ -56,4 +56,32 @@ class UrlResolverTest {
         assertFalse(UrlResolver.isWebScheme("file"))
         assertFalse(UrlResolver.isWebScheme(null))
     }
+
+    @Test fun searchGoesToTheChosenEngine() {
+        assertEquals("https://search.naver.com/search.naver?query=%EC%98%A4%EB%8A%98+%EB%82%A0%EC%94%A8", UrlResolver.resolve("오늘 날씨", SearchEngine.NAVER))
+        assertEquals("https://www.bing.com/search?q=hello+world", UrlResolver.resolve("hello world", SearchEngine.BING))
+        assertEquals("https://www.google.com/search?q=naver", UrlResolver.resolve("naver", SearchEngine.GOOGLE))
+        // addresses are never searches, whatever the engine
+        assertEquals("https://naver.com", UrlResolver.resolve("naver.com", SearchEngine.BING))
+    }
+
+    @Test fun resolveAddressRejectsPlainText() {
+        assertNull(UrlResolver.resolveAddress("hello world"))
+        assertEquals("https://a.com", UrlResolver.resolveAddress("a.com"))
+    }
+
+    @Test fun engineKeysRoundTripAndUnknownFallsBackToGoogle() {
+        SearchEngine.entries.forEach { assertEquals(it, SearchEngine.fromKey(it.key)) }
+        assertEquals(SearchEngine.GOOGLE, SearchEngine.fromKey("nope"))
+        assertEquals(SearchEngine.GOOGLE, SearchEngine.fromKey(null))
+        assertTrue(SearchEngine.isAnySearchUrl("https://search.naver.com/search.naver?query=x"))
+        assertFalse(SearchEngine.isAnySearchUrl("https://example.com/search?q=x"))
+    }
+
+    @Test fun compactShowsJustTheSite() {
+        assertEquals("example.com", UrlResolver.compact("https://www.example.com/a/b?x=1#top"))
+        assertEquals("m.naver.com", UrlResolver.compact("https://m.naver.com/"))
+        assertEquals("localhost:8765", UrlResolver.compact("http://localhost:8765/index.html"))
+        assertEquals("not a url", UrlResolver.compact("not a url"))
+    }
 }

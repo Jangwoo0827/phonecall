@@ -30,7 +30,7 @@
 <main>
   <p class="muted"><a href="./">← SuperDialer</a></p>
   <h1>SuperDialer 개인정보처리방침</h1>
-  <p class="muted">시행일: 2026년 10월 14일 · 최종 수정: 2026년 10월 14일 · English summary at the bottom</p>
+  <p class="muted">시행일: 2026년 10월 14일 · 최종 수정: 2026년 10월 25일 · English summary at the bottom</p>
 
   <div class="box">
     <p><strong>한 줄 요약</strong> — 통화 기록·연락처·문자는 <strong>폰 밖으로 나가지 않습니다.</strong>
@@ -50,7 +50,8 @@
     <tr><td>문자·MMS</td><td>연락처/통화 내역 화면에서 대화 보기, 문자 보내기</td><td>폰의 문자 저장소를 읽음. 앱에서 보낸 문자의 기록은 앱 안에만 저장</td></tr>
     <tr><td>통화 메모, 연락처 메모, 단축 다이얼, 연락처 그룹</td><td>사용자가 직접 입력한 메모와 설정</td><td>앱 내부 저장소(이 폰에만)</td></tr>
     <tr><td>통화 녹음(마이크)</td><td>사용자가 녹음 버튼을 눌렀을 때만</td><td>폰의 <code>음악/SuperDialer</code> 폴더. 녹음 관련 법을 확인하고 사용하세요</td></tr>
-    <tr><td>브라우저 기록·북마크·탭</td><td>내장 브라우저 기능</td><td>앱 내부 저장소. 로그인하면 북마크와 시작 페이지 링크만 동기화(아래 3번)</td></tr>
+    <tr><td>브라우저 기록·북마크·탭</td><td>내장 브라우저 기능</td><td>앱 내부 저장소. 로그인하면 북마크와 시작 페이지 링크만 동기화(아래 3번). <strong>비공개 탭</strong>은 방문 기록·쿠키·사이트 데이터를 저장하지 않고, 탭을 모두 닫으면 지워집니다</td></tr>
+    <tr><td>사이트 권한 선택</td><td>웹사이트가 카메라·마이크·위치를 요청했을 때 사용자가 고른 허용/차단</td><td>앱 내부 저장소(이 폰에만, 동기화 안 함). 설정 &gt; 브라우저 &gt; 사이트 권한에서 지울 수 있음. 비공개 탭에서는 저장하지 않음</td></tr>
     <tr><td>카카오톡 알림 내용(선택, 기본 꺼짐)</td><td>설정에서 켜고 시스템의 “알림 접근”을 직접 허용했을 때만, 카카오톡이 알림으로 보여 준 보낸 사람·대화방 이름·미리보기 글을 최근기록 &gt; 카톡 화면에 모아 보여 주고 알림의 답장 버튼으로 답장하기 위해</td><td>앱 내부 저장소(이 폰에만, 최근 500개). 서버로 보내지 않음. 설정에서 끄거나 “모은 알림 지우기”로 삭제. 다른 앱의 알림은 읽지 않음</td></tr>
     <tr><td>오류 기록</td><td>앱이 멈췄을 때 원인 확인</td><td>폰 안에만 저장(시각·앱 버전·기기 모델·오류 내용). 설정에서 보고 지울 수 있음</td></tr>
   </table>
@@ -84,7 +85,8 @@
   <ul>
     <li>전화(<code>CALL_PHONE</code>, 기본 전화 앱 역할): 전화 걸기·받기·통화 화면, 번호 차단</li>
     <li>통화 기록 읽기/쓰기, 연락처 읽기/쓰기, 문자 읽기/보내기: 위 2번의 기능들</li>
-    <li>마이크: 통화 녹음 버튼을 눌렀을 때만</li>
+    <li>마이크: 통화 녹음 버튼을 눌렀을 때, 또는 웹사이트가 요청해서 사용자가 허용했을 때만</li>
+    <li>카메라·위치(정밀/대략): 내장 브라우저에서 웹사이트가 요청하고 사용자가 허용했을 때만. 앱 자체는 카메라나 위치를 쓰지 않으며 이 정보를 수집·저장하지 않습니다. 보안 연결(https)인 사이트만 요청할 수 있습니다</li>
     <li>알림 접근(선택): 위의 카카오톡 알림 모아 보기를 켰을 때만. 시스템 설정에서 사용자가 직접 허용해야 하며 언제든 끌 수 있습니다. 카카오톡이 아닌 앱의 알림은 처리하지 않습니다</li>
     <li>알림·전체 화면 알림: 수신 전화와 부재중 알림, 새 버전 알림</li>
     <li>인터넷: 내장 브라우저, 계정 동기화, 업데이트 확인</li>
@@ -124,6 +126,7 @@
   An account is optional. If you sign in (email/password or Google), the app stores on Supabase (Seoul): your email, an account ID, and synced app data (start-page links, bookmarks, best game scores, display settings, reject-message texts).
   Your nickname and best scores are visible to other signed-in users on the leaderboard; your email is not.
   We use Google sign-in only to identify you (email and name), and our use of Google user data follows the Google API Services User Data Policy, including the Limited Use requirements.
+  The in-app browser can pass your camera, microphone or location to a website only after you allow it for that site (secure https pages only); the app itself does not collect it. Private tabs keep no history, cookies or site data.
   No ads, analytics or tracking; no sale of data. You can delete your account and all server-side data at any time in the app: <em>Settings &gt; Account &gt; Delete account</em>.
   Contact: <a href="https://github.com/Jangwoo0827/phonecall/issues">GitHub Issues</a>.</p>
 </main>

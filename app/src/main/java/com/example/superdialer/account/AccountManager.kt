@@ -410,6 +410,8 @@ object AccountManager {
                 themeMode = AppSettings.themeMode.key,
                 accent = AppSettings.accent.key,
                 textSize = AppSettings.textSize.key,
+                searchEngine = AppSettings.searchEngine.key,
+                webDarkMode = AppSettings.webDarkMode.key,
                 rejectMessages = RejectMessageStore.messages.toList(),
                 checklistId = prefs?.getString(KEY_CHECKLIST, null),
             )
@@ -450,6 +452,8 @@ object AccountManager {
             AppSettings.updateThemeMode(ThemeMode.fromKey(snapshot.themeMode))
             AppSettings.updateAccent(AccentColor.fromKey(snapshot.accent))
             AppSettings.updateTextSize(TextSize.fromKey(snapshot.textSize))
+            AppSettings.updateSearchEngine(com.example.superdialer.browser.SearchEngine.fromKey(snapshot.searchEngine))
+            AppSettings.updateWebDarkMode(com.example.superdialer.settings.WebDarkMode.fromKey(snapshot.webDarkMode))
             if (snapshot.rejectMessages.isNotEmpty()) RejectMessageStore.replaceAll(snapshot.rejectMessages)
         }
         snapshot.checklistId?.let { prefs?.edit()?.putString(KEY_CHECKLIST, it)?.apply() }

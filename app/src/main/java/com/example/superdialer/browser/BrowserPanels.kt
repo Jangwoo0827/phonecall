@@ -1,5 +1,8 @@
 package com.example.superdialer.browser
 
+import com.example.superdialer.ui.groupShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -46,45 +49,6 @@ import com.example.superdialer.calllog.formatDateTime
 import com.example.superdialer.ui.ScreenHeader
 
 @Composable
-internal fun TabsPanel(
-    tabs: List<BrowserTab>,
-    selectedId: Int,
-    onSelect: (Int) -> Unit,
-    onClose: (Int) -> Unit,
-    onNewTab: () -> Unit,
-    onBack: () -> Unit,
-) {
-    Surface(modifier = Modifier.fillMaxSize()) {
-        Column {
-            ScreenHeader("탭 ${tabs.size}개", onBack) {
-                IconButton(onClick = onNewTab) { Icon(Icons.Filled.Add, contentDescription = "새 탭") }
-            }
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(tabs, key = { it.id }) { tab ->
-                    val current = tab.id == selectedId
-                    ListItem(
-                        modifier = Modifier.clickable { onSelect(tab.id) },
-                        colors = ListItemDefaults.colors(
-                            containerColor = if (current) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-                        ),
-                        headlineContent = {
-                            Text(tab.title.ifBlank { tab.url.ifBlank { "새 탭" } }, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        },
-                        supportingContent = { Text(tab.url, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        leadingContent = { SiteIcon(tab.url, tab.title, 40.dp) },
-                        trailingContent = {
-                            IconButton(onClick = { onClose(tab.id) }) {
-                                Icon(Icons.Filled.Close, contentDescription = "탭 닫기")
-                            }
-                        },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 internal fun BookmarksPanel(
     bookmarks: List<Bookmark>,
     onOpen: (Bookmark) -> Unit,
@@ -103,9 +67,13 @@ internal fun BookmarksPanel(
                 Text("검색 결과가 없습니다.", modifier = Modifier.padding(24.dp))
             }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(shown, key = { it.id }) { item ->
+                itemsIndexed(shown, key = { _, item -> item.id }) { index, item ->
                     ListItem(
-                        modifier = Modifier.clickable { onOpen(item) },
+                        modifier = Modifier
+                            .padding(start = 12.dp, end = 12.dp, bottom = 2.dp)
+                            .clip(groupShape(index, shown.size))
+                            .clickable { onOpen(item) },
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         supportingContent = { Text(item.url, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         leadingContent = { SiteIcon(item.url, item.title, 40.dp) },
@@ -143,9 +111,13 @@ internal fun HistoryPanel(
                 Text("검색 결과가 없습니다.", modifier = Modifier.padding(24.dp))
             }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(shown, key = { it.id }) { item ->
+                itemsIndexed(shown, key = { _, item -> item.id }) { index, item ->
                     ListItem(
-                        modifier = Modifier.clickable { onOpen(item) },
+                        modifier = Modifier
+                            .padding(start = 12.dp, end = 12.dp, bottom = 2.dp)
+                            .clip(groupShape(index, shown.size))
+                            .clickable { onOpen(item) },
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         supportingContent = {
                             Column {

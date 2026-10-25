@@ -57,11 +57,13 @@ object BrowserSession {
     }
 
     private fun save(app: Application, vm: BrowserViewModel) {
-        val saved = vm.tabs.map { SavedTab(if (it.isStart) null else it.url, it.title) }
+        // private tabs are never written to disk
+        val normal = vm.tabs.filter { !it.isPrivate }
+        val saved = normal.map { SavedTab(if (it.isStart) null else it.url, it.title) }
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putLong(KEY_TIME, System.currentTimeMillis())
             .putString(KEY_TABS, SavedTabs.encode(saved))
-            .putInt(KEY_SELECTED, vm.tabs.indexOfFirst { it.id == vm.selectedId })
+            .putInt(KEY_SELECTED, normal.indexOfFirst { it.id == vm.selectedId })
             .putInt(KEY_SECTION, vm.hubSection)
             .putString(KEY_GAME, GameSession.playingId.orEmpty())
             .apply()

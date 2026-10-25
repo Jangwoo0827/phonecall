@@ -56,6 +56,8 @@ fun SettingsScreen(
     onOpenBlocked: () -> Unit,
     onOpenRejectMessages: () -> Unit,
     onOpenQuickDial: () -> Unit,
+    onOpenSitePermissions: () -> Unit,
+    onOpenPatchNotes: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -189,6 +191,9 @@ fun SettingsScreen(
         }
 
         SettingsGroup("브라우저") {
+            BrowserPreferences()
+            HorizontalDivider()
+            Clickable("사이트 권한", "카메라·마이크·위치를 쓰게 허용하거나 차단한 사이트 보기", onOpenSitePermissions)
             Clickable("비밀번호·자동 완성", "삼성 패스·구글 같은 자동 완성 서비스를 골라 두면 사이트 로그인 정보를 저장하고 채워 줘요") {
                 try {
                     context.startActivity(Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -245,6 +250,7 @@ fun SettingsScreen(
                 headlineContent = { Text("버전") },
                 supportingContent = { Text(appVersion(context)) },
             )
+            Clickable("패치노트", "지금까지 나온 모든 버전의 바뀐 내용", onOpenPatchNotes)
             Clickable("개인정보처리방침", "어떤 정보가 어디에 저장되는지, 계정 삭제 방법") {
                 try {
                     context.startActivity(
