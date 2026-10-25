@@ -48,6 +48,18 @@ class BrowserModesTest : AppTestBase() {
         waitForText("주소 또는 검색어")
         compose.onNodeWithContentDescription("더보기").performClick()
         compose.onNodeWithTag("menu_new_private_tab").performClick()
+
+        // Private tabs need a WebView that can keep a separate profile (recent ones; the emulator images used on CI
+        // ship an older one). Without it no tab may be opened that only pretends to be private.
+        var profilesSupported = false
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            profilesSupported = androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)
+        }
+        if (!profilesSupported) {
+            compose.waitForIdle()
+            assertEquals(0, compose.onAllNodes(hasTag("private_banner")).fetchSemanticsNodes().size)
+            return
+        }
         waitFor(hasTag("private_banner"))
         compose.onNodeWithTag("private_banner").assertIsDisplayed()
 
