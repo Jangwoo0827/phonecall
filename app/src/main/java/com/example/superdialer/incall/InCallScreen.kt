@@ -1,5 +1,10 @@
 package com.example.superdialer.incall
 
+import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.VideocamOff
+import androidx.compose.material.icons.filled.Videocam
 import com.example.superdialer.ui.hasPermission
 import android.Manifest
 import androidx.compose.material3.RadioButton
@@ -97,6 +102,14 @@ fun InCallScreen(onClose: () -> Unit, onAddCall: () -> Unit) {
         if (call == null) return@Box
         val others = calls.filter { it.id != call.id }
 
+        // A video call that is on (or being set up) fills the screen with pictures.
+        if (call.isVideo && !call.isRinging && !call.isHolding) {
+            VideoCallLayout(call, audio, ended)
+            if (call.upgradeRequest != 0) VideoUpgradeDialog(call)
+            return@Box
+        }
+        if (call.upgradeRequest != 0 && !ended) VideoUpgradeDialog(call)
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -151,6 +164,7 @@ private fun CallHeader(call: CallSnapshot, ended: Boolean) {
             color = Color(0xFFB0BEC5),
             fontSize = 16.sp,
         )
+        if (call.isVideo && !ended) Text(VideoStates.label(call.videoState), color = Color(0xFF81C784), fontSize = 13.sp)
         Spacer(Modifier.height(24.dp))
         Box(contentAlignment = Alignment.Center) {
             if (call.isRinging) RingingPulse()
@@ -167,7 +181,7 @@ private fun CallHeader(call: CallSnapshot, ended: Boolean) {
 @Composable
 private fun statusText(call: CallSnapshot, ended: Boolean): String {
     if (ended || call.isDisconnected) return "통화 종료"
-    if (call.isRinging) return "수신 전화"
+    if (call.isRinging) return if (call.isVideo) "영상통화 수신" else "수신 전화"
     if (call.isHolding) return "통화 대기 중"
     if (call.isActive) {
         var now by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -220,9 +234,29 @@ private fun RingingControls(call: CallSnapshot) {
             Text("  메시지로 거절", color = Color.White)
         }
         Spacer(Modifier.height(24.dp))
+        val context = LocalContext.current
+        // answering with video needs the camera: ask first, and fall back to a voice answer if it is refused
+        val cameraPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (granted) {
+                CallManager.answerVideo(call.id)
+            } else {
+                Toast.makeText(context, "카메라 권한이 없어 음성으로 받았습니다.", Toast.LENGTH_SHORT).show()
+                CallManager.answer(call.id)
+            }
+        }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             RoundButton(Icons.Filled.CallEnd, "거절", EndCallRed) { CallManager.reject(call.id) }
-            RoundButton(Icons.Filled.Call, "받기", CallButtonGreen) { CallManager.answer(call.id) }
+            if (call.isVideo) {
+                RoundButton(Icons.Filled.Call, "음성으로", Color(0xFF455A64)) { CallManager.answer(call.id) }
+                RoundButton(Icons.Filled.Videocam, "영상으로", CallButtonGreen) {
+                    if (context.hasPermission(Manifest.permission.CAMERA)) CallManager.answerVideo(call.id)
+                    else cameraPermission.launch(Manifest.permission.CAMERA)
+                }
+            } else {
+                RoundButton(Icons.Filled.Call, "받기", CallButtonGreen) { CallManager.answer(call.id) }
+            }
         }
     }
     if (showMessages) {
@@ -328,6 +362,11 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
     ) { granted ->
         if (granted) startRecording() else Toast.makeText(context, "녹음하려면 마이크 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
     }
+    val videoPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) CallManager.requestVideo(call.id) else Toast.makeText(context, "영상통화에는 카메라 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+    }
     // A recording never outlives its call.
     androidx.compose.runtime.DisposableEffect(call.id) { onDispose { CallRecorder.stop(context) } }
     var showRoutes by remember { mutableStateOf(false) }
@@ -384,6 +423,12 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             if (call.canMerge) {
                 ToggleAction(Icons.Filled.EditNote, "메모", false, enabled = call.number.isNotEmpty()) { showMemo = true }
+            }
+            if (call.canVideo && !call.isVideo) {
+                ToggleAction(Icons.Filled.Videocam, "영상 전환", false) {
+                    if (context.hasPermission(Manifest.permission.CAMERA)) CallManager.requestVideo(call.id)
+                    else videoPermission.launch(Manifest.permission.CAMERA)
+                }
             }
             ToggleAction(Icons.Filled.FiberManualRecord, if (CallRecorder.recording) "녹음 중" else "녹음", CallRecorder.recording) {
                 if (CallRecorder.recording) {
@@ -490,4 +535,155 @@ private fun ToggleAction(
             fontSize = 13.sp,
         )
     }
+}
+
+// --- Video calls ---------------------------------------------------------------------------------
+
+/** The other side's picture full screen, ours small in a corner, and the controls of a video call. */
+@Composable
+private fun VideoCallLayout(call: CallSnapshot, audio: AudioInfo, ended: Boolean) {
+    val context = LocalContext.current
+    val front by CallManager.frontCamera.collectAsState()
+    val peerSize by CallManager.peerSize.collectAsState()
+    val sending = VideoStates.sendsVideo(call.videoState)
+    val title = call.name ?: PhoneNumberFormatter.formatLoose(call.number).ifEmpty { "번호정보 없음" }
+
+    // The camera needs its permission; ask once when a video call is up, then pick the front camera.
+    val cameraPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) CallManager.useCamera(context, call.id, front = true)
+        else Toast.makeText(context, "내 영상을 보내려면 카메라 권한이 필요합니다.", Toast.LENGTH_LONG).show()
+    }
+    LaunchedEffect(call.id) {
+        if (context.hasPermission(Manifest.permission.CAMERA)) CallManager.useCamera(context, call.id, front = true)
+        else cameraPermission.launch(Manifest.permission.CAMERA)
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black).testTag("video_call_screen")) {
+        // The other side's picture keeps its shape (letterboxed) when Telecom told us its size.
+        val remoteModifier = peerSize?.let { (w, h) -> if (w > 0 && h > 0) Modifier.fillMaxSize().aspectRatio(w.toFloat() / h, matchHeightConstraintsFirst = false) else null }
+            ?: Modifier.fillMaxSize()
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            VideoSurface(remoteModifier) { CallManager.setDisplaySurface(call.id, it) }
+        }
+        if (!VideoStates.receivesVideo(call.videoState)) {
+            Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                InitialAvatar(title, size = 120.dp, fontSize = 48.sp)
+                Text("상대 화면을 기다리는 중", color = Color(0xFFB0BEC5), modifier = Modifier.padding(top = 12.dp))
+            }
+        }
+
+        // Our own picture
+        if (sending && !ended) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 96.dp, end = 16.dp)
+                    .size(width = 108.dp, height = 156.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF263238)),
+            ) { VideoSurface(Modifier.fillMaxSize()) { CallManager.setPreviewSurface(call.id, it) } }
+        }
+
+        // Name and time on top
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .fillMaxWidth()
+                .background(Brush.verticalGradient(listOf(Color(0xAA000000), Color.Transparent)))
+                .padding(start = 20.dp, end = 20.dp, top = 48.dp, bottom = 24.dp),
+        ) {
+            Text(title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+            Text(statusText(call, ended), color = Color(0xFFCFD8DC), fontSize = 15.sp)
+        }
+
+        // Controls at the bottom
+        if (!ended) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000))))
+                    .padding(horizontal = 16.dp, vertical = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    ToggleAction(if (audio.muted) Icons.Filled.MicOff else Icons.Filled.Mic, "음소거", audio.muted) {
+                        CallManager.setMuted(!audio.muted)
+                    }
+                    ToggleAction(if (sending) Icons.Filled.Videocam else Icons.Filled.VideocamOff, if (sending) "카메라 끄기" else "카메라 켜기", !sending) {
+                        CallManager.setCameraOn(call.id, !sending)
+                    }
+                    ToggleAction(Icons.Filled.Cameraswitch, "전환", false, enabled = sending) { CallManager.switchCamera(context, call.id) }
+                    val speakerOn = audio.route == CallAudioState.ROUTE_SPEAKER
+                    ToggleAction(Icons.AutoMirrored.Filled.VolumeUp, "스피커", speakerOn) { CallManager.setSpeaker(!speakerOn) }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(40.dp), verticalAlignment = Alignment.CenterVertically) {
+                    ToggleAction(Icons.Filled.Call, "음성으로", false) { CallManager.switchToVoice(call.id) }
+                    RoundButton(Icons.Filled.CallEnd, "종료", EndCallRed) { CallManager.disconnect(call.id) }
+                }
+            }
+        }
+    }
+}
+
+/** A surface the video call draws into. The surface is handed to Telecom while it exists and taken back when it goes. */
+@Composable
+private fun VideoSurface(modifier: Modifier, onSurface: (android.view.Surface?) -> Unit) {
+    val latest by androidx.compose.runtime.rememberUpdatedState(onSurface)
+    androidx.compose.ui.viewinterop.AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            android.view.TextureView(context).apply {
+                keepScreenOn = true
+                surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
+                    private var surface: android.view.Surface? = null
+                    override fun onSurfaceTextureAvailable(texture: android.graphics.SurfaceTexture, width: Int, height: Int) {
+                        surface = android.view.Surface(texture).also { latest(it) }
+                    }
+
+                    override fun onSurfaceTextureSizeChanged(texture: android.graphics.SurfaceTexture, width: Int, height: Int) {}
+
+                    override fun onSurfaceTextureDestroyed(texture: android.graphics.SurfaceTexture): Boolean {
+                        latest(null)
+                        surface?.release()
+                        surface = null
+                        return true
+                    }
+
+                    override fun onSurfaceTextureUpdated(texture: android.graphics.SurfaceTexture) {}
+                }
+            }
+        },
+    )
+}
+
+/** The other side asks to switch to video: accept (the camera permission is asked first) or keep the call as it is. */
+@Composable
+private fun VideoUpgradeDialog(call: CallSnapshot) {
+    val context = LocalContext.current
+    val permission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            CallManager.respondToUpgrade(call.id, accept = true)
+        } else {
+            Toast.makeText(context, "영상통화에는 카메라 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+            CallManager.respondToUpgrade(call.id, accept = false)
+        }
+    }
+    AlertDialog(
+        onDismissRequest = { CallManager.respondToUpgrade(call.id, accept = false) },
+        title = { Text("영상통화 요청") },
+        text = { Text("상대가 영상통화로 바꾸자고 해요. 수락하면 내 카메라 화면도 상대에게 보여요.") },
+        confirmButton = {
+            TextButton(onClick = {
+                if (context.hasPermission(Manifest.permission.CAMERA)) CallManager.respondToUpgrade(call.id, accept = true)
+                else permission.launch(Manifest.permission.CAMERA)
+            }) { Text("수락") }
+        },
+        dismissButton = { TextButton(onClick = { CallManager.respondToUpgrade(call.id, accept = false) }) { Text("거절") } },
+    )
 }

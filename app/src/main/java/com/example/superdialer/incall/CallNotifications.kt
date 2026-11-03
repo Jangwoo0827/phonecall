@@ -92,7 +92,7 @@ object CallNotifications {
         NotificationCompat.Builder(context, CHANNEL_INCOMING)
             .setSmallIcon(android.R.drawable.sym_action_call)
             .setContentTitle(label(call))
-            .setContentText("수신 전화")
+            .setContentText(if (call.isVideo) "영상통화 수신" else "수신 전화")
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setOngoing(true)
@@ -100,7 +100,14 @@ object CallNotifications {
             .setContentIntent(openCall(context, 0))
             .setFullScreenIntent(openCall(context, 1), true)
             .addAction(0, "거절", broadcast(context, ACTION_DECLINE, 2))
-            .addAction(0, "받기", openCall(context, 3, answer = true))
+            .apply {
+                if (call.isVideo) {
+                    addAction(0, "음성으로", openCall(context, 3, answer = true))
+                    addAction(0, "영상으로", openCall(context, 6, answer = true, video = true))
+                } else {
+                    addAction(0, "받기", openCall(context, 3, answer = true))
+                }
+            }
             .build()
 
     private fun ongoing(context: Context, call: CallSnapshot) =
@@ -115,9 +122,9 @@ object CallNotifications {
             .addAction(0, "종료", broadcast(context, ACTION_HANGUP, 5))
             .build()
 
-    private fun openCall(context: Context, requestCode: Int, answer: Boolean = false) =
+    private fun openCall(context: Context, requestCode: Int, answer: Boolean = false, video: Boolean = false) =
         PendingIntent.getActivity(
-            context, requestCode, InCallActivity.intent(context, answer),
+            context, requestCode, InCallActivity.intent(context, answer, video),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 

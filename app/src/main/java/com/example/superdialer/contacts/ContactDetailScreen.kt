@@ -1,5 +1,7 @@
 package com.example.superdialer.contacts
 
+import com.example.superdialer.ui.rememberVideoDialAction
+import androidx.compose.material.icons.filled.Videocam
 import com.example.superdialer.kakao.KakaoActions
 import com.example.superdialer.ui.theme.starColor
 import com.example.superdialer.ui.theme.callGreen
@@ -90,6 +92,7 @@ fun ContactDetailScreen(
 ) {
     val context = LocalContext.current
     val dial = rememberDialAction()
+    val videoDial = rememberVideoDialAction()
 
     LaunchedEffect(contactId) {
         viewModel.loadDetail(contactId)
@@ -202,6 +205,9 @@ fun ContactDetailScreen(
                         Row {
                             IconButton(onClick = { context.sendSms(entry.number) }) {
                                 Icon(Icons.AutoMirrored.Filled.Message, contentDescription = "문자 보내기")
+                            }
+                            IconButton(onClick = { videoDial(entry.number) }) {
+                                Icon(Icons.Filled.Videocam, contentDescription = "영상통화", tint = callGreen())
                             }
                             IconButton(onClick = { dial(entry.number) }) {
                                 Icon(Icons.Filled.Call, contentDescription = "발신", tint = callGreen())

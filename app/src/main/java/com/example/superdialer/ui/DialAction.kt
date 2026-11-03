@@ -16,38 +16,46 @@ import com.example.superdialer.dialer.PlaceCallResult
 
 /** Returns a function that places a call, asking for CALL_PHONE first if needed. */
 @Composable
-fun rememberDialAction(): (String) -> Unit {
+fun rememberDialAction(): (String) -> Unit = rememberCallAction(video = false)
+
+/** Like [rememberDialAction] but starts a video call; that also needs the camera permission. */
+@Composable
+fun rememberVideoDialAction(): (String) -> Unit = rememberCallAction(video = true)
+
+@Composable
+private fun rememberCallAction(video: Boolean): (String) -> Unit {
     val context = LocalContext.current
     var pending by remember { mutableStateOf<String?>(null) }
+    val needed = if (video) arrayOf(Manifest.permission.CALL_PHONE, Manifest.permission.CAMERA) else arrayOf(Manifest.permission.CALL_PHONE)
 
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
         val number = pending
         pending = null
-        if (granted && number != null) {
-            place(context, number)
+        val allGranted = needed.all { results[it] == true || context.hasPermission(it) }
+        if (allGranted && number != null) {
+            place(context, number, video)
         } else {
-            Toast.makeText(context, "전화를 걸려면 '전화' 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+            val what = if (video && context.hasPermission(Manifest.permission.CALL_PHONE)) "카메라" else "전화"
+            Toast.makeText(context, "${if (video) "영상통화" else "전화"}를 걸려면 '$what' 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
         }
     }
 
-    return remember(context) {
+    return remember(context, video) {
         { number: String ->
             if (number.isNotEmpty()) {
-                if (context.hasPermission(Manifest.permission.CALL_PHONE)) {
-                    place(context, number)
+                if (needed.all { context.hasPermission(it) }) {
+                    place(context, number, video)
                 } else {
                     pending = number
-                    launcher.launch(Manifest.permission.CALL_PHONE)
+                    launcher.launch(needed)
                 }
             }
         }
     }
 }
 
-private fun place(context: Context, number: String) {
-    val message = when (CallPlacer.placeCall(context, number)) {
+private fun place(context: Context, number: String, video: Boolean) {
+    val message = when (CallPlacer.placeCall(context, number, video)) {
         PlaceCallResult.Placed -> return
         PlaceCallResult.NoPermission -> "전화를 걸려면 '전화' 권한이 필요합니다."
         PlaceCallResult.Unavailable -> "이 기기에서는 전화를 걸 수 없습니다."

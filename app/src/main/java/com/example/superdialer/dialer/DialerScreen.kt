@@ -1,5 +1,7 @@
 package com.example.superdialer.dialer
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.ui.platform.testTag
 import android.widget.Toast
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -97,8 +99,11 @@ fun DialerScreen(
     var permissionDenied by rememberSaveable { mutableStateOf(false) }
     var callUnavailable by rememberSaveable { mutableStateOf(false) }
 
+    var videoNext by remember { mutableStateOf(false) }
     fun placeCall() {
-        when (CallPlacer.placeCall(context, number)) {
+        val video = videoNext
+        videoNext = false
+        when (CallPlacer.placeCall(context, number, video)) {
             PlaceCallResult.Placed -> { permissionDenied = false; callUnavailable = false }
             PlaceCallResult.NoPermission -> permissionDenied = true
             PlaceCallResult.Unavailable -> callUnavailable = true
@@ -106,17 +111,27 @@ fun DialerScreen(
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) placeCall() else permissionDenied = true
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        val phone = results[Manifest.permission.CALL_PHONE] == true ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
+        val camera = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        when {
+            !phone -> { videoNext = false; permissionDenied = true }
+            videoNext && !camera -> {
+                videoNext = false
+                Toast.makeText(context, "영상통화를 걸려면 '카메라' 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+            }
+            else -> placeCall()
+        }
     }
 
-    fun onCallClick() {
+    fun onCallClick(video: Boolean = false) {
         if (number.isEmpty()) return
-        val granted = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.CALL_PHONE
-        ) == PackageManager.PERMISSION_GRANTED
-        if (granted) placeCall() else permissionLauncher.launch(Manifest.permission.CALL_PHONE)
+        videoNext = video
+        val needed = if (video) arrayOf(Manifest.permission.CALL_PHONE, Manifest.permission.CAMERA) else arrayOf(Manifest.permission.CALL_PHONE)
+        val granted = needed.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
+        if (granted) placeCall() else permissionLauncher.launch(needed)
     }
 
     Column(
@@ -196,23 +211,47 @@ fun DialerScreen(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .padding(vertical = 12.dp)
-                .size(80.dp)
-                .alpha(if (number.isEmpty()) 0.4f else 1f)
-                .shadow(if (number.isEmpty()) 0.dp else 8.dp, CircleShape)
-                .clip(CircleShape)
-                .background(CallButtonGreen)
-                .pointerInput(number) { detectTapGestures(onTap = { onCallClick() }) },
-            contentAlignment = Alignment.Center,
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Filled.Call,
-                contentDescription = "통화",
-                tint = Color.White,
-                modifier = Modifier.size(36.dp),
-            )
+            Spacer(Modifier.size(56.dp)) // balances the video button so the call button stays centered
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+                    .size(80.dp)
+                    .alpha(if (number.isEmpty()) 0.4f else 1f)
+                    .shadow(if (number.isEmpty()) 0.dp else 8.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(CallButtonGreen)
+                    .pointerInput(number) { detectTapGestures(onTap = { onCallClick() }) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Call,
+                    contentDescription = "통화",
+                    tint = Color.White,
+                    modifier = Modifier.size(36.dp),
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .alpha(if (number.isEmpty()) 0.4f else 1f)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .testTag("video_call_button")
+                    .pointerInput(number) { detectTapGestures(onTap = { onCallClick(video = true) }) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Videocam,
+                    contentDescription = "영상통화",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
         }
     }
 }
