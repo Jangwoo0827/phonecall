@@ -330,7 +330,7 @@ private fun SearchBar(
             value = query,
             onValueChange = onQueryChange,
             modifier = Modifier.weight(1f),
-            placeholder = { Text(str(R.string.t_search_name_initials_number)) },
+            placeholder = { Text(str(R.string.t_search_name_initials_number), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             trailingIcon = {
                 if (query.isNotEmpty()) {

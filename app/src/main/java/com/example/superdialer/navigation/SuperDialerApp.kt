@@ -32,6 +32,7 @@ import com.example.superdialer.dialer.findSuggestions
 import com.example.superdialer.ui.hasPermission
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -160,7 +161,7 @@ fun SuperDialerApp(
                             }
                         },
                         icon = { Icon(destination.icon, contentDescription = destination.label) },
-                        label = { Text(destination.label) },
+                        label = { Text(destination.label, maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Clip, fontSize = 11.sp) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             selectedTextColor = MaterialTheme.colorScheme.onSurface,

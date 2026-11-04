@@ -552,7 +552,7 @@ private fun AddressField(
             focused = state.isFocused
         },
         singleLine = true,
-        placeholder = { Text(str(R.string.t_address_or_search)) },
+        placeholder = { Text(str(R.string.t_address_or_search), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
         leadingIcon = when {
             privateTab -> ({ Icon(Icons.Filled.VisibilityOff, contentDescription = str(R.string.t_private_tab), tint = MaterialTheme.colorScheme.primary) })
             pageMode -> ({

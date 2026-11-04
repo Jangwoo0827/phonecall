@@ -18,7 +18,7 @@
     <string name="t_add_to_contacts">Add to contacts</string>
     <string name="t_add_to_favorites">Add to favorites</string>
     <string name="t_address">Address</string>
-    <string name="t_address_or_search">Address or search</string>
+    <string name="t_address_or_search">Search or URL</string>
     <string name="t_all">All</string>
     <string name="t_all_kakaotalk_notification_text_stored">All KakaoTalk notification text stored on this phone is erased. Chats in the KakaoTalk app are not affected.</string>
     <string name="t_all_of_this_account_s_data">All of this account\'s data on the server (start page links, bookmarks, game scores and leaderboard entries, settings, decline messages) and the sign-in info are erased, and so is the data of the Checklist note that uses the same account. This can\'t be undone.\n\nThe data on this phone stays.</string>
@@ -166,7 +166,7 @@
     <string name="t_downloading_3">%1$s downloading… %2$s</string>
     <string name="t_downloading_4">Downloading… %1$s</string>
     <string name="t_downloading_the_new_version">Downloading the new version…</string>
-    <string name="t_draw_together">Draw together</string>
+    <string name="t_draw_together">Co-draw</string>
     <string name="t_earpiece">Earpiece</string>
     <string name="t_edit">Edit</string>
     <string name="t_edit_2">Edit</string>
@@ -398,7 +398,7 @@
     <string name="t_search_by_title_or_address">Search by title or address</string>
     <string name="t_search_contacts">Search contacts</string>
     <string name="t_search_engine">Search engine</string>
-    <string name="t_search_name_initials_number">Search name, initials, number</string>
+    <string name="t_search_name_initials_number">Search name or number</string>
     <string name="t_secure_connection">Secure connection</string>
     <string name="t_select">Select</string>
     <string name="t_select_all">Select all</string>

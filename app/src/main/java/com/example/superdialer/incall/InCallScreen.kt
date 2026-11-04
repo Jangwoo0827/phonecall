@@ -249,7 +249,7 @@ private fun RingingControls(call: CallSnapshot) {
             }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            RoundButton(Icons.Filled.CallEnd, str(R.string.t_declined), EndCallRed) { CallManager.reject(call.id) }
+            RoundButton(Icons.Filled.CallEnd, str(R.string.decline_action), EndCallRed) { CallManager.reject(call.id) }
             if (call.isVideo) {
                 RoundButton(Icons.Filled.Call, str(R.string.t_voice), Color(0xFF455A64)) { CallManager.answer(call.id) }
                 RoundButton(Icons.Filled.Videocam, str(R.string.t_video), CallButtonGreen) {
@@ -686,6 +686,6 @@ private fun VideoUpgradeDialog(call: CallSnapshot) {
                 else permission.launch(Manifest.permission.CAMERA)
             }) { Text(str(R.string.t_accept)) }
         },
-        dismissButton = { TextButton(onClick = { CallManager.respondToUpgrade(call.id, accept = false) }) { Text(str(R.string.t_declined)) } },
+        dismissButton = { TextButton(onClick = { CallManager.respondToUpgrade(call.id, accept = false) }) { Text(str(R.string.decline_action)) } },
     )
 }

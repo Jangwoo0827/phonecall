@@ -101,7 +101,7 @@ object CallNotifications {
             .setOnlyAlertOnce(true)
             .setContentIntent(openCall(context, 0))
             .setFullScreenIntent(openCall(context, 1), true)
-            .addAction(0, str(R.string.t_declined), broadcast(context, ACTION_DECLINE, 2))
+            .addAction(0, str(R.string.decline_action), broadcast(context, ACTION_DECLINE, 2))
             .apply {
                 if (call.isVideo) {
                     addAction(0, str(R.string.t_voice), openCall(context, 3, answer = true))

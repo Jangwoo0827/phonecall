@@ -30,6 +30,7 @@ internal fun BrowserPreferences() {
             SearchEngine.entries.forEachIndexed { index, engine ->
                 SegmentedButton(
                     selected = AppSettings.searchEngine == engine,
+                    icon = {},
                     onClick = { AppSettings.updateSearchEngine(engine) },
                     shape = SegmentedButtonDefaults.itemShape(index, SearchEngine.entries.size),
                     colors = choiceColors(),
@@ -48,6 +49,7 @@ internal fun BrowserPreferences() {
             WebDarkMode.entries.forEachIndexed { index, mode ->
                 SegmentedButton(
                     selected = AppSettings.webDarkMode == mode,
+                    icon = {},
                     onClick = { AppSettings.updateWebDarkMode(mode) },
                     shape = SegmentedButtonDefaults.itemShape(index, WebDarkMode.entries.size),
                     colors = choiceColors(),

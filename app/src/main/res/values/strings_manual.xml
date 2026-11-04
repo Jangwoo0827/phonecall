@@ -15,4 +15,5 @@
     <string name="shortcut_browser">Browser</string>
     <string name="permission_needed_video">Video calls need the \'%1$s\' permission.</string>
     <string name="permission_needed_call">Calls need the \'%1$s\' permission.</string>
+    <string name="decline_action">Decline</string>
 </resources>

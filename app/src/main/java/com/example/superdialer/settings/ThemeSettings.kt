@@ -37,6 +37,7 @@ internal fun ThemeRows() {
             ThemeMode.entries.forEachIndexed { index, mode ->
                 SegmentedButton(
                     selected = AppSettings.themeMode == mode,
+                    icon = {},
                     onClick = { AppSettings.updateThemeMode(mode) },
                     shape = SegmentedButtonDefaults.itemShape(index, ThemeMode.entries.size),
                     colors = SegmentedButtonDefaults.colors(
@@ -79,6 +80,7 @@ internal fun ThemeRows() {
             TextSize.entries.forEachIndexed { index, size ->
                 SegmentedButton(
                     selected = AppSettings.textSize == size,
+                    icon = {},
                     onClick = { AppSettings.updateTextSize(size) },
                     shape = SegmentedButtonDefaults.itemShape(index, TextSize.entries.size),
                     colors = SegmentedButtonDefaults.colors(

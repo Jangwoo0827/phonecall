@@ -190,7 +190,7 @@ private fun SearchField(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier,
-        placeholder = { Text(str(R.string.t_search_name_initials_number)) },
+        placeholder = { Text(str(R.string.t_search_name_initials_number), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotEmpty()) {
