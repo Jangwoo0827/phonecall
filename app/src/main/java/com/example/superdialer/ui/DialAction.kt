@@ -1,5 +1,7 @@
 package com.example.superdialer.ui
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.Manifest
 import android.content.Context
 import android.widget.Toast
@@ -35,8 +37,8 @@ private fun rememberCallAction(video: Boolean): (String) -> Unit {
         if (allGranted && number != null) {
             place(context, number, video)
         } else {
-            val what = if (video && context.hasPermission(Manifest.permission.CALL_PHONE)) "카메라" else "전화"
-            Toast.makeText(context, "${if (video) "영상통화" else "전화"}를 걸려면 '$what' 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+            val what = if (video && context.hasPermission(Manifest.permission.CALL_PHONE)) str(R.string.t_camera) else str(R.string.t_call)
+            Toast.makeText(context, str(if (video) R.string.permission_needed_video else R.string.permission_needed_call, what), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -57,8 +59,8 @@ private fun rememberCallAction(video: Boolean): (String) -> Unit {
 private fun place(context: Context, number: String, video: Boolean) {
     val message = when (CallPlacer.placeCall(context, number, video)) {
         PlaceCallResult.Placed -> return
-        PlaceCallResult.NoPermission -> "전화를 걸려면 '전화' 권한이 필요합니다."
-        PlaceCallResult.Unavailable -> "이 기기에서는 전화를 걸 수 없습니다."
+        PlaceCallResult.NoPermission -> str(R.string.t_calling_needs_the_phone_permission)
+        PlaceCallResult.Unavailable -> str(R.string.t_this_device_can_t_place_calls)
     }
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }

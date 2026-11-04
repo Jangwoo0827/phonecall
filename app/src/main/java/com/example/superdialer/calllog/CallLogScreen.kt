@@ -1,5 +1,7 @@
 package com.example.superdialer.calllog
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import com.example.superdialer.kakao.KakaoRoomsList
@@ -103,7 +105,7 @@ import com.example.superdialer.ui.shareText
 import java.time.Instant
 import java.time.ZoneId
 
-internal const val UNKNOWN_NUMBER = "번호정보 없음"
+internal val UNKNOWN_NUMBER: String get() = str(R.string.t_no_caller_info)
 
 @Composable
 fun CallLogScreen(
@@ -120,7 +122,7 @@ fun CallLogScreen(
     PermissionGate(
         required = listOf(Manifest.permission.READ_CALL_LOG),
         optional = listOf(Manifest.permission.WRITE_CALL_LOG, Manifest.permission.READ_CONTACTS),
-        rationale = "최근 통화 기록을 보려면 통화 기록 권한이 필요합니다.\n연락처 권한을 허용하면 저장된 이름도 표시됩니다.",
+        rationale = str(R.string.t_showing_recent_calls_needs_the_call),
         modifier = modifier,
     ) {
         CallLogList(viewModel, onOpenHistory, onOpenMessages, onOpenThread, onOpenKakao, onOpenContact, onOpenBlocked, onOpenStats, modifier)
@@ -160,7 +162,7 @@ private fun CallLogList(
     ) { granted ->
         val action = pendingDelete
         pendingDelete = null
-        if (granted && action != null) action() else toast("삭제하려면 통화 기록 쓰기 권한이 필요합니다.")
+        if (granted && action != null) action() else toast(str(R.string.t_deleting_needs_the_call_log_write))
     }
 
     fun withWritePermission(action: () -> Unit) {
@@ -173,15 +175,15 @@ private fun CallLogList(
     }
 
     fun onDeleted(ok: Boolean) {
-        if (!ok) toast("삭제하지 못했습니다.")
+        if (!ok) toast(str(R.string.t_couldn_t_delete))
     }
 
     fun block(entry: CallLogEntry) = viewModel.block(entry.number) { result ->
         toast(
             when (result) {
-                BlockResult.Blocked -> "차단했습니다."
-                BlockResult.NotAllowed -> "기본 전화 앱으로 설정해야 번호를 차단할 수 있습니다."
-                BlockResult.Failed -> "차단하지 못했습니다."
+                BlockResult.Blocked -> str(R.string.t_blocked)
+                BlockResult.NotAllowed -> str(R.string.t_set_this_app_as_the_default)
+                BlockResult.Failed -> str(R.string.t_couldn_t_block)
             }
         )
     }
@@ -192,7 +194,7 @@ private fun CallLogList(
     var memoEntry by remember { mutableStateOf<CallLogEntry?>(null) }
     memoEntry?.let { entry ->
         NoteDialog(
-            title = "통화 메모",
+            title = str(R.string.t_call_note),
             initial = CallNotes.noteFor(entry)?.text.orEmpty(),
             onSave = { CallNotes.setFor(entry, it) },
             onDismiss = { memoEntry = null },
@@ -286,8 +288,8 @@ private fun CallLogList(
                 }
                 viewModel.loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 viewModel.entries.isNotEmpty() ->
-                    Text("조건에 맞는 통화 기록이 없습니다.", modifier = Modifier.align(Alignment.Center))
-                else -> Text("통화 기록이 없습니다.", modifier = Modifier.align(Alignment.Center))
+                    Text(str(R.string.t_no_calls_match), modifier = Modifier.align(Alignment.Center))
+                else -> Text(str(R.string.t_no_call_history), modifier = Modifier.align(Alignment.Center))
             }
         }
     }
@@ -295,15 +297,15 @@ private fun CallLogList(
     if (confirmDeleteAll) {
         AlertDialog(
             onDismissRequest = { confirmDeleteAll = false },
-            title = { Text("전체 삭제") },
-            text = { Text("모든 통화 기록을 삭제할까요? 되돌릴 수 없습니다.") },
+            title = { Text(str(R.string.t_delete_all)) },
+            text = { Text(str(R.string.t_delete_all_call_history_this_can)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDeleteAll = false
                     withWritePermission { viewModel.deleteAll(::onDeleted) }
-                }) { Text("삭제") }
+                }) { Text(str(R.string.t_delete)) }
             },
-            dismissButton = { TextButton(onClick = { confirmDeleteAll = false }) { Text("취소") } },
+            dismissButton = { TextButton(onClick = { confirmDeleteAll = false }) { Text(str(R.string.cancel)) } },
         )
     }
 }
@@ -328,12 +330,12 @@ private fun SearchBar(
             value = query,
             onValueChange = onQueryChange,
             modifier = Modifier.weight(1f),
-            placeholder = { Text("이름, 초성, 번호 검색") },
+            placeholder = { Text(str(R.string.t_search_name_initials_number)) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             trailingIcon = {
                 if (query.isNotEmpty()) {
                     IconButton(onClick = { onQueryChange("") }) {
-                        Icon(Icons.Filled.Clear, contentDescription = "검색어 지우기")
+                        Icon(Icons.Filled.Clear, contentDescription = str(R.string.t_clear_search))
                     }
                 }
             },
@@ -349,13 +351,13 @@ private fun SearchBar(
         )
         Box {
             IconButton(onClick = { menuOpen = true }) {
-                Icon(Icons.Filled.MoreVert, contentDescription = "더보기")
+                Icon(Icons.Filled.MoreVert, contentDescription = str(R.string.t_more))
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuItem(text = { Text("선택 삭제") }, onClick = { menuOpen = false; onSelect() })
-                DropdownMenuItem(text = { Text("전체 삭제") }, onClick = { menuOpen = false; onDeleteAll() })
-                DropdownMenuItem(text = { Text("통화 통계") }, onClick = { menuOpen = false; onOpenStats() })
-                DropdownMenuItem(text = { Text("차단 관리") }, onClick = { menuOpen = false; onOpenBlocked() })
+                DropdownMenuItem(text = { Text(str(R.string.t_delete_selected)) }, onClick = { menuOpen = false; onSelect() })
+                DropdownMenuItem(text = { Text(str(R.string.t_delete_all)) }, onClick = { menuOpen = false; onDeleteAll() })
+                DropdownMenuItem(text = { Text(str(R.string.t_call_statistics)) }, onClick = { menuOpen = false; onOpenStats() })
+                DropdownMenuItem(text = { Text(str(R.string.t_blocked_numbers)) }, onClick = { menuOpen = false; onOpenBlocked() })
             }
         }
     }
@@ -389,8 +391,8 @@ private fun FilterRow(
                 colors = colors,
             )
         }
-        FilterChip(selected = messagesSelected, onClick = onMessages, label = { Text("문자") }, colors = colors)
-        FilterChip(selected = kakaoSelected, onClick = onKakao, label = { Text("카톡") }, colors = colors)
+        FilterChip(selected = messagesSelected, onClick = onMessages, label = { Text(str(R.string.t_texts)) }, colors = colors)
+        FilterChip(selected = kakaoSelected, onClick = onKakao, label = { Text(str(R.string.t_kakaotalk)) }, colors = colors)
     }
 }
 
@@ -402,10 +404,10 @@ private fun SelectionBar(count: Int, onClose: () -> Unit, onSelectAll: () -> Uni
             .padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onClose) { Icon(Icons.Filled.Close, contentDescription = "선택 취소") }
-        Text("${count}개 선택", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-        TextButton(onClick = onSelectAll) { Text("전체 선택") }
-        IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = "삭제") }
+        IconButton(onClick = onClose) { Icon(Icons.Filled.Close, contentDescription = str(R.string.t_cancel_selection)) }
+        Text(str(R.string.t_selected, count), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+        TextButton(onClick = onSelectAll) { Text(str(R.string.t_select_all)) }
+        IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = str(R.string.t_delete)) }
     }
 }
 
@@ -508,7 +510,7 @@ private fun CallLogRow(
                     )
                     if (memo != null) {
                         Text(
-                            "메모 · $memo",
+                            str(R.string.t_note, memo),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
@@ -531,20 +533,20 @@ private fun CallLogRow(
                         .padding(bottom = 12.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
-                    ActionButton(Icons.Filled.History, "기록", onHistory)
-                    ActionButton(Icons.Filled.Person, "연락처", onContact, enabled = entry.number.isNotEmpty())
-                    ActionButton(Icons.AutoMirrored.Filled.Message, "메시지", onMessage, enabled = entry.number.isNotEmpty())
-                    ActionButton(Icons.Filled.EditNote, "메모", onMemo, enabled = entry.number.isNotEmpty())
+                    ActionButton(Icons.Filled.History, str(R.string.t_history_2), onHistory)
+                    ActionButton(Icons.Filled.Person, str(R.string.shortcut_contacts), onContact, enabled = entry.number.isNotEmpty())
+                    ActionButton(Icons.AutoMirrored.Filled.Message, str(R.string.t_messages), onMessage, enabled = entry.number.isNotEmpty())
+                    ActionButton(Icons.Filled.EditNote, str(R.string.t_note_2), onMemo, enabled = entry.number.isNotEmpty())
                 }
             }
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            DropdownMenuItem(text = { Text("선택") }, onClick = { menuOpen = false; onSelect() })
-            DropdownMenuItem(text = { Text("삭제") }, onClick = { menuOpen = false; onDelete() })
+            DropdownMenuItem(text = { Text(str(R.string.t_select)) }, onClick = { menuOpen = false; onSelect() })
+            DropdownMenuItem(text = { Text(str(R.string.t_delete)) }, onClick = { menuOpen = false; onDelete() })
             if (entry.number.isNotEmpty()) {
-                DropdownMenuItem(text = { Text("번호 복사") }, onClick = { menuOpen = false; onCopy() })
-                DropdownMenuItem(text = { Text("번호 공유") }, onClick = { menuOpen = false; onShare() })
-                DropdownMenuItem(text = { Text("차단") }, onClick = { menuOpen = false; onBlock() })
+                DropdownMenuItem(text = { Text(str(R.string.t_copy_number)) }, onClick = { menuOpen = false; onCopy() })
+                DropdownMenuItem(text = { Text(str(R.string.t_share_number)) }, onClick = { menuOpen = false; onShare() })
+                DropdownMenuItem(text = { Text(str(R.string.t_block)) }, onClick = { menuOpen = false; onBlock() })
             }
         }
     }
@@ -559,7 +561,7 @@ internal fun CallButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.primaryContainer),
     ) {
-        Icon(Icons.Filled.Call, contentDescription = "발신", tint = callGreen())
+        Icon(Icons.Filled.Call, contentDescription = str(R.string.t_outgoing), tint = callGreen())
     }
 }
 
@@ -614,7 +616,7 @@ private fun copyNumber(context: Context, number: String) {
     clipboard.setPrimaryClip(ClipData.newPlainText("phone number", number))
     // Android 13+ shows its own confirmation.
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-        Toast.makeText(context, "번호를 복사했습니다.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, str(R.string.t_number_copied), Toast.LENGTH_SHORT).show()
     }
 }
 

@@ -1,5 +1,7 @@
 package com.example.superdialer.account
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import java.net.URI
 import java.net.URLDecoder
 import java.security.MessageDigest
@@ -70,10 +72,10 @@ object GoogleSignIn {
         val description = params["error_description"].orEmpty()
         return Callback.Failure(
             when {
-                error == "access_denied" -> "구글 로그인을 취소했어요."
+                error == "access_denied" -> str(R.string.t_google_sign_in_was_cancelled)
                 description.isNotBlank() -> description
-                error.isNotBlank() -> "구글 로그인에 실패했어요 ($error)."
-                else -> "구글 로그인 응답을 읽을 수 없어요."
+                error.isNotBlank() -> str(R.string.t_google_sign_in_failed, error)
+                else -> str(R.string.t_can_t_read_the_google_sign)
             }
         )
     }

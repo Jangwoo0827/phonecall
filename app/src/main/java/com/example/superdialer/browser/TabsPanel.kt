@@ -1,5 +1,7 @@
 package com.example.superdialer.browser
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -80,14 +82,14 @@ internal fun TabsPanel(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = str(R.string.t_back)) }
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(1f)) {
                         SegmentedButton(
                             selected = !showPrivate,
                             onClick = { showPrivate = false },
                             shape = SegmentedButtonDefaults.itemShape(0, 2),
                             colors = switchColors(),
-                        ) { Text("일반 $normalCount", maxLines = 1, softWrap = false) }
+                        ) { Text(str(R.string.t_normal, normalCount), maxLines = 1, softWrap = false) }
                         SegmentedButton(
                             selected = showPrivate,
                             onClick = { showPrivate = true },
@@ -95,17 +97,17 @@ internal fun TabsPanel(
                             colors = switchColors(),
                             icon = {},
                             modifier = Modifier.testTag("private_switch"),
-                        ) { Text("비공개 $privateCount", maxLines = 1, softWrap = false) }
+                        ) { Text(str(R.string.t_private_text, privateCount), maxLines = 1, softWrap = false) }
                     }
                     FilledTonalIconButton(
                         onClick = { onNewTab(showPrivate) },
                         modifier = Modifier.padding(start = 8.dp, end = 4.dp).testTag("new_tab_button"),
                         shape = RoundedCornerShape(14.dp),
-                    ) { Icon(Icons.Filled.Add, contentDescription = if (showPrivate) "새 비공개 탭" else "새 탭") }
+                    ) { Icon(Icons.Filled.Add, contentDescription = if (showPrivate) str(R.string.t_new_private_tab) else str(R.string.t_new_tab)) }
                 }
                 if (shown.isNotEmpty()) {
                     Row(modifier = Modifier.fillMaxWidth().padding(end = 8.dp), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = { onCloseAll(showPrivate) }) { Text("모두 닫기") }
+                        TextButton(onClick = { onCloseAll(showPrivate) }) { Text(str(R.string.t_close_all)) }
                     }
                 }
                 if (shown.isEmpty()) {
@@ -136,7 +138,7 @@ private fun switchColors() = SegmentedButtonDefaults.colors(
 
 @Composable
 private fun TabCard(tab: BrowserTab, current: Boolean, onSelect: () -> Unit, onClose: () -> Unit) {
-    val title = tab.title.ifBlank { tab.url.ifBlank { "새 탭" } }
+    val title = tab.title.ifBlank { tab.url.ifBlank { str(R.string.t_new_tab) } }
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onSelect).testTag("tab_card"),
         shape = RoundedCornerShape(20.dp),
@@ -158,7 +160,7 @@ private fun TabCard(tab: BrowserTab, current: Boolean, onSelect: () -> Unit, onC
                     overflow = TextOverflow.Ellipsis,
                 )
                 IconButton(onClick = onClose, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Filled.Close, contentDescription = "탭 닫기", modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.Close, contentDescription = str(R.string.t_close_tab), modifier = Modifier.size(18.dp))
                 }
             }
             Box(
@@ -182,7 +184,7 @@ private fun TabCard(tab: BrowserTab, current: Boolean, onSelect: () -> Unit, onC
                 } else if (tab.url.isNotBlank()) {
                     SiteIcon(tab.url, tab.title, 48.dp)
                 } else {
-                    Text("새 탭", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(str(R.string.t_new_tab), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -202,15 +204,15 @@ private fun PrivateEmpty(onNewTab: () -> Unit) {
             contentAlignment = Alignment.Center,
         ) { Icon(Icons.Filled.VisibilityOff, contentDescription = null, modifier = Modifier.size(34.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer) }
         Spacer(Modifier.height(20.dp))
-        Text("비공개 탭이 없어요", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(str(R.string.t_no_private_tabs), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(
-            "비공개 탭은 방문 기록, 쿠키, 사이트 데이터를 남기지 않아요. 탭을 모두 닫으면 그 데이터도 함께 지워져요. 다운로드한 파일과 북마크는 남아요.",
+            str(R.string.t_private_tabs_keep_no_history_cookies),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(20.dp))
-        Button(onClick = onNewTab) { Text("새 비공개 탭") }
+        Button(onClick = onNewTab) { Text(str(R.string.t_new_private_tab)) }
     }
 }

@@ -1,12 +1,14 @@
 package com.example.superdialer.browser
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import java.net.URLEncoder
 
 /** The search engine the address bar uses for text that is not an address. [key] is what is stored and synced. */
 enum class SearchEngine(val key: String, val label: String, private val searchBase: String) {
-    GOOGLE("google", "구글", "https://www.google.com/search?q="),
-    NAVER("naver", "네이버", "https://search.naver.com/search.naver?query="),
-    BING("bing", "마이크로소프트", "https://www.bing.com/search?q=");
+    GOOGLE("google", str(R.string.t_google), "https://www.google.com/search?q="),
+    NAVER("naver", str(R.string.t_naver), "https://search.naver.com/search.naver?query="),
+    BING("bing", str(R.string.t_microsoft), "https://www.bing.com/search?q=");
 
     fun searchUrl(query: String): String = searchBase + URLEncoder.encode(query, "UTF-8")
 

@@ -1,5 +1,7 @@
 package com.example.superdialer.dialer
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.ui.platform.testTag
@@ -120,7 +122,7 @@ fun DialerScreen(
             !phone -> { videoNext = false; permissionDenied = true }
             videoNext && !camera -> {
                 videoNext = false
-                Toast.makeText(context, "영상통화를 걸려면 '카메라' 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, str(R.string.t_video_calls_need_the_camera_permission), Toast.LENGTH_SHORT).show()
             }
             else -> placeCall()
         }
@@ -160,7 +162,7 @@ fun DialerScreen(
 
         if (permissionDenied) {
             Text(
-                text = "전화를 걸려면 '전화' 권한이 필요합니다.\n설정에서 권한을 허용해 주세요.",
+                text = str(R.string.t_calling_needs_the_phone_permission_ple),
                 color = MaterialTheme.colorScheme.error,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
@@ -172,11 +174,11 @@ fun DialerScreen(
                         Uri.fromParts("package", context.packageName, null),
                     )
                 )
-            }) { Text("설정 열기") }
+            }) { Text(str(R.string.t_open_settings)) }
         }
         if (callUnavailable) {
             Text(
-                text = "이 기기에서는 전화를 걸 수 없습니다.",
+                text = str(R.string.t_this_device_can_t_place_calls),
                 color = MaterialTheme.colorScheme.error,
                 fontSize = 13.sp,
             )
@@ -200,7 +202,7 @@ fun DialerScreen(
                                         if (AppSettings.quickDialCallsDirectly &&
                                             CallPlacer.placeCall(context, dial.number) == PlaceCallResult.Placed
                                         ) return@let
-                                        Toast.makeText(context, "${digit}번 · ${dial.name}", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, str(R.string.t_text_4, digit, dial.name), Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             },
@@ -230,7 +232,7 @@ fun DialerScreen(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Call,
-                    contentDescription = "통화",
+                    contentDescription = str(R.string.t_call_2),
                     tint = Color.White,
                     modifier = Modifier.size(36.dp),
                 )
@@ -247,7 +249,7 @@ fun DialerScreen(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Videocam,
-                    contentDescription = "영상통화",
+                    contentDescription = str(R.string.t_video_call),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(26.dp),
                 )
@@ -298,7 +300,7 @@ private fun NumberDisplay(
             if (number.isNotEmpty()) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Backspace,
-                    contentDescription = "지우기",
+                    contentDescription = str(R.string.t_clear),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -420,7 +422,7 @@ private fun SuggestionStrip(
                 if (suggestion.recent) {
                     Icon(
                         Icons.Filled.History,
-                        contentDescription = "최근 통화",
+                        contentDescription = str(R.string.t_recent_calls),
                         modifier = Modifier.padding(start = 8.dp).size(14.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -429,7 +431,7 @@ private fun SuggestionStrip(
         }
         if (showAddContact) {
             item {
-                TextButton(onClick = onAddContact) { Text("연락처에 추가") }
+                TextButton(onClick = onAddContact) { Text(str(R.string.t_add_to_contacts)) }
             }
         }
     }

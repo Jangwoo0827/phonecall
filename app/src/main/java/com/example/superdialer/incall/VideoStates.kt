@@ -1,5 +1,7 @@
 package com.example.superdialer.incall
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.telecom.VideoProfile
 
 /**
@@ -26,9 +28,9 @@ object VideoStates {
 
     /** Short text for the call screen. */
     fun label(state: Int): String = when {
-        !hasVideo(state) -> "음성통화"
-        state and BIDIRECTIONAL == BIDIRECTIONAL -> "영상통화"
-        state and RX != 0 -> "상대 영상 보는 중"
-        else -> "내 영상 보내는 중"
+        !hasVideo(state) -> str(R.string.t_voice_call)
+        state and BIDIRECTIONAL == BIDIRECTIONAL -> str(R.string.t_video_call)
+        state and RX != 0 -> str(R.string.t_watching_their_video)
+        else -> str(R.string.t_sending_your_video)
     }
 }

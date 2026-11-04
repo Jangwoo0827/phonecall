@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
@@ -8,7 +10,7 @@ import androidx.compose.runtime.setValue
 
 /** Light/dark choice for the app; SYSTEM follows the phone. [key] is what is stored and synced. */
 enum class ThemeMode(val key: String, val label: String) {
-    SYSTEM("system", "시스템"), LIGHT("light", "라이트"), DARK("dark", "다크");
+    SYSTEM("system", str(R.string.t_system)), LIGHT("light", str(R.string.t_light)), DARK("dark", str(R.string.t_dark));
 
     companion object {
         fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: SYSTEM
@@ -17,7 +19,7 @@ enum class ThemeMode(val key: String, val label: String) {
 
 /** Whether web pages are shown in a dark version. FOLLOW_APP: dark while the app itself is dark. */
 enum class WebDarkMode(val key: String, val label: String) {
-    OFF("off", "끔"), FOLLOW_APP("follow", "앱 따라가기"), ON("on", "항상");
+    OFF("off", str(R.string.t_off)), FOLLOW_APP("follow", str(R.string.t_follow_app)), ON("on", str(R.string.t_always));
 
     companion object {
         fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: OFF
@@ -26,7 +28,7 @@ enum class WebDarkMode(val key: String, val label: String) {
 
 /** App text size on top of the phone's own font size setting. */
 enum class TextSize(val key: String, val label: String, val scale: Float) {
-    SMALL("small", "작게", 0.9f), NORMAL("normal", "보통", 1f), LARGE("large", "크게", 1.15f), HUGE("huge", "최대", 1.3f);
+    SMALL("small", str(R.string.t_small), 0.9f), NORMAL("normal", str(R.string.t_normal_2), 1f), LARGE("large", str(R.string.t_large), 1.15f), HUGE("huge", str(R.string.t_largest), 1.3f);
 
     companion object {
         fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: NORMAL
@@ -35,7 +37,7 @@ enum class TextSize(val key: String, val label: String, val scale: Float) {
 
 /** Accent color of the app palette. */
 enum class AccentColor(val key: String, val label: String) {
-    GREEN("green", "초록"), BLUE("blue", "파랑"), PURPLE("purple", "보라"), ORANGE("orange", "주황"), PINK("pink", "분홍");
+    GREEN("green", str(R.string.t_green)), BLUE("blue", str(R.string.t_blue)), PURPLE("purple", str(R.string.t_purple)), ORANGE("orange", str(R.string.t_orange)), PINK("pink", str(R.string.t_pink));
 
     companion object {
         fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: GREEN
@@ -55,6 +57,7 @@ object AppSettings {
     private const val KEY_AUTO_UPDATE = "auto_download_updates"
     private const val KEY_TEXT_SIZE = "text_size"
     private const val KEY_SEARCH_ENGINE = "search_engine"
+    private const val KEY_LANGUAGE = "language"
     private const val KEY_WEB_DARK = "web_dark_mode"
 
     private var prefs: SharedPreferences? = null
@@ -83,6 +86,10 @@ object AppSettings {
     var webDarkMode by mutableStateOf(WebDarkMode.OFF)
         private set
 
+    /** The language of the app (see [com.example.superdialer.i18n.Strings]); changing it restarts the app. */
+    var language by mutableStateOf(com.example.superdialer.i18n.AppLanguage.SYSTEM)
+        private set
+
     /** Fetch a newer release in the background (on Wi-Fi) so installing it is one tap. */
     var autoDownloadUpdates by mutableStateOf(false)
         private set
@@ -109,6 +116,13 @@ object AppSettings {
         textSize = TextSize.fromKey(p.getString(KEY_TEXT_SIZE, null))
         searchEngine = com.example.superdialer.browser.SearchEngine.fromKey(p.getString(KEY_SEARCH_ENGINE, null))
         webDarkMode = WebDarkMode.fromKey(p.getString(KEY_WEB_DARK, null))
+        language = com.example.superdialer.i18n.AppLanguage.fromKey(p.getString(KEY_LANGUAGE, null))
+    }
+
+    /** Stores the language only; the caller restarts the app so that every text is rebuilt in it. */
+    fun updateLanguage(value: com.example.superdialer.i18n.AppLanguage) {
+        language = value
+        prefs?.edit()?.putString(KEY_LANGUAGE, value.key)?.commit() // commit: the process is restarted right after
     }
 
     fun updateSearchEngine(engine: com.example.superdialer.browser.SearchEngine) {

@@ -1,5 +1,7 @@
 package com.example.superdialer.kakao
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.ActivityNotFoundException
 import android.content.ContentUris
 import android.content.Context
@@ -9,7 +11,7 @@ import android.widget.Toast
 
 /** What a KakaoTalk entry of a contact does. */
 enum class KakaoKind(val label: String) {
-    Chat("카카오톡 채팅"), Voice("보이스톡"), Video("페이스톡"), Other("카카오톡")
+    Chat(str(R.string.t_kakaotalk_chat)), Voice(str(R.string.t_voicetalk)), Video(str(R.string.t_facetalk)), Other(str(R.string.t_kakaotalk_2))
 }
 
 /** One KakaoTalk entry in the phone's contacts (the buttons the phone's own contact screen shows): chat, voice or video call. */
@@ -75,7 +77,7 @@ object KakaoLinks {
         context.startActivity(shareIntent(text))
         true
     } catch (e: ActivityNotFoundException) {
-        Toast.makeText(context, "카카오톡이 설치되어 있지 않습니다.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, str(R.string.t_kakaotalk_isn_t_installed), Toast.LENGTH_SHORT).show()
         false
     }
 
@@ -83,7 +85,7 @@ object KakaoLinks {
     fun openApp(context: Context) {
         val launch = context.packageManager.getLaunchIntentForPackage(PACKAGE)
         if (launch == null) {
-            Toast.makeText(context, "카카오톡을 열 수 없습니다. 설치되어 있나요?", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, str(R.string.t_can_t_open_kakaotalk_is_it), Toast.LENGTH_SHORT).show()
             return
         }
         context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

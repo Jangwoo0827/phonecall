@@ -1,5 +1,7 @@
 package com.example.superdialer.browser
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.Manifest
 import android.content.Context
 import androidx.compose.runtime.mutableStateMapOf
@@ -9,10 +11,10 @@ import java.net.URI
 
 /** What a website can ask the phone for through the browser. */
 enum class SitePermission(val key: String, val label: String, val osPermissions: List<String>) {
-    Camera("camera", "카메라", listOf(Manifest.permission.CAMERA)),
-    Microphone("mic", "마이크", listOf(Manifest.permission.RECORD_AUDIO)),
+    Camera("camera", str(R.string.t_camera), listOf(Manifest.permission.CAMERA)),
+    Microphone("mic", str(R.string.t_microphone), listOf(Manifest.permission.RECORD_AUDIO)),
     // Android lets the user pick "approximate" instead of "precise": either one is enough for a website.
-    Location("location", "위치", listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION));
+    Location("location", str(R.string.t_location), listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION));
 
     companion object {
         fun fromKey(key: String?) = entries.firstOrNull { it.key == key }
@@ -20,7 +22,7 @@ enum class SitePermission(val key: String, val label: String, val osPermissions:
 }
 
 enum class SiteDecision(val key: String, val label: String) {
-    Allow("allow", "허용"), Deny("deny", "차단");
+    Allow("allow", str(R.string.t_allow)), Deny("deny", str(R.string.t_block));
 
     companion object {
         fun fromKey(key: String?) = entries.firstOrNull { it.key == key }

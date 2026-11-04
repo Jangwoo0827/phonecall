@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import org.json.JSONArray
@@ -10,10 +12,10 @@ object RejectMessageStore {
     private const val KEY = "messages"
 
     private val DEFAULTS = listOf(
-        "지금 통화할 수 없습니다. 나중에 연락드리겠습니다.",
-        "회의 중입니다. 잠시 후 연락드릴게요.",
-        "운전 중입니다. 나중에 전화드리겠습니다.",
-        "문자로 말씀해 주세요.",
+        str(R.string.t_i_can_t_talk_right_now),
+        str(R.string.t_i_m_in_a_meeting_i),
+        str(R.string.t_i_m_driving_i_ll_call),
+        str(R.string.t_please_send_me_a_text),
     )
 
     private var appContext: Context? = null

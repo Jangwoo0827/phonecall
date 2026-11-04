@@ -6,6 +6,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FindAndDesktopTest {
+    @org.junit.Before
+    fun koreanTexts() = com.example.superdialer.i18n.TestStrings.install()
+
     private val phone =
         "Mozilla/5.0 (Linux; Android 14; SM-S911N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.122 Mobile Safari/537.36"
 

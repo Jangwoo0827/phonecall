@@ -6,6 +6,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GoogleSignInTest {
+    @org.junit.Before
+    fun koreanTexts() = com.example.superdialer.i18n.TestStrings.install()
+
     @Test fun challengeMatchesTheRfc7636Example() {
         // RFC 7636 appendix B
         assertEquals(

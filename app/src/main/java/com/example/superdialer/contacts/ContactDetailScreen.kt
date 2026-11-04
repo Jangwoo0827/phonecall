@@ -1,5 +1,7 @@
 package com.example.superdialer.contacts
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import com.example.superdialer.ui.rememberVideoDialAction
 import androidx.compose.material.icons.filled.Videocam
 import com.example.superdialer.kakao.KakaoActions
@@ -103,7 +105,7 @@ fun ContactDetailScreen(
     // Starring writes to contacts, which needs WRITE_CONTACTS: ask once and then finish the toggle.
     var pendingStar by remember { mutableStateOf<Boolean?>(null) }
     fun applyStar(starred: Boolean) = viewModel.toggleStar(contactId, starred) { ok ->
-        if (!ok) Toast.makeText(context, "즐겨찾기를 변경하지 못했습니다.", Toast.LENGTH_SHORT).show()
+        if (!ok) Toast.makeText(context, str(R.string.t_couldn_t_change_the_favorite), Toast.LENGTH_SHORT).show()
     }
     val writePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         val wanted = pendingStar
@@ -111,7 +113,7 @@ fun ContactDetailScreen(
         if (granted && wanted != null) {
             applyStar(wanted)
         } else {
-            Toast.makeText(context, "즐겨찾기를 바꾸려면 연락처 수정 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, str(R.string.t_changing_favorites_needs_the_contacts), Toast.LENGTH_SHORT).show()
         }
     }
     fun toggleStar(current: Boolean) {
@@ -129,15 +131,15 @@ fun ContactDetailScreen(
                 IconButton(onClick = { toggleStar(detail.starred) }) {
                     Icon(
                         if (detail.starred) Icons.Filled.Star else Icons.Filled.StarBorder,
-                        contentDescription = if (detail.starred) "즐겨찾기 해제" else "즐겨찾기 추가",
+                        contentDescription = if (detail.starred) str(R.string.t_remove_from_favorites) else str(R.string.t_add_to_favorites),
                         tint = if (detail.starred) starColor() else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 IconButton(onClick = { shareContact(context, detail) }) {
-                    Icon(Icons.Filled.Share, contentDescription = "공유")
+                    Icon(Icons.Filled.Share, contentDescription = str(R.string.t_share))
                 }
                 IconButton(onClick = { editContact(context, detail.id) }) {
-                    Icon(Icons.Filled.Edit, contentDescription = "편집")
+                    Icon(Icons.Filled.Edit, contentDescription = str(R.string.t_edit_2))
                 }
             }
         }
@@ -187,7 +189,7 @@ fun ContactDetailScreen(
                     ) {
                         Text(detail.name, fontSize = 28.sp, style = MaterialTheme.typography.headlineSmall)
                         if (detail.starred) {
-                            Icon(Icons.Filled.Star, contentDescription = "즐겨찾기", tint = starColor())
+                            Icon(Icons.Filled.Star, contentDescription = str(R.string.t_favorite), tint = starColor())
                         }
                     }
                 }
@@ -204,13 +206,13 @@ fun ContactDetailScreen(
                     trailingContent = {
                         Row {
                             IconButton(onClick = { context.sendSms(entry.number) }) {
-                                Icon(Icons.AutoMirrored.Filled.Message, contentDescription = "문자 보내기")
+                                Icon(Icons.AutoMirrored.Filled.Message, contentDescription = str(R.string.t_send_text))
                             }
                             IconButton(onClick = { videoDial(entry.number) }) {
-                                Icon(Icons.Filled.Videocam, contentDescription = "영상통화", tint = callGreen())
+                                Icon(Icons.Filled.Videocam, contentDescription = str(R.string.t_video_call), tint = callGreen())
                             }
                             IconButton(onClick = { dial(entry.number) }) {
-                                Icon(Icons.Filled.Call, contentDescription = "발신", tint = callGreen())
+                                Icon(Icons.Filled.Call, contentDescription = str(R.string.t_outgoing), tint = callGreen())
                             }
                         }
                     },
@@ -228,7 +230,7 @@ fun ContactDetailScreen(
                 if (history.isEmpty()) {
                     item {
                         Text(
-                            "통화 기록이 없습니다.",
+                            str(R.string.t_no_call_history),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -264,13 +266,13 @@ private fun ContactMemoCard(numbers: List<String>) {
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         leadingContent = { Icon(Icons.Filled.EditNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
         headlineContent = {
-            Text(if (memo.isEmpty()) "메모 추가" else memo, color = if (memo.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified)
+            Text(if (memo.isEmpty()) str(R.string.t_add_note) else memo, color = if (memo.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified)
         },
-        supportingContent = if (memo.isEmpty()) null else ({ Text("눌러서 수정", color = MaterialTheme.colorScheme.onSurfaceVariant) }),
+        supportingContent = if (memo.isEmpty()) null else ({ Text(str(R.string.t_tap_to_edit), color = MaterialTheme.colorScheme.onSurfaceVariant) }),
     )
     if (editing) {
         NoteDialog(
-            title = "연락처 메모",
+            title = str(R.string.t_contact_note),
             initial = memo,
             onSave = { ContactMemos.setFor(numbers, it) },
             onDismiss = { editing = false },
@@ -285,9 +287,9 @@ private fun shareContact(context: Context, detail: ContactDetail) {
     }
     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
     try {
-        context.startActivity(Intent.createChooser(send, "연락처 공유").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        context.startActivity(Intent.createChooser(send, str(R.string.t_share_contact)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (e: ActivityNotFoundException) {
-        Toast.makeText(context, "공유할 앱이 없습니다.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, str(R.string.t_no_app_to_share_with), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -296,6 +298,6 @@ private fun editContact(context: Context, contactId: Long) {
     try {
         context.startActivity(Intent(Intent.ACTION_EDIT, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (e: ActivityNotFoundException) {
-        Toast.makeText(context, "연락처 앱을 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, str(R.string.t_can_t_find_the_contacts_app), Toast.LENGTH_SHORT).show()
     }
 }

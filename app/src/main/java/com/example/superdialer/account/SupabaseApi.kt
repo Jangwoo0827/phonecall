@@ -1,5 +1,7 @@
 package com.example.superdialer.account
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -46,7 +48,7 @@ object SupabaseApi {
             JSONObject().put("email", email).put("password", password),
         )
         if (code !in 200..299) throw ApiError(errorMessage(code, body))
-        return parseSession(body, System.currentTimeMillis()) ?: throw ApiError("로그인 응답을 읽을 수 없습니다.")
+        return parseSession(body, System.currentTimeMillis()) ?: throw ApiError(str(R.string.t_can_t_read_the_sign_in))
     }
 
     /** The browser address that starts Google sign-in; the server sends the login back to [GoogleSignIn.REDIRECT_URI]. */
@@ -63,7 +65,7 @@ object SupabaseApi {
         val connection = try {
             URL(googleAuthorizeUrl(challenge)).openConnection() as HttpURLConnection
         } catch (e: IOException) {
-            return "서버에 연결할 수 없습니다."
+            return str(R.string.t_can_t_connect_to_the_server)
         }
         return try {
             connection.instanceFollowRedirects = false
@@ -78,7 +80,7 @@ object SupabaseApi {
                 googleUnavailableMessage(code, stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty())
             }
         } catch (e: IOException) {
-            "네트워크에 연결할 수 없습니다."
+            str(R.string.t_can_t_connect_to_the_network)
         } finally {
             connection.disconnect()
         }
@@ -91,14 +93,14 @@ object SupabaseApi {
             JSONObject().put("auth_code", authCode).put("code_verifier", verifier),
         )
         if (code !in 200..299) throw ApiError(errorMessage(code, body))
-        return parseSession(body, System.currentTimeMillis()) ?: throw ApiError("로그인 응답을 읽을 수 없습니다.")
+        return parseSession(body, System.currentTimeMillis()) ?: throw ApiError(str(R.string.t_can_t_read_the_sign_in))
     }
 
     fun refresh(refreshToken: String): AuthSession {
         val (code, body) = request("POST", "/auth/v1/token?grant_type=refresh_token", JSONObject().put("refresh_token", refreshToken))
-        if (code in 400..401) throw ApiError("로그인이 만료되었습니다. 다시 로그인해 주세요.", authExpired = true)
+        if (code in 400..401) throw ApiError(str(R.string.t_your_sign_in_expired_please_sign), authExpired = true)
         if (code !in 200..299) throw ApiError(errorMessage(code, body))
-        return parseSession(body, System.currentTimeMillis()) ?: throw ApiError("로그인 응답을 읽을 수 없습니다.", authExpired = true)
+        return parseSession(body, System.currentTimeMillis()) ?: throw ApiError(str(R.string.t_can_t_read_the_sign_in), authExpired = true)
     }
 
     /**
@@ -107,7 +109,7 @@ object SupabaseApi {
      */
     fun deleteAccount(accessToken: String) {
         val (code, body) = request("POST", "/rest/v1/rpc/superdialer_delete_account", JSONObject(), accessToken)
-        if (code == 401) throw ApiError("로그인이 만료되었습니다. 다시 로그인한 뒤 시도해 주세요.", authExpired = true)
+        if (code == 401) throw ApiError(str(R.string.t_your_sign_in_expired_sign_in), authExpired = true)
         if (code !in 200..299) throw ApiError(deleteAccountErrorMessage(code, body))
     }
 
@@ -118,7 +120,7 @@ object SupabaseApi {
 
     fun fetchSnapshot(accessToken: String): RemoteSnapshot? {
         val (code, body) = request("GET", "/rest/v1/superdialer_sync?select=data,updated_at&limit=1", null, accessToken)
-        if (code == 401) throw ApiError("로그인이 만료되었습니다. 다시 로그인해 주세요.", authExpired = true)
+        if (code == 401) throw ApiError(str(R.string.t_your_sign_in_expired_please_sign), authExpired = true)
         if (code !in 200..299) throw ApiError(errorMessage(code, body))
         return parseRemote(body)
     }
@@ -131,16 +133,16 @@ object SupabaseApi {
             "POST", "/rest/v1/superdialer_sync?on_conflict=user_id", JSONArray().put(row), accessToken,
             mapOf("Prefer" to "resolution=merge-duplicates,return=representation"),
         )
-        if (code == 401) throw ApiError("로그인이 만료되었습니다. 다시 로그인해 주세요.", authExpired = true)
+        if (code == 401) throw ApiError(str(R.string.t_your_sign_in_expired_please_sign), authExpired = true)
         if (code !in 200..299) throw ApiError(errorMessage(code, body))
-        return parseRemote(body)?.updatedAt ?: throw ApiError("저장 응답을 읽을 수 없습니다.")
+        return parseRemote(body)?.updatedAt ?: throw ApiError(str(R.string.t_can_t_read_the_save_response))
     }
 
     /** Sends a score; the server keeps the better of this and the stored one. */
     fun submitScore(accessToken: String, gameId: String, score: Int, nickname: String) {
         val body = JSONObject().put("p_game", gameId).put("p_score", score).put("p_nickname", nickname)
         val (code, text) = request("POST", "/rest/v1/rpc/superdialer_submit_score", body, accessToken)
-        if (code == 401) throw ApiError("로그인이 만료되었습니다. 다시 로그인해 주세요.", authExpired = true)
+        if (code == 401) throw ApiError(str(R.string.t_your_sign_in_expired_please_sign), authExpired = true)
         if (code !in 200..299) throw ApiError(errorMessage(code, text))
     }
 
@@ -148,7 +150,7 @@ object SupabaseApi {
         val path = "/rest/v1/superdialer_scores?game_id=eq.${java.net.URLEncoder.encode(gameId, "UTF-8")}" +
             "&select=user_id,nickname,score&order=score.desc&limit=$limit"
         val (code, text) = request("GET", path, null, accessToken)
-        if (code == 401) throw ApiError("로그인이 만료되었습니다. 다시 로그인해 주세요.", authExpired = true)
+        if (code == 401) throw ApiError(str(R.string.t_your_sign_in_expired_please_sign), authExpired = true)
         if (code !in 200..299) throw ApiError(errorMessage(code, text))
         return parseLeaderboard(text)
     }
@@ -163,7 +165,7 @@ object SupabaseApi {
         val connection = try {
             URL(URL + path).openConnection() as HttpURLConnection
         } catch (e: IOException) {
-            throw ApiError("서버에 연결할 수 없습니다.")
+            throw ApiError(str(R.string.t_can_t_connect_to_the_server))
         }
         try {
             connection.requestMethod = method
@@ -183,7 +185,7 @@ object SupabaseApi {
             val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
             return code to body
         } catch (e: IOException) {
-            throw ApiError("네트워크에 연결할 수 없습니다.")
+            throw ApiError(str(R.string.t_can_t_connect_to_the_network))
         } finally {
             connection.disconnect()
         }
@@ -234,7 +236,7 @@ object SupabaseApi {
     /** The function is missing on a server where the SQL file was not run yet; say so instead of a raw error. */
     fun deleteAccountErrorMessage(code: Int, body: String): String =
         if (code == 404 || "could not find the function" in body.lowercase()) {
-            "서버에 계정 삭제 기능이 아직 설치되지 않았어요. 개발자에게 알려 주세요."
+            str(R.string.t_account_deletion_isn_t_installed_on)
         } else {
             errorMessage(code, body)
         }
@@ -242,7 +244,7 @@ object SupabaseApi {
     /** Why the authorize address did not redirect: usually the Google provider is not enabled in the Supabase project. */
     fun googleUnavailableMessage(code: Int, body: String): String {
         if ("not enabled" in body.lowercase()) {
-            return "구글 로그인이 아직 켜져 있지 않아요. (Supabase 대시보드 Authentication > Providers > Google 설정이 필요해요)"
+            return str(R.string.t_google_sign_in_isn_t_turned)
         }
         return errorMessage(code, body)
     }
@@ -257,15 +259,15 @@ object SupabaseApi {
         }.orEmpty()
         val text = raw.lowercase()
         return when {
-            "invalid login" in text -> "이메일 또는 비밀번호가 맞지 않습니다."
-            "not confirmed" in text -> "메일로 보낸 인증 링크를 먼저 눌러 주세요."
-            "already registered" in text || "already been registered" in text -> "이미 가입된 이메일입니다. 로그인해 주세요."
-            "password" in text && ("at least" in text || "weak" in text || "short" in text) -> "비밀번호는 6자 이상이어야 합니다."
-            "valid email" in text || "invalid email" in text || "email address" in text && "invalid" in text -> "올바른 이메일 주소를 입력해 주세요."
-            "rate limit" in text || code == 429 -> "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
-            code in 500..599 -> "서버에 문제가 있습니다. 잠시 후 다시 시도해 주세요."
+            "invalid login" in text -> str(R.string.t_the_email_or_password_is_incorrect)
+            "not confirmed" in text -> str(R.string.t_tap_the_verification_link_we_emailed)
+            "already registered" in text || "already been registered" in text -> str(R.string.t_this_email_is_already_registered_pleas)
+            "password" in text && ("at least" in text || "weak" in text || "short" in text) -> str(R.string.t_the_password_must_be_at_least)
+            "valid email" in text || "invalid email" in text || "email address" in text && "invalid" in text -> str(R.string.t_enter_a_valid_email_address)
+            "rate limit" in text || code == 429 -> str(R.string.t_too_many_requests_please_try_again)
+            code in 500..599 -> str(R.string.t_the_server_has_a_problem_please)
             raw.isNotEmpty() -> raw
-            else -> "요청에 실패했습니다 ($code)."
+            else -> str(R.string.t_the_request_failed, code)
         }
     }
 }

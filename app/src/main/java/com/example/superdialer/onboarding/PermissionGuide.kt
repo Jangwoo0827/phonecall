@@ -1,5 +1,7 @@
 package com.example.superdialer.onboarding
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,19 +47,19 @@ class PermissionInfo(val title: String, val reason: String, val icon: ImageVecto
 object CorePermissions {
     val all: List<PermissionInfo> = listOf(
         PermissionInfo(
-            "전화", "키패드에서 바로 전화를 걸어요.",
+            str(R.string.t_call), str(R.string.t_places_calls_right_from_the_keypad),
             Icons.Filled.Call, listOf(Manifest.permission.CALL_PHONE),
         ),
         PermissionInfo(
-            "통화 기록", "최근 기록을 보여주고 지울 수 있어요.",
+            str(R.string.t_calls_3), str(R.string.t_shows_and_deletes_your_recent_calls),
             Icons.Filled.History, listOf(Manifest.permission.READ_CALL_LOG, Manifest.permission.WRITE_CALL_LOG),
         ),
         PermissionInfo(
-            "연락처", "번호 대신 이름을 보여주고, 키패드에서 자동 완성해요.",
+            str(R.string.shortcut_contacts), str(R.string.t_shows_names_instead_of_numbers_and),
             Icons.Filled.Contacts, listOf(Manifest.permission.READ_CONTACTS),
         ),
         PermissionInfo(
-            "문자", "통화 기록 옆에서 그 번호와 주고받은 문자를 보여줘요. 읽기만 하고 서버로 보내지 않아요.",
+            str(R.string.t_texts), str(R.string.t_shows_the_texts_exchanged_with_a),
             Icons.Filled.Sms, listOf(Manifest.permission.READ_SMS),
         ),
     )
@@ -88,10 +90,10 @@ fun PermissionGuide(onFinished: () -> Unit, modifier: Modifier = Modifier) {
     ) {
         Icon(Icons.Filled.VerifiedUser, contentDescription = null, modifier = Modifier.size(72.dp), tint = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(24.dp))
-        Text("이 앱이 쓰는 권한", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+        Text(str(R.string.t_permissions_this_app_uses), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(8.dp))
         Text(
-            "아래 권한을 한 번에 허용하면 중간에 허용 창이 뜨지 않아요. 허용하지 않아도 앱은 쓸 수 있고, 필요한 화면에서 다시 물어봐요.",
+            str(R.string.t_if_you_allow_the_permissions_below),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -113,7 +115,7 @@ fun PermissionGuide(onFinished: () -> Unit, modifier: Modifier = Modifier) {
                 if (missing.isEmpty()) onFinished() else launcher.launch(missing.toTypedArray())
             },
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("권한 허용") }
-        TextButton(onClick = onFinished, modifier = Modifier.fillMaxWidth()) { Text("나중에") }
+        ) { Text(str(R.string.t_allow_permission)) }
+        TextButton(onClick = onFinished, modifier = Modifier.fillMaxWidth()) { Text(str(R.string.t_later)) }
     }
 }

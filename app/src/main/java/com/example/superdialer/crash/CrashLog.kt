@@ -1,5 +1,7 @@
 package com.example.superdialer.crash
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.Context
 import android.os.Build
 import androidx.compose.runtime.getValue
@@ -67,10 +69,10 @@ object CrashLog {
         val stack = StringWriter().also { error.printStackTrace(PrintWriter(it)) }.toString()
         val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.KOREA).format(Date(atMillis))
         return buildString {
-            appendLine("시각: $time")
-            appendLine("앱 버전: $appVersion")
-            appendLine("기기: $device (Android API $sdk)")
-            appendLine("스레드: $threadName")
+            appendLine(str(R.string.t_time, time))
+            appendLine(str(R.string.t_app_version, appVersion))
+            appendLine(str(R.string.t_device_android_api, device, sdk))
+            appendLine(str(R.string.t_thread, threadName))
             appendLine()
             append(stack)
         }

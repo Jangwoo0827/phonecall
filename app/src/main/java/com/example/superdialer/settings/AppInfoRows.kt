@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import com.example.superdialer.update.WhatsNew
 import com.example.superdialer.update.UpdateInstaller
 import com.example.superdialer.update.ReleaseInfo
@@ -50,14 +52,14 @@ internal fun AppInfoRows() {
     ListItem(
         modifier = Modifier.clickable { UpdateChecker.check(context); showUpdate = true },
         colors = transparent,
-        headlineContent = { Text("업데이트 확인") },
+        headlineContent = { Text(str(R.string.t_check_for_updates)) },
         supportingContent = {
             Text(
                 when (update) {
-                    is UpdateState.Available -> "새 버전 ${update.info.version} 이 있습니다"
-                    is UpdateState.Ready -> "새 버전 ${update.info.version} 설치 준비됨 · 눌러서 설치"
-                    is UpdateState.Downloading -> "새 버전 받는 중…"
-                    else -> "GitHub에 올라온 최신 버전을 확인합니다"
+                    is UpdateState.Available -> str(R.string.t_new_version_available, update.info.version)
+                    is UpdateState.Ready -> str(R.string.t_new_version_ready_to_install_tap, update.info.version)
+                    is UpdateState.Downloading -> str(R.string.t_downloading_the_new_version)
+                    else -> str(R.string.t_checks_the_latest_version_on_github)
                 },
                 color = if (update is UpdateState.Available || update is UpdateState.Ready) MaterialTheme.colorScheme.primary else Color.Unspecified,
             )
@@ -65,8 +67,8 @@ internal fun AppInfoRows() {
     )
     ListItem(
         colors = transparent,
-        headlineContent = { Text("새 버전 미리 받아 두기") },
-        supportingContent = { Text("앱을 열 때 새 버전이 있으면 Wi-Fi에서 설치 파일을 받아 두고 알려 줍니다. 설치는 직접 누릅니다") },
+        headlineContent = { Text(str(R.string.t_pre_download_new_versions)) },
+        supportingContent = { Text(str(R.string.t_when_you_open_the_app_and)) },
         trailingContent = {
             androidx.compose.material3.Switch(checked = AppSettings.autoDownloadUpdates, onCheckedChange = AppSettings::updateAutoDownloadUpdates)
         },
@@ -75,8 +77,8 @@ internal fun AppInfoRows() {
     ListItem(
         modifier = Modifier.clickable { showCrashes = true },
         colors = transparent,
-        headlineContent = { Text("오류 기록") },
-        supportingContent = { Text(if (crashCount == 0) "저장된 오류가 없습니다" else "앱이 멈춘 기록 ${crashCount}건 · 눌러서 보기·공유") },
+        headlineContent = { Text(str(R.string.t_error_log)) },
+        supportingContent = { Text(if (crashCount == 0) str(R.string.t_no_saved_errors) else str(R.string.t_crash_records_tap_to_view_or, crashCount)) },
     )
 
     if (showUpdate) UpdateDialog(update, onDismiss = { showUpdate = false })
@@ -97,36 +99,36 @@ internal fun UpdateDialog(state: UpdateState, onDismiss: () -> Unit, onLater: ((
     askPermission?.let { info ->
         AlertDialog(
             onDismissRequest = { askPermission = null },
-            title = { Text("설치 허용 필요") },
-            text = { Text("앱을 직접 설치하려면 이 앱에 '출처를 알 수 없는 앱 설치'를 허용해야 합니다. 다음 화면에서 SuperDialer를 허용한 뒤 돌아와서 다시 눌러 주세요.") },
+            title = { Text(str(R.string.t_install_permission_needed)) },
+            text = { Text(str(R.string.t_to_install_the_app_yourself_allow)) },
             confirmButton = {
-                TextButton(onClick = { askPermission = null; UpdateInstaller.openInstallPermissionSettings(context) }) { Text("설정 열기") }
+                TextButton(onClick = { askPermission = null; UpdateInstaller.openInstallPermissionSettings(context) }) { Text(str(R.string.t_open_settings)) }
             },
-            dismissButton = { TextButton(onClick = { askPermission = null }) { Text("취소") } },
+            dismissButton = { TextButton(onClick = { askPermission = null }) { Text(str(R.string.cancel)) } },
         )
     }
 
     val busy = state is UpdateState.Checking || state is UpdateState.Downloading || state is UpdateState.Installing
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("업데이트") },
+        title = { Text(str(R.string.t_updates)) },
         text = {
             when (state) {
                 UpdateState.Idle, UpdateState.Checking -> CircularProgressIndicator()
-                is UpdateState.UpToDate -> Text("최신 버전(${state.current})을 쓰고 있습니다.")
+                is UpdateState.UpToDate -> Text(str(R.string.t_you_re_on_the_latest_version, state.current))
                 is UpdateState.Failed -> Text(state.message)
                 is UpdateState.Downloading -> androidx.compose.foundation.layout.Column {
-                    Text("${state.info.version} 받는 중… ${if (state.percent >= 0) "${state.percent}%" else ""}")
+                    Text(str(R.string.t_downloading_3, state.info.version, if (state.percent >= 0) "${state.percent}%" else ""))
                     if (state.percent >= 0) androidx.compose.material3.LinearProgressIndicator(progress = { state.percent / 100f }, modifier = Modifier.fillMaxWidth())
                     else androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
-                is UpdateState.Installing -> Text("설치 중입니다. 확인 창이 뜨면 '설치'를 눌러 주세요. 설치가 끝나면 앱이 다시 시작됩니다.")
-                is UpdateState.Ready -> Text("새 버전 ${state.info.version} 설치 파일을 받아 두었습니다. 설치하면 앱이 다시 시작됩니다.")
+                is UpdateState.Installing -> Text(str(R.string.t_installing_if_a_confirmation_appears_t))
+                is UpdateState.Ready -> Text(str(R.string.t_the_installer_for_version_is_downloade, state.info.version))
                 is UpdateState.Available -> androidx.compose.foundation.layout.Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp)) {
-                    Text("새 버전 ${state.info.version} 이 올라와 있습니다. 앱 안에서 받아 바로 설치할 수 있습니다 (디버그 빌드가 깔려 있으면 먼저 지워야 합니다).")
+                    Text(str(R.string.t_version_is_available_you_can_download, state.info.version))
                     val changes = WhatsNew.cleanNotes(state.info.notes)
                     if (changes.isNotEmpty()) {
-                        Text("바뀐 내용", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 12.dp))
+                        Text(str(R.string.t_what_s_new), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 12.dp))
                         changes.forEach { Text("• $it", fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp)) }
                     }
                 }
@@ -134,17 +136,17 @@ internal fun UpdateDialog(state: UpdateState, onDismiss: () -> Unit, onLater: ((
         },
         confirmButton = {
             when (state) {
-                is UpdateState.Available -> TextButton(onClick = { update(state.info) }) { Text("지금 업데이트") }
-                is UpdateState.Ready -> TextButton(onClick = { update(state.info) }) { Text("설치") }
-                else -> TextButton(onClick = onDismiss) { Text(if (busy) "백그라운드로" else "확인") }
+                is UpdateState.Available -> TextButton(onClick = { update(state.info) }) { Text(str(R.string.t_update_now)) }
+                is UpdateState.Ready -> TextButton(onClick = { update(state.info) }) { Text(str(R.string.t_install)) }
+                else -> TextButton(onClick = onDismiss) { Text(if (busy) str(R.string.t_in_background) else str(R.string.t_ok)) }
             }
         },
         dismissButton = {
             when (state) {
                 is UpdateState.Available ->
-                    if (onLater != null) TextButton(onClick = onLater) { Text("나중에") }
-                    else TextButton(onClick = { openUrl(context, state.info.pageUrl); onDismiss() }) { Text("릴리스 페이지") }
-                is UpdateState.Ready -> TextButton(onClick = onLater ?: onDismiss) { Text("나중에") }
+                    if (onLater != null) TextButton(onClick = onLater) { Text(str(R.string.t_later)) }
+                    else TextButton(onClick = { openUrl(context, state.info.pageUrl); onDismiss() }) { Text(str(R.string.t_release_page)) }
+                is UpdateState.Ready -> TextButton(onClick = onLater ?: onDismiss) { Text(str(R.string.t_later)) }
                 else -> {}
             }
         },
@@ -158,28 +160,28 @@ private fun CrashDialog(onDismiss: () -> Unit) {
     val latest = entries.firstOrNull()?.second
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("오류 기록") },
+        title = { Text(str(R.string.t_error_log)) },
         text = {
             if (latest == null) {
-                Text("저장된 오류가 없습니다. 앱이 멈추면 여기에 남고, 폰 밖으로는 나가지 않습니다.")
+                Text(str(R.string.t_no_saved_errors_if_the_app))
             } else {
                 androidx.compose.foundation.layout.Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 360.dp)) {
-                    Text("가장 최근 오류 (총 ${entries.size}건)", style = MaterialTheme.typography.labelLarge)
+                    Text(str(R.string.t_latest_error_total, entries.size), style = MaterialTheme.typography.labelLarge)
                     Text(latest.take(3000), fontFamily = FontFamily.Monospace, fontSize = 10.sp, modifier = Modifier.fillMaxWidth())
                 }
             }
         },
         confirmButton = {
-            if (latest != null) TextButton(onClick = { share(context, entries.joinToString("\n\n----\n\n") { it.second }); onDismiss() }) { Text("공유") }
-            else TextButton(onClick = onDismiss) { Text("확인") }
+            if (latest != null) TextButton(onClick = { share(context, entries.joinToString("\n\n----\n\n") { it.second }); onDismiss() }) { Text(str(R.string.t_share)) }
+            else TextButton(onClick = onDismiss) { Text(str(R.string.t_ok)) }
         },
         dismissButton = {
             androidx.compose.foundation.layout.Row {
                 if (latest != null) {
-                    TextButton(onClick = { copy(context, latest) }) { Text("복사") }
-                    TextButton(onClick = { CrashLog.clear(); onDismiss() }) { Text("지우기") }
+                    TextButton(onClick = { copy(context, latest) }) { Text(str(R.string.t_copy)) }
+                    TextButton(onClick = { CrashLog.clear(); onDismiss() }) { Text(str(R.string.t_clear)) }
                 }
-                TextButton(onClick = onDismiss) { Text("닫기") }
+                TextButton(onClick = onDismiss) { Text(str(R.string.t_close)) }
             }
         },
     )
@@ -189,21 +191,21 @@ private fun openUrl(context: Context, url: String) {
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (e: ActivityNotFoundException) {
-        Toast.makeText(context, "열 수 있는 앱이 없습니다.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, str(R.string.t_no_app_can_open_this), Toast.LENGTH_SHORT).show()
     }
 }
 
 private fun copy(context: Context, text: String) {
-    context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("오류 기록", text))
-    Toast.makeText(context, "복사했습니다.", Toast.LENGTH_SHORT).show()
+    context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(str(R.string.t_error_log), text))
+    Toast.makeText(context, str(R.string.t_copied), Toast.LENGTH_SHORT).show()
 }
 
 private fun share(context: Context, text: String) {
     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
     try {
-        context.startActivity(Intent.createChooser(send, "오류 기록 공유").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        context.startActivity(Intent.createChooser(send, str(R.string.t_share_error_log)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (e: ActivityNotFoundException) {
-        Toast.makeText(context, "공유할 앱이 없습니다.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, str(R.string.t_no_app_to_share_with), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -226,14 +228,14 @@ internal fun UpdateBanner() {
     ) {
         ListItem(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            headlineContent = { Text("새 버전 ${info.version} 이 있어요", color = MaterialTheme.colorScheme.onPrimaryContainer) },
+            headlineContent = { Text(str(R.string.t_new_version_is_out, info.version), color = MaterialTheme.colorScheme.onPrimaryContainer) },
             supportingContent = {
                 Text(
                     when (state) {
-                        is UpdateState.Downloading -> "받는 중… ${if (state.percent >= 0) "${state.percent}%" else ""}"
-                        is UpdateState.Installing -> "설치 중…"
-                        is UpdateState.Ready -> "설치 준비됨 · 눌러서 설치"
-                        else -> "눌러서 업데이트"
+                        is UpdateState.Downloading -> str(R.string.t_downloading_4, if (state.percent >= 0) "${state.percent}%" else "")
+                        is UpdateState.Installing -> str(R.string.t_installing)
+                        is UpdateState.Ready -> str(R.string.t_ready_to_install_tap_to_install)
+                        else -> str(R.string.t_tap_to_update)
                     },
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )

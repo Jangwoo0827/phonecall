@@ -1,5 +1,7 @@
 package com.example.superdialer.update
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.padding
 import android.content.Context
@@ -94,17 +96,17 @@ fun WhatsNewHost() {
     val info = WhatsNew.pending ?: return
     AlertDialog(
         onDismissRequest = WhatsNew::dismiss,
-        title = { Text("${info.version} 업데이트 완료") },
+        title = { Text(str(R.string.t_updated, info.version)) },
         text = {
             if (info.lines.isEmpty()) {
-                Text("앱이 새 버전으로 업데이트되었습니다.")
+                Text(str(R.string.t_the_app_was_updated_to_a))
             } else {
                 androidx.compose.foundation.layout.Column {
-                    Text("바뀐 내용", style = androidx.compose.material3.MaterialTheme.typography.labelLarge)
+                    Text(str(R.string.t_what_s_new), style = androidx.compose.material3.MaterialTheme.typography.labelLarge)
                     info.lines.forEach { Text("• $it", modifier = androidx.compose.ui.Modifier.padding(top = 4.dp)) }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = WhatsNew::dismiss) { Text("확인") } },
+        confirmButton = { TextButton(onClick = WhatsNew::dismiss) { Text(str(R.string.t_ok)) } },
     )
 }

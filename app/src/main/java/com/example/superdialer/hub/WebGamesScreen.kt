@@ -1,5 +1,7 @@
 package com.example.superdialer.hub
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideInHorizontally
@@ -23,7 +25,7 @@ import com.example.superdialer.browser.BrowserScreen
 import com.example.superdialer.browser.BrowserViewModel
 import com.example.superdialer.games.GamesScreen
 
-private val sections = listOf("브라우저", "게임")
+private val sections = listOf(str(R.string.shortcut_browser), str(R.string.shortcut_games))
 
 /**
  * One bottom tab that hosts the built-in browser and the built-in games behind a top switcher.

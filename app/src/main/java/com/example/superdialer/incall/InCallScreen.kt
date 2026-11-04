@@ -1,5 +1,7 @@
 package com.example.superdialer.incall
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material.icons.filled.Cameraswitch
@@ -157,7 +159,7 @@ private fun RingingPulse() {
 @Composable
 private fun CallHeader(call: CallSnapshot, ended: Boolean) {
     val title = call.name
-        ?: if (call.isConference) "다자간 통화" else PhoneNumberFormatter.formatLoose(call.number).ifEmpty { "번호정보 없음" }
+        ?: if (call.isConference) str(R.string.t_conference_call) else PhoneNumberFormatter.formatLoose(call.number).ifEmpty { str(R.string.t_no_caller_info) }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = statusText(call, ended),
@@ -180,9 +182,9 @@ private fun CallHeader(call: CallSnapshot, ended: Boolean) {
 
 @Composable
 private fun statusText(call: CallSnapshot, ended: Boolean): String {
-    if (ended || call.isDisconnected) return "통화 종료"
-    if (call.isRinging) return if (call.isVideo) "영상통화 수신" else "수신 전화"
-    if (call.isHolding) return "통화 대기 중"
+    if (ended || call.isDisconnected) return str(R.string.t_call_ended)
+    if (call.isRinging) return if (call.isVideo) str(R.string.t_incoming_video_call) else str(R.string.t_incoming_call)
+    if (call.isHolding) return str(R.string.t_on_hold)
     if (call.isActive) {
         var now by remember { mutableStateOf(System.currentTimeMillis()) }
         LaunchedEffect(call.connectTimeMillis) {
@@ -193,7 +195,7 @@ private fun statusText(call: CallSnapshot, ended: Boolean): String {
         }
         return formatElapsed(now - call.connectTimeMillis)
     }
-    return "연결 중..."
+    return str(R.string.t_connecting)
 }
 
 private fun formatElapsed(millis: Long): String {
@@ -206,7 +208,7 @@ private fun formatElapsed(millis: Long): String {
 
 @Composable
 private fun HeldBanner(held: CallSnapshot) {
-    val label = held.name ?: PhoneNumberFormatter.formatLoose(held.number).ifEmpty { "번호정보 없음" }
+    val label = held.name ?: PhoneNumberFormatter.formatLoose(held.number).ifEmpty { str(R.string.t_no_caller_info) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -218,10 +220,10 @@ private fun HeldBanner(held: CallSnapshot) {
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column {
-            Text("보류 중", color = Color(0xFFB0BEC5), fontSize = 12.sp)
+            Text(str(R.string.t_on_hold_2), color = Color(0xFFB0BEC5), fontSize = 12.sp)
             Text(label, color = Color.White, fontSize = 16.sp)
         }
-        Text("전환", color = Color(0xFF81C784), fontWeight = FontWeight.SemiBold)
+        Text(str(R.string.t_flip), color = Color(0xFF81C784), fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -231,7 +233,7 @@ private fun RingingControls(call: CallSnapshot) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         TextButton(onClick = { showMessages = true }) {
             Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, tint = Color.White)
-            Text("  메시지로 거절", color = Color.White)
+            Text(str(R.string.t_decline_with_message), color = Color.White)
         }
         Spacer(Modifier.height(24.dp))
         val context = LocalContext.current
@@ -242,20 +244,20 @@ private fun RingingControls(call: CallSnapshot) {
             if (granted) {
                 CallManager.answerVideo(call.id)
             } else {
-                Toast.makeText(context, "카메라 권한이 없어 음성으로 받았습니다.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, str(R.string.t_no_camera_permission_so_the_call), Toast.LENGTH_SHORT).show()
                 CallManager.answer(call.id)
             }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            RoundButton(Icons.Filled.CallEnd, "거절", EndCallRed) { CallManager.reject(call.id) }
+            RoundButton(Icons.Filled.CallEnd, str(R.string.t_declined), EndCallRed) { CallManager.reject(call.id) }
             if (call.isVideo) {
-                RoundButton(Icons.Filled.Call, "음성으로", Color(0xFF455A64)) { CallManager.answer(call.id) }
-                RoundButton(Icons.Filled.Videocam, "영상으로", CallButtonGreen) {
+                RoundButton(Icons.Filled.Call, str(R.string.t_voice), Color(0xFF455A64)) { CallManager.answer(call.id) }
+                RoundButton(Icons.Filled.Videocam, str(R.string.t_video), CallButtonGreen) {
                     if (context.hasPermission(Manifest.permission.CAMERA)) CallManager.answerVideo(call.id)
                     else cameraPermission.launch(Manifest.permission.CAMERA)
                 }
             } else {
-                RoundButton(Icons.Filled.Call, "받기", CallButtonGreen) { CallManager.answer(call.id) }
+                RoundButton(Icons.Filled.Call, str(R.string.t_answer), CallButtonGreen) { CallManager.answer(call.id) }
             }
         }
     }
@@ -271,24 +273,24 @@ private fun RingingControls(call: CallSnapshot) {
 }
 
 private fun routeLabel(route: Int) = when (route) {
-    CallAudioState.ROUTE_SPEAKER -> "스피커"
-    CallAudioState.ROUTE_BLUETOOTH -> "블루투스"
-    CallAudioState.ROUTE_WIRED_HEADSET -> "헤드셋"
-    else -> "수화기"
+    CallAudioState.ROUTE_SPEAKER -> str(R.string.t_speaker)
+    CallAudioState.ROUTE_BLUETOOTH -> str(R.string.t_bluetooth)
+    CallAudioState.ROUTE_WIRED_HEADSET -> str(R.string.t_headset)
+    else -> str(R.string.t_earpiece)
 }
 
 /** Pick where the call audio goes: earpiece, speaker, bluetooth or a wired headset (only the ones available). */
 @Composable
 private fun AudioRouteDialog(audio: AudioInfo, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
     val options = listOf(
-        CallAudioState.ROUTE_EARPIECE to "수화기",
-        CallAudioState.ROUTE_SPEAKER to "스피커",
-        CallAudioState.ROUTE_BLUETOOTH to "블루투스",
-        CallAudioState.ROUTE_WIRED_HEADSET to "유선 헤드셋",
+        CallAudioState.ROUTE_EARPIECE to str(R.string.t_earpiece),
+        CallAudioState.ROUTE_SPEAKER to str(R.string.t_speaker),
+        CallAudioState.ROUTE_BLUETOOTH to str(R.string.t_bluetooth),
+        CallAudioState.ROUTE_WIRED_HEADSET to str(R.string.t_wired_headset),
     ).filter { audio.supportedRoutes and it.first != 0 }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("소리 출력") },
+        title = { Text(str(R.string.t_sound_output)) },
         text = {
             Column {
                 options.forEach { (route, label) ->
@@ -302,7 +304,7 @@ private fun AudioRouteDialog(audio: AudioInfo, onPick: (Int) -> Unit, onDismiss:
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("닫기") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(str(R.string.t_close)) } },
     )
 }
 
@@ -311,11 +313,11 @@ private fun RejectMessageDialog(onSelect: (String) -> Unit, onDismiss: () -> Uni
     var custom by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("메시지로 거절") },
+        title = { Text(str(R.string.t_decline_with_message_2)) },
         text = {
             Column {
                 if (RejectMessageStore.messages.isEmpty()) {
-                    Text("등록된 거절 메시지가 없습니다. 설정에서 추가해 주세요.")
+                    Text(str(R.string.t_no_decline_messages_yet_add_some))
                 }
                 RejectMessageStore.messages.forEach { message ->
                     Text(
@@ -331,15 +333,15 @@ private fun RejectMessageDialog(onSelect: (String) -> Unit, onDismiss: () -> Uni
                     androidx.compose.material3.OutlinedTextField(
                         value = custom,
                         onValueChange = { custom = it },
-                        placeholder = { Text("직접 입력") },
+                        placeholder = { Text(str(R.string.t_write_your_own)) },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(enabled = custom.isNotBlank(), onClick = { onSelect(custom.trim()) }) { Text("보내기") }
+                    TextButton(enabled = custom.isNotBlank(), onClick = { onSelect(custom.trim()) }) { Text(str(R.string.t_send)) }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("취소") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }
 
@@ -352,20 +354,20 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
     // side only on speaker (said in the toast and in Settings).
     fun startRecording() {
         if (CallRecorder.start(context, call.name ?: call.number)) {
-            Toast.makeText(context, "마이크로 녹음을 시작했습니다. 상대 목소리는 스피커를 켰을 때만 담깁니다.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, str(R.string.t_recording_with_the_microphone_the_othe), Toast.LENGTH_LONG).show()
         } else {
-            Toast.makeText(context, "녹음을 시작하지 못했습니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, str(R.string.t_couldn_t_start_recording), Toast.LENGTH_SHORT).show()
         }
     }
     val micPermission = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        if (granted) startRecording() else Toast.makeText(context, "녹음하려면 마이크 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+        if (granted) startRecording() else Toast.makeText(context, str(R.string.t_recording_needs_the_microphone_permiss), Toast.LENGTH_SHORT).show()
     }
     val videoPermission = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        if (granted) CallManager.requestVideo(call.id) else Toast.makeText(context, "영상통화에는 카메라 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+        if (granted) CallManager.requestVideo(call.id) else Toast.makeText(context, str(R.string.t_video_calls_need_the_camera_permission_2), Toast.LENGTH_SHORT).show()
     }
     // A recording never outlives its call.
     androidx.compose.runtime.DisposableEffect(call.id) { onDispose { CallRecorder.stop(context) } }
@@ -377,7 +379,7 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
     }
     if (showMemo) {
         com.example.superdialer.calllog.NoteDialog(
-            title = "통화 메모",
+            title = str(R.string.t_call_note),
             initial = com.example.superdialer.calllog.CallNotes.duringCall(call.number, call.connectTimeMillis)?.text.orEmpty(),
             onSave = { com.example.superdialer.calllog.CallNotes.saveDuringCall(call.number, call.connectTimeMillis, it) },
             onDismiss = { showMemo = false },
@@ -391,10 +393,10 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
 
     Column(verticalArrangement = Arrangement.spacedBy(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            ToggleAction(if (audio.muted) Icons.Filled.MicOff else Icons.Filled.Mic, "음소거", audio.muted) {
+            ToggleAction(if (audio.muted) Icons.Filled.MicOff else Icons.Filled.Mic, str(R.string.t_mute), audio.muted) {
                 CallManager.setMuted(!audio.muted)
             }
-            ToggleAction(Icons.Filled.Dialpad, "키패드", false) { showKeypad = true }
+            ToggleAction(Icons.Filled.Dialpad, str(R.string.t_keypad), false) { showKeypad = true }
             val extraRoutes = audio.supportedRoutes and (CallAudioState.ROUTE_BLUETOOTH or CallAudioState.ROUTE_WIRED_HEADSET) != 0
             ToggleAction(
                 icon = when (audio.route) {
@@ -402,38 +404,38 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
                     CallAudioState.ROUTE_WIRED_HEADSET -> Icons.Filled.Headset
                     else -> Icons.AutoMirrored.Filled.VolumeUp
                 },
-                label = if (extraRoutes) routeLabel(audio.route) else "스피커",
+                label = if (extraRoutes) routeLabel(audio.route) else str(R.string.t_speaker),
                 active = speakerOn || (extraRoutes && audio.route != CallAudioState.ROUTE_EARPIECE),
             ) { if (extraRoutes) showRoutes = true else CallManager.setSpeaker(!speakerOn) }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            ToggleAction(Icons.Filled.Add, "통화 추가", false, onClick = onAddCall)
+            ToggleAction(Icons.Filled.Add, str(R.string.t_add_call), false, onClick = onAddCall)
             ToggleAction(
                 icon = if (call.isHolding) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                label = if (call.isHolding) "보류 해제" else "보류",
+                label = if (call.isHolding) str(R.string.t_resume) else str(R.string.t_hold),
                 active = call.isHolding,
                 enabled = call.canHold,
             ) { if (call.isHolding) CallManager.unhold(call.id) else CallManager.hold(call.id) }
             if (call.canMerge) {
-                ToggleAction(Icons.AutoMirrored.Filled.CallMerge, "병합", false) { CallManager.merge(call.id) }
+                ToggleAction(Icons.AutoMirrored.Filled.CallMerge, str(R.string.t_merge_2), false) { CallManager.merge(call.id) }
             } else {
-                ToggleAction(Icons.Filled.EditNote, "메모", false, enabled = call.number.isNotEmpty()) { showMemo = true }
+                ToggleAction(Icons.Filled.EditNote, str(R.string.t_note_2), false, enabled = call.number.isNotEmpty()) { showMemo = true }
             }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             if (call.canMerge) {
-                ToggleAction(Icons.Filled.EditNote, "메모", false, enabled = call.number.isNotEmpty()) { showMemo = true }
+                ToggleAction(Icons.Filled.EditNote, str(R.string.t_note_2), false, enabled = call.number.isNotEmpty()) { showMemo = true }
             }
             if (call.canVideo && !call.isVideo) {
-                ToggleAction(Icons.Filled.Videocam, "영상 전환", false) {
+                ToggleAction(Icons.Filled.Videocam, str(R.string.t_switch_to_video), false) {
                     if (context.hasPermission(Manifest.permission.CAMERA)) CallManager.requestVideo(call.id)
                     else videoPermission.launch(Manifest.permission.CAMERA)
                 }
             }
-            ToggleAction(Icons.Filled.FiberManualRecord, if (CallRecorder.recording) "녹음 중" else "녹음", CallRecorder.recording) {
+            ToggleAction(Icons.Filled.FiberManualRecord, if (CallRecorder.recording) str(R.string.t_recording) else str(R.string.t_record), CallRecorder.recording) {
                 if (CallRecorder.recording) {
                     CallRecorder.stop(context)
-                    Toast.makeText(context, "녹음을 저장했습니다 (내 파일 > 음악 > SuperDialer)", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, str(R.string.t_recording_saved_my_files_music_superdi), Toast.LENGTH_LONG).show()
                 } else if (context.hasPermission(Manifest.permission.RECORD_AUDIO)) {
                     startRecording()
                 } else {
@@ -442,7 +444,7 @@ private fun ActiveControls(call: CallSnapshot, audio: AudioInfo, onAddCall: () -
             }
         }
         Spacer(Modifier.height(8.dp))
-        RoundButton(Icons.Filled.CallEnd, "종료", EndCallRed) { CallManager.disconnect(call.id) }
+        RoundButton(Icons.Filled.CallEnd, str(R.string.t_end), EndCallRed) { CallManager.disconnect(call.id) }
     }
 }
 
@@ -480,8 +482,8 @@ private fun InCallKeypad(callId: Int, onHide: () -> Unit) {
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(32.dp), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onHide) { Text("숨기기", color = Color.White) }
-            RoundButton(Icons.Filled.CallEnd, "종료", EndCallRed) { CallManager.disconnect(callId) }
+            TextButton(onClick = onHide) { Text(str(R.string.t_hide), color = Color.White) }
+            RoundButton(Icons.Filled.CallEnd, str(R.string.t_end), EndCallRed) { CallManager.disconnect(callId) }
         }
     }
 }
@@ -546,14 +548,14 @@ private fun VideoCallLayout(call: CallSnapshot, audio: AudioInfo, ended: Boolean
     val front by CallManager.frontCamera.collectAsState()
     val peerSize by CallManager.peerSize.collectAsState()
     val sending = VideoStates.sendsVideo(call.videoState)
-    val title = call.name ?: PhoneNumberFormatter.formatLoose(call.number).ifEmpty { "번호정보 없음" }
+    val title = call.name ?: PhoneNumberFormatter.formatLoose(call.number).ifEmpty { str(R.string.t_no_caller_info) }
 
     // The camera needs its permission; ask once when a video call is up, then pick the front camera.
     val cameraPermission = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
     ) { granted ->
         if (granted) CallManager.useCamera(context, call.id, front = true)
-        else Toast.makeText(context, "내 영상을 보내려면 카메라 권한이 필요합니다.", Toast.LENGTH_LONG).show()
+        else Toast.makeText(context, str(R.string.t_sending_your_video_needs_the_camera), Toast.LENGTH_LONG).show()
     }
     LaunchedEffect(call.id) {
         if (context.hasPermission(Manifest.permission.CAMERA)) CallManager.useCamera(context, call.id, front = true)
@@ -570,7 +572,7 @@ private fun VideoCallLayout(call: CallSnapshot, audio: AudioInfo, ended: Boolean
         if (!VideoStates.receivesVideo(call.videoState)) {
             Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 InitialAvatar(title, size = 120.dp, fontSize = 48.sp)
-                Text("상대 화면을 기다리는 중", color = Color(0xFFB0BEC5), modifier = Modifier.padding(top = 12.dp))
+                Text(str(R.string.t_waiting_for_the_other_side_s), color = Color(0xFFB0BEC5), modifier = Modifier.padding(top = 12.dp))
             }
         }
 
@@ -610,19 +612,19 @@ private fun VideoCallLayout(call: CallSnapshot, audio: AudioInfo, ended: Boolean
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    ToggleAction(if (audio.muted) Icons.Filled.MicOff else Icons.Filled.Mic, "음소거", audio.muted) {
+                    ToggleAction(if (audio.muted) Icons.Filled.MicOff else Icons.Filled.Mic, str(R.string.t_mute), audio.muted) {
                         CallManager.setMuted(!audio.muted)
                     }
-                    ToggleAction(if (sending) Icons.Filled.Videocam else Icons.Filled.VideocamOff, if (sending) "카메라 끄기" else "카메라 켜기", !sending) {
+                    ToggleAction(if (sending) Icons.Filled.Videocam else Icons.Filled.VideocamOff, if (sending) str(R.string.t_camera_off) else str(R.string.t_camera_on), !sending) {
                         CallManager.setCameraOn(call.id, !sending)
                     }
-                    ToggleAction(Icons.Filled.Cameraswitch, "전환", false, enabled = sending) { CallManager.switchCamera(context, call.id) }
+                    ToggleAction(Icons.Filled.Cameraswitch, str(R.string.t_flip), false, enabled = sending) { CallManager.switchCamera(context, call.id) }
                     val speakerOn = audio.route == CallAudioState.ROUTE_SPEAKER
-                    ToggleAction(Icons.AutoMirrored.Filled.VolumeUp, "스피커", speakerOn) { CallManager.setSpeaker(!speakerOn) }
+                    ToggleAction(Icons.AutoMirrored.Filled.VolumeUp, str(R.string.t_speaker), speakerOn) { CallManager.setSpeaker(!speakerOn) }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(40.dp), verticalAlignment = Alignment.CenterVertically) {
-                    ToggleAction(Icons.Filled.Call, "음성으로", false) { CallManager.switchToVoice(call.id) }
-                    RoundButton(Icons.Filled.CallEnd, "종료", EndCallRed) { CallManager.disconnect(call.id) }
+                    ToggleAction(Icons.Filled.Call, str(R.string.t_voice), false) { CallManager.switchToVoice(call.id) }
+                    RoundButton(Icons.Filled.CallEnd, str(R.string.t_end), EndCallRed) { CallManager.disconnect(call.id) }
                 }
             }
         }
@@ -670,20 +672,20 @@ private fun VideoUpgradeDialog(call: CallSnapshot) {
         if (granted) {
             CallManager.respondToUpgrade(call.id, accept = true)
         } else {
-            Toast.makeText(context, "영상통화에는 카메라 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, str(R.string.t_video_calls_need_the_camera_permission_2), Toast.LENGTH_SHORT).show()
             CallManager.respondToUpgrade(call.id, accept = false)
         }
     }
     AlertDialog(
         onDismissRequest = { CallManager.respondToUpgrade(call.id, accept = false) },
-        title = { Text("영상통화 요청") },
-        text = { Text("상대가 영상통화로 바꾸자고 해요. 수락하면 내 카메라 화면도 상대에게 보여요.") },
+        title = { Text(str(R.string.t_video_call_request)) },
+        text = { Text(str(R.string.t_the_other_person_wants_to_switch)) },
         confirmButton = {
             TextButton(onClick = {
                 if (context.hasPermission(Manifest.permission.CAMERA)) CallManager.respondToUpgrade(call.id, accept = true)
                 else permission.launch(Manifest.permission.CAMERA)
-            }) { Text("수락") }
+            }) { Text(str(R.string.t_accept)) }
         },
-        dismissButton = { TextButton(onClick = { CallManager.respondToUpgrade(call.id, accept = false) }) { Text("거절") } },
+        dismissButton = { TextButton(onClick = { CallManager.respondToUpgrade(call.id, accept = false) }) { Text(str(R.string.t_declined)) } },
     )
 }

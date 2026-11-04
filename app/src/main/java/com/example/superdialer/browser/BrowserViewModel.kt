@@ -1,5 +1,7 @@
 package com.example.superdialer.browser
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.annotation.SuppressLint
 import android.app.Application
 import android.app.DownloadManager
@@ -187,11 +189,11 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     fun newTab(url: String? = null, private: Boolean = false): BrowserTab {
         if (private && !privateSupported) {
             // Never pretend: without a separate profile a "private" tab would share cookies with the normal ones.
-            Toast.makeText(getApplication(), "이 폰의 웹뷰 버전에서는 비공개 탭을 쓸 수 없어요. Android System WebView를 업데이트해 주세요.", Toast.LENGTH_LONG).show()
+            Toast.makeText(getApplication(), str(R.string.t_this_phone_s_webview_can_t), Toast.LENGTH_LONG).show()
             return selected ?: newTab(url)
         }
         if (tabs.size >= MAX_TABS) {
-            Toast.makeText(getApplication(), "탭은 최대 ${MAX_TABS}개까지 열 수 있습니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(getApplication(), str(R.string.t_you_can_open_up_to_tabs, MAX_TABS), Toast.LENGTH_SHORT).show()
             return selected ?: tabs.last()
         }
         selected?.let(::captureThumbnail)
@@ -343,7 +345,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             ContextCompat.checkSelfPermission(app, it) == android.content.pm.PackageManager.PERMISSION_GRANTED
         }
         if (granted.isEmpty()) {
-            Toast.makeText(app, "폰의 앱 권한에서 허용해야 사이트가 쓸 수 있어요.", Toast.LENGTH_LONG).show()
+            Toast.makeText(app, str(R.string.t_allow_it_in_the_phone_s), Toast.LENGTH_LONG).show()
             pending.request.deny()
         } else {
             pending.request.grant(granted)
@@ -556,7 +558,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         pendingDownload = null
         val context = getApplication<Application>()
         if (!UrlResolver.isWebScheme(Uri.parse(request.url).scheme)) {
-            Toast.makeText(context, "이 형식의 다운로드는 지원하지 않습니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, str(R.string.t_this_kind_of_download_isn_t), Toast.LENGTH_SHORT).show()
             return
         }
         val manager = context.getSystemService(DownloadManager::class.java)
@@ -570,9 +572,9 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
         try {
             manager.enqueue(download)
-            Toast.makeText(context, "다운로드를 시작합니다: ${request.fileName}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, str(R.string.t_downloading, request.fileName), Toast.LENGTH_SHORT).show()
         } catch (e: RuntimeException) {
-            Toast.makeText(context, "다운로드를 시작하지 못했습니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, str(R.string.t_couldn_t_start_the_download), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -774,7 +776,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         try {
             getApplication<Application>().startActivity(Intent(action, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (e: android.content.ActivityNotFoundException) {
-            Toast.makeText(getApplication(), "이 링크를 열 수 있는 앱이 없습니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(getApplication(), str(R.string.t_no_app_can_open_this_link), Toast.LENGTH_SHORT).show()
         }
         return false
     }

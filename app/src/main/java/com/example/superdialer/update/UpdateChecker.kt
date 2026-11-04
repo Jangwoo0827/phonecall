@@ -1,5 +1,7 @@
 package com.example.superdialer.update
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import com.example.superdialer.settings.AppSettings
 import android.content.Context
 import androidx.compose.runtime.getValue
@@ -111,7 +113,7 @@ object UpdateChecker {
                 UpdateInstaller.install(app, file)
             } catch (e: Exception) {
                 file.delete()
-                withContext(Dispatchers.Main) { state = UpdateState.Failed(e.message ?: "업데이트하지 못했습니다.") }
+                withContext(Dispatchers.Main) { state = UpdateState.Failed(e.message ?: str(R.string.t_couldn_t_update)) }
             }
         }
     }
@@ -184,7 +186,7 @@ object UpdateChecker {
         val connection = try {
             URL(LATEST_URL).openConnection() as HttpURLConnection
         } catch (e: java.io.IOException) {
-            return UpdateState.Failed("연결할 수 없습니다.")
+            return UpdateState.Failed(str(R.string.t_can_t_connect))
         }
         return try {
             connection.connectTimeout = 10_000
@@ -194,7 +196,7 @@ object UpdateChecker {
             when (val code = connection.responseCode) {
                 200 -> {
                     val body = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-                    val release = parseRelease(body) ?: return UpdateState.Failed("릴리스 정보를 읽을 수 없습니다.")
+                    val release = parseRelease(body) ?: return UpdateState.Failed(str(R.string.t_can_t_read_the_release_info))
                     when {
                         !isNewer(release.version, current) -> UpdateState.UpToDate(current)
                         // an installer for this version was already downloaded and checked
@@ -202,11 +204,11 @@ object UpdateChecker {
                         else -> UpdateState.Available(release)
                     }
                 }
-                404 -> UpdateState.Failed("아직 올라온 릴리스가 없습니다.")
-                else -> UpdateState.Failed("확인하지 못했습니다 ($code).")
+                404 -> UpdateState.Failed(str(R.string.t_no_release_has_been_published_yet))
+                else -> UpdateState.Failed(str(R.string.t_couldn_t_check, code))
             }
         } catch (e: java.io.IOException) {
-            UpdateState.Failed("인터넷에 연결할 수 없습니다.")
+            UpdateState.Failed(str(R.string.t_no_internet_connection))
         } finally {
             connection.disconnect()
         }

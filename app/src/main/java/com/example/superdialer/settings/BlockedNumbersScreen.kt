@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -48,7 +50,7 @@ fun BlockedNumbersScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        ScreenHeader("차단 관리", onBack)
+        ScreenHeader(str(R.string.t_blocked_numbers), onBack)
 
         if (!viewModel.canBlock) {
             Column(
@@ -57,9 +59,9 @@ fun BlockedNumbersScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Text("번호 차단은 기본 전화 앱으로 설정해야 사용할 수 있습니다. 차단한 번호의 전화는 울리지 않고 거절됩니다.")
+                Text(str(R.string.t_blocking_numbers_needs_superdialer_to))
                 if (!defaultDialer.isDefault) {
-                    Button(onClick = defaultDialer.request) { Text("기본 전화 앱으로 설정") }
+                    Button(onClick = defaultDialer.request) { Text(str(R.string.t_set_as_default_phone_app)) }
                 }
             }
             return@Column
@@ -77,7 +79,7 @@ fun BlockedNumbersScreen(
                 value = input,
                 onValueChange = { input = it },
                 modifier = Modifier.weight(1f),
-                label = { Text("차단할 번호") },
+                label = { Text(str(R.string.t_number_to_block)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             )
@@ -88,15 +90,15 @@ fun BlockedNumbersScreen(
                         if (ok) {
                             input = ""
                         } else {
-                            Toast.makeText(context, "차단하지 못했습니다.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, str(R.string.t_couldn_t_block), Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
-            ) { Text("추가") }
+            ) { Text(str(R.string.t_add)) }
         }
 
         if (viewModel.numbers.isEmpty()) {
-            Text("차단한 번호가 없습니다.", modifier = Modifier.padding(24.dp))
+            Text(str(R.string.t_no_blocked_numbers), modifier = Modifier.padding(24.dp))
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(viewModel.numbers, key = { it.id }) { item ->
@@ -104,7 +106,7 @@ fun BlockedNumbersScreen(
                         headlineContent = { Text(PhoneNumberFormatter.formatLoose(item.number).ifEmpty { item.number }) },
                         trailingContent = {
                             IconButton(onClick = { viewModel.remove(item) }) {
-                                Icon(Icons.Filled.Delete, contentDescription = "차단 해제")
+                                Icon(Icons.Filled.Delete, contentDescription = str(R.string.t_unblock))
                             }
                         },
                     )

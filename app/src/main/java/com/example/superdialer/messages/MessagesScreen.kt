@@ -1,5 +1,7 @@
 package com.example.superdialer.messages
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import com.example.superdialer.kakao.KakaoActions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -61,7 +63,7 @@ fun MessagesScreen(
                     Text(formatted, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            IconButton(onClick = { dial(number) }) { Icon(Icons.Filled.Call, contentDescription = "발신", tint = callGreen()) }
+            IconButton(onClick = { dial(number) }) { Icon(Icons.Filled.Call, contentDescription = str(R.string.t_outgoing), tint = callGreen()) }
         }
         KakaoActions(contact?.id)
         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {

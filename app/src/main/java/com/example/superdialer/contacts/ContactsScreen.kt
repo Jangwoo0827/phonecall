@@ -1,5 +1,7 @@
 package com.example.superdialer.contacts
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FilterChip
 import com.example.superdialer.ui.theme.starColor
@@ -67,7 +69,7 @@ fun ContactsScreen(
 ) {
     PermissionGate(
         required = listOf(Manifest.permission.READ_CONTACTS),
-        rationale = "연락처를 보려면 연락처 권한이 필요합니다.",
+        rationale = str(R.string.t_showing_contacts_needs_the_contacts_pe),
         modifier = modifier,
     ) {
         ContactsList(viewModel, onOpenContact, onOpenBlocked, onOpenGroups, onOpenDuplicates, modifier)
@@ -112,17 +114,17 @@ private fun ContactsList(
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     )
                 } catch (e: ActivityNotFoundException) {
-                    Toast.makeText(context, "연락처 앱을 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, str(R.string.t_can_t_find_the_contacts_app), Toast.LENGTH_SHORT).show()
                 }
-            }) { Icon(Icons.Filled.Add, contentDescription = "연락처 추가") }
+            }) { Icon(Icons.Filled.Add, contentDescription = str(R.string.t_add_contact)) }
             Box {
                 IconButton(onClick = { menuOpen = true }) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = "더보기")
+                    Icon(Icons.Filled.MoreVert, contentDescription = str(R.string.t_more))
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    DropdownMenuItem(text = { Text("그룹 관리") }, onClick = { menuOpen = false; onOpenGroups() })
-                    DropdownMenuItem(text = { Text("중복 연락처 정리") }, onClick = { menuOpen = false; onOpenDuplicates() })
-                    DropdownMenuItem(text = { Text("차단 관리") }, onClick = { menuOpen = false; onOpenBlocked() })
+                    DropdownMenuItem(text = { Text(str(R.string.t_manage_groups)) }, onClick = { menuOpen = false; onOpenGroups() })
+                    DropdownMenuItem(text = { Text(str(R.string.t_clean_up_duplicate_contacts)) }, onClick = { menuOpen = false; onOpenDuplicates() })
+                    DropdownMenuItem(text = { Text(str(R.string.t_blocked_numbers)) }, onClick = { menuOpen = false; onOpenBlocked() })
                 }
             }
         }
@@ -136,7 +138,7 @@ private fun ContactsList(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
             ) {
-                item { FilterChip(selected = viewModel.selectedGroupId == null, onClick = { viewModel.selectGroup(null) }, label = { Text("전체") }, colors = chipColors) }
+                item { FilterChip(selected = viewModel.selectedGroupId == null, onClick = { viewModel.selectGroup(null) }, label = { Text(str(R.string.t_all)) }, colors = chipColors) }
                 items(ContactGroups.groups.toList(), key = { it.id }) { group ->
                     FilterChip(
                         selected = viewModel.selectedGroupId == group.id,
@@ -154,14 +156,14 @@ private fun ContactsList(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else {
                     Text(
-                        text = if (viewModel.query.isBlank()) "연락처가 없습니다." else "검색 결과가 없습니다.",
+                        text = if (viewModel.query.isBlank()) str(R.string.t_no_contacts) else str(R.string.t_no_results),
                         modifier = Modifier.align(Alignment.Center),
                     )
                 }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     if (favorites.isNotEmpty()) {
-                        item(key = "header-favorites") { SectionHeader("즐겨찾기") }
+                        item(key = "header-favorites") { SectionHeader(str(R.string.t_favorite)) }
                         itemsIndexed(favorites, key = { _, c -> "fav-${c.id}" }) { index, contact ->
                             ContactRow(contact, groupShape(index, favorites.size), onClick = { onOpenContact(contact.id) })
                         }
@@ -188,12 +190,12 @@ private fun SearchField(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier,
-        placeholder = { Text("이름, 초성, 번호 검색") },
+        placeholder = { Text(str(R.string.t_search_name_initials_number)) },
         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotEmpty()) {
                 IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Filled.Clear, contentDescription = "검색어 지우기")
+                    Icon(Icons.Filled.Clear, contentDescription = str(R.string.t_clear_search))
                 }
             }
         },
@@ -234,7 +236,7 @@ private fun ContactRow(contact: Contact, shape: Shape, onClick: () -> Unit) {
         headlineContent = { Text(contact.name, maxLines = 1, fontWeight = FontWeight.SemiBold) },
         trailingContent = {
             if (contact.starred) {
-                Icon(Icons.Filled.Star, contentDescription = "즐겨찾기", tint = starColor())
+                Icon(Icons.Filled.Star, contentDescription = str(R.string.t_favorite), tint = starColor())
             }
         },
     )

@@ -1,5 +1,7 @@
 package com.example.superdialer.ui
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -82,9 +84,9 @@ fun PermissionGate(
             Button(
                 onClick = { launcher.launch((required + optional).toTypedArray()) },
                 modifier = Modifier.padding(top = 16.dp),
-            ) { Text("권한 허용") }
+            ) { Text(str(R.string.t_allow_permission)) }
             if (requested) {
-                TextButton(onClick = { context.openAppSettings() }) { Text("설정 열기") }
+                TextButton(onClick = { context.openAppSettings() }) { Text(str(R.string.t_open_settings)) }
             }
         }
     }

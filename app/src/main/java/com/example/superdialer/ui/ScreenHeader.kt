@@ -1,5 +1,7 @@
 package com.example.superdialer.ui
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,7 +33,7 @@ fun ScreenHeader(
     ) {
         if (onBack != null) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = str(R.string.t_back))
             }
         }
         Text(

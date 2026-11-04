@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>스네이크</title>
+<title>Snake</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: #12281a; color: #e8f5e9; font-family: sans-serif; overflow: hidden; touch-action: none; }
@@ -15,11 +15,14 @@
 </head>
 <body>
 <div id="app">
-  <div class="bar"><span>점수 <span id="score">0</span></span><span>최고 <span id="best">0</span></span></div>
+  <div class="bar"><span><span data-en="Score">점수</span> <span id="score">0</span></span><span><span data-en="Best">최고</span> <span id="best">0</span></span></div>
   <canvas id="c"></canvas>
-  <div class="hint" id="hint">화면을 탭해서 시작 · 밀어서 방향 전환</div>
+  <div class="hint" id="hint" data-en="Tap to start · swipe to turn">화면을 탭해서 시작 · 밀어서 방향 전환</div>
 </div>
 <script>
+  var EN = /[?&]lang=en/.test(location.search);
+  function T(ko, en) { return EN ? en : ko; }
+  if (EN) { document.documentElement.lang = 'en'; Array.prototype.forEach.call(document.querySelectorAll('[data-en]'), function (el) { el.textContent = el.getAttribute('data-en'); }); }
 (function () {
   var COLS = 20, ROWS = 20;
   var canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
@@ -52,7 +55,7 @@
       var o = JSON.parse(t);
       if (!o.snake || o.snake.length < 3 || !o.dir || !o.apple) return false;
       snake = o.snake; dir = o.dir; nextDir = o.nextDir || o.dir; apple = o.apple; score = o.score | 0; delay = o.delay || 140; dead = false;
-      scoreEl.textContent = score; hint.textContent = '이어하기 · 탭해서 계속';
+      scoreEl.textContent = score; hint.textContent = T('이어하기 · 탭해서 계속', 'Resume · tap to continue');
       return true;
     } catch (e) { return false; }
   }
@@ -92,7 +95,7 @@
 
   function gameOver() {
     running = false; dead = true; draw();
-    hint.textContent = '게임 오버 · 점수 ' + score + ' · 탭해서 다시 시작';
+    hint.textContent = T('게임 오버 · 점수 ', 'Game over · Score ') + score + T(' · 탭해서 다시 시작', ' · tap to restart');
     if (score > best) { best = score; bestEl.textContent = best; }
     try { if (window.Native) Native.submitScore(score); } catch (e) {}
     save();
@@ -130,7 +133,7 @@
     if (!m) return;
     e.preventDefault(); if (!running) start(); turn(m[0], m[1]);
   });
-  document.addEventListener('visibilitychange', function () { if (document.hidden && running) { running = false; hint.textContent = '일시정지 · 탭해서 계속'; save(); } });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && running) { running = false; hint.textContent = T('일시정지 · 탭해서 계속', 'Paused · tap to continue'); save(); } });
   window.addEventListener('resize', resize);
 
   if (!restore()) reset();

@@ -1,5 +1,7 @@
 package com.example.superdialer.browser
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import com.example.superdialer.ui.groupShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -57,14 +59,14 @@ internal fun BookmarksPanel(
 ) {
     Surface(modifier = Modifier.fillMaxSize()) {
         Column {
-            ScreenHeader("북마크", onBack)
+            ScreenHeader(str(R.string.t_bookmarks), onBack)
             var query by remember { mutableStateOf("") }
             if (bookmarks.isNotEmpty()) PanelSearch(query) { query = it }
             val shown = bookmarks.filter { matchesQuery(it.title, it.url, query) }
             if (bookmarks.isEmpty()) {
-                Text("북마크가 없습니다. 주소창의 별을 눌러 추가하세요.", modifier = Modifier.padding(24.dp))
+                Text(str(R.string.t_no_bookmarks_yet_tap_the_star), modifier = Modifier.padding(24.dp))
             } else if (shown.isEmpty()) {
-                Text("검색 결과가 없습니다.", modifier = Modifier.padding(24.dp))
+                Text(str(R.string.t_no_results), modifier = Modifier.padding(24.dp))
             }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 itemsIndexed(shown, key = { _, item -> item.id }) { index, item ->
@@ -79,7 +81,7 @@ internal fun BookmarksPanel(
                         leadingContent = { SiteIcon(item.url, item.title, 40.dp) },
                         trailingContent = {
                             IconButton(onClick = { onDelete(item) }) {
-                                Icon(Icons.Filled.Delete, contentDescription = "북마크 삭제")
+                                Icon(Icons.Filled.Delete, contentDescription = str(R.string.t_delete_bookmark))
                             }
                         },
                     )
@@ -99,16 +101,16 @@ internal fun HistoryPanel(
 ) {
     Surface(modifier = Modifier.fillMaxSize()) {
         Column {
-            ScreenHeader("방문 기록", onBack) {
-                if (items.isNotEmpty()) TextButton(onClick = onClear) { Text("전체 삭제") }
+            ScreenHeader(str(R.string.t_history), onBack) {
+                if (items.isNotEmpty()) TextButton(onClick = onClear) { Text(str(R.string.t_delete_all)) }
             }
             var query by remember { mutableStateOf("") }
             if (items.isNotEmpty()) PanelSearch(query) { query = it }
             val shown = items.filter { matchesQuery(it.title, it.url, query) }
             if (items.isEmpty()) {
-                Text("방문 기록이 없습니다.", modifier = Modifier.padding(24.dp))
+                Text(str(R.string.t_no_history_yet), modifier = Modifier.padding(24.dp))
             } else if (shown.isEmpty()) {
-                Text("검색 결과가 없습니다.", modifier = Modifier.padding(24.dp))
+                Text(str(R.string.t_no_results), modifier = Modifier.padding(24.dp))
             }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 itemsIndexed(shown, key = { _, item -> item.id }) { index, item ->
@@ -128,7 +130,7 @@ internal fun HistoryPanel(
                         leadingContent = { SiteIcon(item.url, item.title, 40.dp) },
                         trailingContent = {
                             IconButton(onClick = { onDelete(item) }) {
-                                Icon(Icons.Filled.Delete, contentDescription = "기록 삭제")
+                                Icon(Icons.Filled.Delete, contentDescription = str(R.string.t_delete_entry))
                             }
                         },
                     )
@@ -183,12 +185,12 @@ private fun PanelSearch(query: String, onChange: (String) -> Unit) {
         value = query,
         onValueChange = onChange,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        placeholder = { Text("제목이나 주소로 검색") },
+        placeholder = { Text(str(R.string.t_search_by_title_or_address)) },
         singleLine = true,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
         trailingIcon = {
             if (query.isNotEmpty()) {
-                IconButton(onClick = { onChange("") }) { Icon(Icons.Filled.Close, contentDescription = "지우기") }
+                IconButton(onClick = { onChange("") }) { Icon(Icons.Filled.Close, contentDescription = str(R.string.t_clear)) }
             }
         },
     )

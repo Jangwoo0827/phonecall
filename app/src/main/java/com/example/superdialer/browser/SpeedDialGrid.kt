@@ -1,5 +1,7 @@
 package com.example.superdialer.browser
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -128,7 +130,7 @@ internal fun SpeedDialGrid(
         if (folder != null) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 4.dp, top = 4.dp)) {
                 IconButton(onClick = { openFolderId = 0L }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = str(R.string.t_back))
                 }
                 Text(folder.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
@@ -239,15 +241,15 @@ private fun SpeedDialTile(
                 SiteIcon(url = item.url, title = item.title, size = 64.dp, corner = 20.dp, modifier = gestures)
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuItem(text = { Text("수정") }, onClick = { menuOpen = false; onEdit() })
+                DropdownMenuItem(text = { Text(str(R.string.t_edit)) }, onClick = { menuOpen = false; onEdit() })
                 if (!item.isFolder && (hasFolders || inFolder)) {
                     DropdownMenuItem(
-                        text = { Text(if (hasFolders) "폴더로 이동" else "맨 위로 이동") },
+                        text = { Text(if (hasFolders) str(R.string.t_move_to_folder) else str(R.string.t_move_to_top)) },
                         onClick = { menuOpen = false; onMove() },
                     )
                 }
                 DropdownMenuItem(
-                    text = { Text(if (item.isFolder) "폴더와 안의 링크 삭제" else "삭제") },
+                    text = { Text(if (item.isFolder) str(R.string.t_delete_the_folder_and_the_links) else str(R.string.t_delete)) },
                     onClick = { menuOpen = false; onDelete() },
                 )
             }
@@ -301,9 +303,9 @@ private fun AddTile(onClick: () -> Unit) {
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.Add, contentDescription = "추가", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Icons.Filled.Add, contentDescription = str(R.string.t_add), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Text("추가", modifier = Modifier.padding(top = 6.dp), fontSize = 12.sp)
+        Text(str(R.string.t_add), modifier = Modifier.padding(top = 6.dp), fontSize = 12.sp)
     }
 }
 
@@ -323,29 +325,29 @@ private fun EditDialog(target: EditTarget, onDismiss: () -> Unit, onSave: (title
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) (if (asFolder) "폴더 추가" else "링크 추가") else (if (asFolder) "폴더 수정" else "링크 수정")) },
+        title = { Text(if (initial == null) (if (asFolder) str(R.string.t_add_folder) else str(R.string.t_add_link)) else (if (asFolder) str(R.string.t_edit_folder) else str(R.string.t_edit_link))) },
         text = {
             Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (canChooseFolder) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = !asFolder, onClick = { asFolder = false }, label = { Text("링크") }, colors = chipColors)
-                        FilterChip(selected = asFolder, onClick = { asFolder = true }, label = { Text("폴더") }, colors = chipColors)
+                        FilterChip(selected = !asFolder, onClick = { asFolder = false }, label = { Text(str(R.string.t_link)) }, colors = chipColors)
+                        FilterChip(selected = asFolder, onClick = { asFolder = true }, label = { Text(str(R.string.t_folder)) }, colors = chipColors)
                     }
                 }
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("이름") },
+                    label = { Text(str(R.string.t_name)) },
                     singleLine = true,
                 )
                 if (!asFolder) {
                     OutlinedTextField(
                         value = url,
                         onValueChange = { url = it },
-                        label = { Text("주소") },
+                        label = { Text(str(R.string.t_address)) },
                         singleLine = true,
                         isError = urlError,
-                        supportingText = { if (urlError) Text("올바른 주소를 입력하세요") },
+                        supportingText = { if (urlError) Text(str(R.string.t_enter_a_valid_address)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     )
                 }
@@ -355,9 +357,9 @@ private fun EditDialog(target: EditTarget, onDismiss: () -> Unit, onSave: (title
             TextButton(
                 enabled = title.isNotBlank() && (asFolder || resolved != null),
                 onClick = { onSave(title.trim(), if (asFolder) "" else resolved!!, asFolder) },
-            ) { Text("저장") }
+            ) { Text(str(R.string.t_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }
 
@@ -365,11 +367,11 @@ private fun EditDialog(target: EditTarget, onDismiss: () -> Unit, onSave: (title
 private fun MoveDialog(item: SpeedDial, folders: List<SpeedDial>, onDismiss: () -> Unit, onPick: (parentId: Long) -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("'${item.title}' 이동") },
+        title = { Text(str(R.string.t_move, item.title)) },
         text = {
             Column {
                 if (item.parentId != 0L) {
-                    TextButton(onClick = { onPick(0L) }) { Text("맨 위 (폴더 밖)") }
+                    TextButton(onClick = { onPick(0L) }) { Text(str(R.string.t_top_outside_folders)) }
                 }
                 folders.filter { it.id != item.parentId }.forEach { folder ->
                     TextButton(onClick = { onPick(folder.id) }) { Text(folder.title) }
@@ -377,6 +379,6 @@ private fun MoveDialog(item: SpeedDial, folders: List<SpeedDial>, onDismiss: () 
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }

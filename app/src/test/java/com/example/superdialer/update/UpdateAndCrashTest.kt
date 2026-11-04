@@ -8,6 +8,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UpdateAndCrashTest {
+    @org.junit.Before
+    fun koreanTexts() = com.example.superdialer.i18n.TestStrings.install()
+
     @Test fun comparesVersionsNumerically() {
         assertTrue(UpdateChecker.isNewer("0.4.1", "0.4.0"))
         assertTrue(UpdateChecker.isNewer("0.10.0", "0.9.0"))

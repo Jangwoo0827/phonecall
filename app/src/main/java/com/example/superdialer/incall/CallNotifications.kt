@@ -1,5 +1,7 @@
 package com.example.superdialer.incall
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -26,16 +28,16 @@ object CallNotifications {
         val manager = context.getSystemService(NotificationManager::class.java)
         // Telecom plays the ringtone itself, so the notification stays silent.
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_INCOMING, "수신 전화", NotificationManager.IMPORTANCE_HIGH).apply {
+            NotificationChannel(CHANNEL_INCOMING, str(R.string.t_incoming_call), NotificationManager.IMPORTANCE_HIGH).apply {
                 setSound(null, null)
                 enableVibration(false)
             }
         )
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_ONGOING, "통화 중", NotificationManager.IMPORTANCE_LOW)
+            NotificationChannel(CHANNEL_ONGOING, str(R.string.t_in_call), NotificationManager.IMPORTANCE_LOW)
         )
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_MISSED, "부재중 전화", NotificationManager.IMPORTANCE_DEFAULT)
+            NotificationChannel(CHANNEL_MISSED, str(R.string.t_missed_call), NotificationManager.IMPORTANCE_DEFAULT)
         )
     }
 
@@ -65,14 +67,14 @@ object CallNotifications {
     }
 
     fun showMissed(context: Context, number: String, name: String?) {
-        val label = name ?: PhoneNumberFormatter.formatLoose(number).ifEmpty { "번호정보 없음" }
+        val label = name ?: PhoneNumberFormatter.formatLoose(number).ifEmpty { str(R.string.t_no_caller_info) }
         val open = PendingIntent.getActivity(
             context, 0, Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_CALL_LOG, true),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_MISSED)
             .setSmallIcon(android.R.drawable.sym_call_missed)
-            .setContentTitle("부재중 전화")
+            .setContentTitle(str(R.string.t_missed_call))
             .setContentText(label)
             .setCategory(NotificationCompat.CATEGORY_MISSED_CALL)
             .setContentIntent(open)
@@ -86,26 +88,26 @@ object CallNotifications {
     }
 
     private fun label(call: CallSnapshot) =
-        call.name ?: if (call.isConference) "다자간 통화" else PhoneNumberFormatter.formatLoose(call.number).ifEmpty { "번호정보 없음" }
+        call.name ?: if (call.isConference) str(R.string.t_conference_call) else PhoneNumberFormatter.formatLoose(call.number).ifEmpty { str(R.string.t_no_caller_info) }
 
     private fun incoming(context: Context, call: CallSnapshot) =
         NotificationCompat.Builder(context, CHANNEL_INCOMING)
             .setSmallIcon(android.R.drawable.sym_action_call)
             .setContentTitle(label(call))
-            .setContentText(if (call.isVideo) "영상통화 수신" else "수신 전화")
+            .setContentText(if (call.isVideo) str(R.string.t_incoming_video_call) else str(R.string.t_incoming_call))
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(openCall(context, 0))
             .setFullScreenIntent(openCall(context, 1), true)
-            .addAction(0, "거절", broadcast(context, ACTION_DECLINE, 2))
+            .addAction(0, str(R.string.t_declined), broadcast(context, ACTION_DECLINE, 2))
             .apply {
                 if (call.isVideo) {
-                    addAction(0, "음성으로", openCall(context, 3, answer = true))
-                    addAction(0, "영상으로", openCall(context, 6, answer = true, video = true))
+                    addAction(0, str(R.string.t_voice), openCall(context, 3, answer = true))
+                    addAction(0, str(R.string.t_video), openCall(context, 6, answer = true, video = true))
                 } else {
-                    addAction(0, "받기", openCall(context, 3, answer = true))
+                    addAction(0, str(R.string.t_answer), openCall(context, 3, answer = true))
                 }
             }
             .build()
@@ -114,12 +116,12 @@ object CallNotifications {
         NotificationCompat.Builder(context, CHANNEL_ONGOING)
             .setSmallIcon(android.R.drawable.sym_action_call)
             .setContentTitle(label(call))
-            .setContentText(if (call.isHolding) "통화 대기 중" else "통화 중")
+            .setContentText(if (call.isHolding) str(R.string.t_on_hold) else str(R.string.t_in_call))
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(openCall(context, 4))
-            .addAction(0, "종료", broadcast(context, ACTION_HANGUP, 5))
+            .addAction(0, str(R.string.t_end), broadcast(context, ACTION_HANGUP, 5))
             .build()
 
     private fun openCall(context: Context, requestCode: Int, answer: Boolean = false, video: Boolean = false) =

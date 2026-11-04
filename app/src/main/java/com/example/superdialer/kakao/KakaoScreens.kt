@@ -1,5 +1,7 @@
 package com.example.superdialer.kakao
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -68,7 +70,7 @@ fun openNotificationAccessSettings(context: Context) {
         try {
             context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (e2: Exception) {
-            Toast.makeText(context, "설정 화면을 열 수 없습니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, str(R.string.t_can_t_open_the_settings_screen), Toast.LENGTH_SHORT).show()
         }
     }
 }
@@ -96,7 +98,7 @@ fun KakaoRoomsList(onOpenRoom: (String) -> Unit, modifier: Modifier = Modifier) 
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             if (rooms.isEmpty()) {
                 Text(
-                    if (KakaoInbox.enabled && granted) "아직 모은 카톡 알림이 없어요.\n카톡이 오면 알림에 뜬 내용이 여기에 쌓여요."
+                    if (KakaoInbox.enabled && granted) str(R.string.t_no_collected_kakaotalk_notifications_y)
                     else "",
                     modifier = Modifier.align(Alignment.Center).padding(24.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -114,17 +116,17 @@ fun KakaoRoomsList(onOpenRoom: (String) -> Unit, modifier: Modifier = Modifier) 
             }
         }
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            TextButton(onClick = { KakaoLinks.openApp(context) }) { Text("카카오톡 열기") }
-            if (rooms.isNotEmpty()) TextButton(onClick = { confirmClear = true }) { Text("모은 알림 지우기") }
+            TextButton(onClick = { KakaoLinks.openApp(context) }) { Text(str(R.string.t_open_kakaotalk)) }
+            if (rooms.isNotEmpty()) TextButton(onClick = { confirmClear = true }) { Text(str(R.string.t_clear_collected_notifications)) }
         }
     }
     if (confirmClear) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { confirmClear = false },
-            title = { Text("모은 카톡 알림을 지울까요?") },
-            text = { Text("이 폰에 저장된 카톡 알림 내용이 모두 지워집니다. 카카오톡 앱의 대화에는 영향이 없습니다.") },
-            confirmButton = { TextButton(onClick = { confirmClear = false; KakaoInbox.clear() }) { Text("지우기") } },
-            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("취소") } },
+            title = { Text(str(R.string.t_clear_the_collected_kakaotalk_notifica)) },
+            text = { Text(str(R.string.t_all_kakaotalk_notification_text_stored)) },
+            confirmButton = { TextButton(onClick = { confirmClear = false; KakaoInbox.clear() }) { Text(str(R.string.t_clear)) } },
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text(str(R.string.cancel)) } },
         )
     }
 }
@@ -137,23 +139,21 @@ private fun SetupCard(granted: Boolean, onEnable: () -> Unit, onOpenSettings: ()
         modifier = Modifier.fillMaxWidth().padding(12.dp).testTag("kakao_setup"),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("카톡 알림 모아 보기", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(str(R.string.t_collect_kakaotalk_notifications), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
-                "카카오톡은 다른 앱에 대화를 열어 주지 않아서, 카톡이 알림으로 보여 주는 것(보낸 사람·미리보기)만 " +
-                    "이 폰 안에 모아서 보여 드려요. 서버로 보내지 않고, 알림에 뜬 것만 보이며, 알림에 답장도 할 수 있어요.",
+                str(R.string.t_kakaotalk_doesn_t_open_chats_to),
                 style = MaterialTheme.typography.bodyMedium,
             )
             if (!granted) {
                 Text(
-                    "켜면 설정의 '알림 접근'에서 SuperDialer를 허용해야 해요. 스위치가 회색이면 설정 > 앱 > SuperDialer > ⋮ > " +
-                        "'제한된 설정 허용'을 먼저 누르세요(앱을 파일로 설치하면 안드로이드가 막아 둡니다).",
+                    str(R.string.t_when_on_allow_superdialer_under_notifi),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (!KakaoInbox.enabled) Button(onClick = onEnable) { Text("모아 보기 켜기") }
-                if (!granted) OutlinedButton(onClick = onOpenSettings) { Text("알림 접근 설정 열기") }
+                if (!KakaoInbox.enabled) Button(onClick = onEnable) { Text(str(R.string.t_turn_on_collecting)) }
+                if (!granted) OutlinedButton(onClick = onOpenSettings) { Text(str(R.string.t_open_notification_access_settings)) }
             }
         }
     }
@@ -171,7 +171,7 @@ private fun RoomRow(room: KakaoRoom, shape: androidx.compose.ui.graphics.Shape, 
             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(room.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    (if (room.last.outgoing) "나: " else "") + room.last.text,
+                    (if (room.last.outgoing) str(R.string.t_me_3) else "") + room.last.text,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -198,11 +198,11 @@ fun KakaoRoomScreen(room: String, onBack: () -> Unit, modifier: Modifier = Modif
 
     Column(modifier = modifier.fillMaxSize()) {
         ScreenHeader(room, onBack) {
-            TextButton(onClick = { if (!KakaoInbox.openChat(room)) KakaoLinks.openApp(context) }) { Text("카톡에서 열기") }
+            TextButton(onClick = { if (!KakaoInbox.openChat(room)) KakaoLinks.openApp(context) }) { Text(str(R.string.t_open_in_kakaotalk)) }
         }
         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp)) {
             if (messages.isEmpty()) {
-                Text("모은 메시지가 없습니다.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(str(R.string.t_no_collected_messages), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             messages.forEach { message ->
                 Box(
@@ -235,7 +235,7 @@ fun KakaoRoomScreen(room: String, onBack: () -> Unit, modifier: Modifier = Modif
                     value = text,
                     onValueChange = { text = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("답장") },
+                    placeholder = { Text(str(R.string.t_reply)) },
                     maxLines = 4,
                     shape = RoundedCornerShape(24.dp),
                 )
@@ -243,13 +243,13 @@ fun KakaoRoomScreen(room: String, onBack: () -> Unit, modifier: Modifier = Modif
                     enabled = text.isNotBlank(),
                     onClick = {
                         if (KakaoInbox.reply(context, room, text)) text = ""
-                        else Toast.makeText(context, "답장을 보내지 못했어요. 카톡에서 직접 답해 주세요.", Toast.LENGTH_SHORT).show()
+                        else Toast.makeText(context, str(R.string.t_couldn_t_send_the_reply_please), Toast.LENGTH_SHORT).show()
                     },
-                ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "답장 보내기", tint = MaterialTheme.colorScheme.primary) }
+                ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = str(R.string.t_send_reply), tint = MaterialTheme.colorScheme.primary) }
             }
         } else {
             Text(
-                "답장은 이 대화의 카톡 알림이 아직 떠 있을 때만 보낼 수 있어요. 알림을 지웠다면 카톡에서 답해 주세요.",
+                str(R.string.t_you_can_only_reply_while_this),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),

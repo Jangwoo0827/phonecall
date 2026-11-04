@@ -3,6 +3,8 @@
     "id": "2048",
     "title": "2048",
     "description": "밀어서 같은 숫자를 합치세요",
+    "title_en": "2048",
+    "description_en": "Slide to merge equal numbers",
     "path": "2048/index.html",
     "color": "#EDC22E"
   },
@@ -10,6 +12,8 @@
     "id": "snake",
     "title": "스네이크",
     "description": "먹이를 먹고 길어지세요",
+    "title_en": "Snake",
+    "description_en": "Eat food and grow longer",
     "path": "snake/index.html",
     "color": "#43A047"
   },
@@ -17,6 +21,8 @@
     "id": "breakout",
     "title": "벽돌깨기",
     "description": "공을 튕겨 벽돌을 부수세요",
+    "title_en": "Breakout",
+    "description_en": "Bounce the ball and break the bricks",
     "path": "breakout/index.html",
     "color": "#E53935"
   },
@@ -24,6 +30,8 @@
     "id": "crossyroads",
     "title": "Crossy Chicks",
     "description": "차·강·기차를 피해 끝없이 건너세요",
+    "title_en": "Crossy Chicks",
+    "description_en": "Keep crossing past cars, rivers and trains",
     "path": "crossyroads/index.html",
     "color": "#FF7A59"
   }

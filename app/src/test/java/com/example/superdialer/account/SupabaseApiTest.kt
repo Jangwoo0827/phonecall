@@ -6,6 +6,9 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class SupabaseApiTest {
+    @org.junit.Before
+    fun koreanTexts() = com.example.superdialer.i18n.TestStrings.install()
+
     @Test fun parsesASessionAndComputesExpiry() {
         val body = """{"access_token":"a","refresh_token":"r","expires_in":3600,"user":{"id":"u-1","email":"me@x.com"}}"""
         val s = SupabaseApi.parseSession(body, 1_000L)!!

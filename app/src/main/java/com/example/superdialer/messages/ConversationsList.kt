@@ -1,5 +1,7 @@
 package com.example.superdialer.messages
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.Manifest
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,7 +46,7 @@ fun ConversationsList(
 ) {
     PermissionGate(
         required = listOf(Manifest.permission.READ_SMS),
-        rationale = "문자 대화를 보려면 문자 읽기 권한이 필요합니다.\n(채팅+(RCS)·카카오톡 대화는 보이지 않습니다)",
+        rationale = str(R.string.t_showing_text_conversations_needs_the_p),
         modifier = modifier,
     ) {
         LifecycleResumeEffect(Unit) {
@@ -59,7 +61,7 @@ fun ConversationsList(
                 shown.isEmpty() && viewModel.loading ->
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 shown.isEmpty() -> Text(
-                    if (query.isBlank()) "문자 대화가 없습니다." else "조건에 맞는 문자 대화가 없습니다.",
+                    if (query.isBlank()) str(R.string.t_no_text_conversations) else str(R.string.t_no_conversations_match),
                     modifier = Modifier.align(Alignment.Center),
                 )
                 else -> LazyColumn(
@@ -96,7 +98,7 @@ private fun ConversationRow(conversation: Conversation, shape: androidx.compose.
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    conversation.snippet.ifBlank { "(내용 없음)" },
+                    conversation.snippet.ifBlank { str(R.string.t_no_content) },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = if (conversation.unread) FontWeight.SemiBold else FontWeight.Normal,

@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,11 +37,11 @@ fun RejectMessagesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val messages = RejectMessageStore.messages
 
     Column(modifier = modifier.fillMaxSize()) {
-        ScreenHeader("거절 메시지", onBack) {
-            IconButton(onClick = { editing = NEW }) { Icon(Icons.Filled.Add, contentDescription = "메시지 추가") }
+        ScreenHeader(str(R.string.t_decline_messages), onBack) {
+            IconButton(onClick = { editing = NEW }) { Icon(Icons.Filled.Add, contentDescription = str(R.string.t_add_message)) }
         }
         Text(
-            "수신 전화에서 '메시지로 거절'을 누르면 아래 문구 중 하나를 보낼 수 있습니다.",
+            str(R.string.t_when_you_tap_decline_with_message),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
         )
@@ -50,7 +52,7 @@ fun RejectMessagesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     headlineContent = { Text(message) },
                     trailingContent = {
                         IconButton(onClick = { RejectMessageStore.remove(index) }) {
-                            Icon(Icons.Filled.Delete, contentDescription = "삭제")
+                            Icon(Icons.Filled.Delete, contentDescription = str(R.string.t_delete))
                         }
                     },
                 )
@@ -61,14 +63,14 @@ fun RejectMessagesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp),
-        ) { Text("기본 문구로 되돌리기") }
+        ) { Text(str(R.string.t_restore_default_messages)) }
     }
 
     editing?.let { index ->
         var text by remember(index) { mutableStateOf(messages.getOrNull(index).orEmpty()) }
         AlertDialog(
             onDismissRequest = { editing = null },
-            title = { Text(if (index == NEW) "메시지 추가" else "메시지 수정") },
+            title = { Text(if (index == NEW) str(R.string.t_add_message) else str(R.string.t_edit_message)) },
             text = {
                 OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth())
             },
@@ -79,9 +81,9 @@ fun RejectMessagesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         if (index == NEW) RejectMessageStore.add(text) else RejectMessageStore.update(index, text)
                         editing = null
                     },
-                ) { Text("저장") }
+                ) { Text(str(R.string.t_save)) }
             },
-            dismissButton = { TextButton(onClick = { editing = null }) { Text("취소") } },
+            dismissButton = { TextButton(onClick = { editing = null }) { Text(str(R.string.cancel)) } },
         )
     }
 }

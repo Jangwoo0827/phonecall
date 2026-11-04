@@ -19,9 +19,15 @@ import com.example.superdialer.settings.RejectMessageStore
 class SuperDialerApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        // First of all: the texts. Classes such as the settings enums build their labels the moment they are first used
+        // (AppSettings.init below already does), so the language must be applied before anything else runs.
+        com.example.superdialer.i18n.Strings.init(
+            this,
+            com.example.superdialer.i18n.AppLanguage.fromKey(getSharedPreferences("app_settings", MODE_PRIVATE).getString("language", null)),
+        )
+        AppSettings.init(this)
         CrashLog.install(this)
         WhatsNew.check(this)
-        AppSettings.init(this)
         RejectMessageStore.init(this)
         GameScores.init(this)
         GameStates.init(this)

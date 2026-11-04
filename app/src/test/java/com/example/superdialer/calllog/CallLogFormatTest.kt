@@ -6,6 +6,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class CallLogFormatTest {
+    @org.junit.Before
+    fun koreanTexts() = com.example.superdialer.i18n.TestStrings.install()
+
     private val zone = ZoneId.of("Asia/Seoul")
     private fun millis(y: Int, m: Int, d: Int, h: Int = 12, min: Int = 0) =
         ZonedDateTime.of(y, m, d, h, min, 0, 0, zone).toInstant().toEpochMilli()

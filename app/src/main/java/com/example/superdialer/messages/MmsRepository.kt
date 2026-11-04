@@ -1,5 +1,7 @@
 package com.example.superdialer.messages
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
@@ -13,11 +15,11 @@ data class MmsAttachment(val partId: Long, val mimeType: String, val name: Strin
     /** Short text for attachments that are not shown as a picture. */
     val label: String
         get() = when {
-            mimeType.startsWith("video/") -> "동영상"
-            mimeType.startsWith("audio/") -> "음성"
-            mimeType.contains("vcard", ignoreCase = true) -> "연락처 카드"
+            mimeType.startsWith("video/") -> str(R.string.t_video_2)
+            mimeType.startsWith("audio/") -> str(R.string.t_audio)
+            mimeType.contains("vcard", ignoreCase = true) -> str(R.string.t_contact_card)
             name.isNotBlank() -> name
-            else -> "첨부 파일"
+            else -> str(R.string.t_attachment)
         }
 }
 
@@ -141,7 +143,7 @@ class MmsRepository(private val context: Context) {
 
         private fun bodyFor(row: MmsRow, text: String): String = when {
             text.isNotEmpty() -> text
-            row.type == TYPE_NOTIFICATION_IND -> "아직 받지 않은 멀티미디어 메시지"
+            row.type == TYPE_NOTIFICATION_IND -> str(R.string.t_multimedia_message_not_downloaded_yet)
             else -> row.subject.takeUnless { it.isBlank() }.orEmpty()
         }
 

@@ -1,10 +1,13 @@
 package com.example.superdialer.calllog
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
+
 /** How far back the statistics look. */
 enum class StatsPeriod(val label: String, val days: Long?) {
-    Week("지난 7일", 7),
-    Month("지난 30일", 30),
-    All("전체", null),
+    Week(str(R.string.t_last_7_days), 7),
+    Month(str(R.string.t_last_30_days), 30),
+    All(str(R.string.t_all), null),
 }
 
 /** One person (one number) in the "most called" ranking. */

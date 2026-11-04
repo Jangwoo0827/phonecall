@@ -1,5 +1,7 @@
 package com.example.superdialer.messages
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -75,12 +77,12 @@ fun MessagesPane(
         if (!granted) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    "주고받은 문자를 보려면 문자 읽기 권한이 필요합니다.",
+                    str(R.string.t_showing_texts_needs_the_permission_to),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(vertical = 16.dp),
                 )
-                Button(onClick = { launcher.launch(Manifest.permission.READ_SMS) }) { Text("권한 허용") }
-                if (asked) TextButton(onClick = { context.openAppSettings() }) { Text("설정 열기") }
+                Button(onClick = { launcher.launch(Manifest.permission.READ_SMS) }) { Text(str(R.string.t_allow_permission)) }
+                if (asked) TextButton(onClick = { context.openAppSettings() }) { Text(str(R.string.t_open_settings)) }
             }
             return@Column
         }
@@ -93,7 +95,7 @@ fun MessagesPane(
             messages.isEmpty() && viewModel.loading ->
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally).padding(24.dp))
             messages.isEmpty() -> Text(
-                "주고받은 문자가 없습니다.\n(채팅+(RCS)·카카오톡 등 채팅 메시지는 표시되지 않습니다)",
+                str(R.string.t_no_texts_yet_rcs_and_kakaotalk),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 16.dp),
@@ -101,7 +103,7 @@ fun MessagesPane(
             else -> {
                 // Where the list starts, so a missing recent chat is obvious: Samsung "채팅+"/RCS chats are not readable by apps.
                 Text(
-                    "가장 최근 문자 · ${formatDateTime(messages.first().dateMillis)}\n채팅+(RCS)로 주고받은 대화는 여기에 보이지 않아요",
+                    str(R.string.t_latest_text_chats_over_rcs_don, formatDateTime(messages.first().dateMillis)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -116,7 +118,7 @@ fun MessagesPane(
                 TextButton(
                     onClick = { numbers.firstOrNull()?.let(context::sendSms) },
                     modifier = Modifier.align(Alignment.End),
-                ) { Text("문자 앱에서 이어서 보기") }
+                ) { Text(str(R.string.t_continue_in_the_messages_app)) }
             }
         }
     }
@@ -137,27 +139,27 @@ private fun Composer(number: String) {
             val staged = try {
                 withContext(Dispatchers.IO) { MmsShare.stage(context, picked) }
             } catch (e: MmsShare.TooLargeException) {
-                Toast.makeText(context, "파일이 너무 큽니다 (25MB 이하만 보낼 수 있습니다).", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, str(R.string.t_the_file_is_too_big_only), Toast.LENGTH_LONG).show()
                 return@launch
             } catch (e: java.io.IOException) {
-                Toast.makeText(context, "사진을 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, str(R.string.t_couldn_t_load_the_photo), Toast.LENGTH_SHORT).show()
                 return@launch
             }
             if (MmsShare.send(context, number, staged, text)) text = ""
-            else Toast.makeText(context, "문자 앱을 열 수 없습니다.", Toast.LENGTH_SHORT).show()
+            else Toast.makeText(context, str(R.string.t_can_t_open_the_messages_app), Toast.LENGTH_SHORT).show()
         }
     }
 
     fun doSend(body: String) {
         if (SmsSender.send(context, number, body)) text = ""
-        else Toast.makeText(context, "문자를 보내지 못했습니다.", Toast.LENGTH_SHORT).show()
+        else Toast.makeText(context, str(R.string.t_couldn_t_send_the_text), Toast.LENGTH_SHORT).show()
     }
 
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         val body = pendingSend
         pendingSend = null
         if (granted && body != null) doSend(body)
-        else Toast.makeText(context, "문자를 보내려면 문자 보내기 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+        else Toast.makeText(context, str(R.string.t_sending_texts_needs_the_permission_to), Toast.LENGTH_SHORT).show()
     }
 
     Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
@@ -166,14 +168,14 @@ private fun Composer(number: String) {
                 value = text,
                 onValueChange = { text = it },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("문자 보내기") },
+                placeholder = { Text(str(R.string.t_send_text)) },
                 maxLines = 4,
                 shape = RoundedCornerShape(24.dp),
             )
             IconButton(
                 enabled = number.isNotBlank(),
                 onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
-            ) { Icon(Icons.Filled.Image, contentDescription = "사진 보내기", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+            ) { Icon(Icons.Filled.Image, contentDescription = str(R.string.t_send_photo), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
             IconButton(
                 enabled = text.isNotBlank() && number.isNotBlank(),
                 onClick = {
@@ -184,10 +186,10 @@ private fun Composer(number: String) {
                         permission.launch(Manifest.permission.SEND_SMS)
                     }
                 },
-            ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "보내기", tint = MaterialTheme.colorScheme.primary) }
+            ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = str(R.string.t_send), tint = MaterialTheme.colorScheme.primary) }
         }
         Text(
-            "여기서 보낸 문자는 이 앱에만 기록되고 기본 문자 앱에는 나타나지 않습니다. 사진·동영상(MMS)은 기본 문자 앱의 작성 화면으로 넘겨서 거기서 보냅니다.",
+            str(R.string.t_texts_sent_from_here_are_only),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 8.dp),
@@ -211,8 +213,8 @@ private fun Bubble(message: SmsMessage, onRetry: () -> Unit) {
                 }
                 Text(
                     formatDateTime(message.dateMillis) + (if (message.isMms) " · MMS" else "") + when {
-                        message.sentId != 0L && message.status == SentMessage.SENDING -> " · 보내는 중"
-                        message.sentId != 0L && message.status == SentMessage.FAILED -> " · 전송 실패"
+                        message.sentId != 0L && message.status == SentMessage.SENDING -> str(R.string.t_sending)
+                        message.sentId != 0L && message.status == SentMessage.FAILED -> str(R.string.t_failed)
                         else -> ""
                     },
                     style = MaterialTheme.typography.labelSmall,
@@ -220,7 +222,7 @@ private fun Bubble(message: SmsMessage, onRetry: () -> Unit) {
                     modifier = Modifier.padding(top = 2.dp),
                 )
                 if (message.sentId != 0L && message.status == SentMessage.FAILED) {
-                    TextButton(onClick = onRetry) { Text("다시 보내기") }
+                    TextButton(onClick = onRetry) { Text(str(R.string.t_send_again)) }
                 }
             }
         }
@@ -242,7 +244,7 @@ fun ActivityChips(
         androidx.compose.material3.FilterChip(
             selected = !showMessages,
             onClick = { onSelect(false) },
-            label = { Text(if (callCount > 0) "통화 기록 $callCount" else "통화 기록") },
+            label = { Text(if (callCount > 0) str(R.string.t_calls_2, callCount) else str(R.string.t_calls_3)) },
             colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                 selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -251,7 +253,7 @@ fun ActivityChips(
         androidx.compose.material3.FilterChip(
             selected = showMessages,
             onClick = { onSelect(true) },
-            label = { Text("메시지") },
+            label = { Text(str(R.string.t_messages)) },
             colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                 selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,

@@ -1,5 +1,7 @@
 package com.example.superdialer.games
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideInHorizontally
@@ -81,7 +83,7 @@ fun GamesScreen(modifier: Modifier = Modifier) {
 private fun GameList(games: List<GameInfo>, onOpenRanking: () -> Unit) {
     if (games.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("등록된 게임이 없습니다.")
+            Text(str(R.string.t_no_games))
         }
         return
     }
@@ -94,7 +96,7 @@ private fun GameList(games: List<GameInfo>, onOpenRanking: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-            androidx.compose.material3.TextButton(onClick = onOpenRanking) { Text("🏆 랭킹 보기") }
+            androidx.compose.material3.TextButton(onClick = onOpenRanking) { Text(str(R.string.t_leaderboard)) }
         }
         items(games, key = { it.id }) { game ->
             GameCard(game, onClick = { GameSession.playingId = game.id })
@@ -121,16 +123,16 @@ private fun GameCard(game: GameInfo, onClick: () -> Unit) {
             GameIcon(game.id, size = 72.dp)
         }
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-            Text(game.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(game.shownTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
-                game.description,
+                game.shownDescription,
                 modifier = Modifier.padding(top = 2.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
             )
             Text(
-                if (best > 0) "최고 점수 $best" else "아직 기록 없음",
+                if (best > 0) str(R.string.t_best_score, best) else str(R.string.t_no_score_yet),
                 modifier = Modifier.padding(top = 8.dp),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,

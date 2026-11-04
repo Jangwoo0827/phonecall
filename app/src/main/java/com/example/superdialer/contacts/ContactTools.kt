@@ -1,5 +1,7 @@
 package com.example.superdialer.contacts
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import com.example.superdialer.calllog.numberKey
@@ -102,7 +104,7 @@ object ContactGroups {
 }
 
 /** Why a set of contacts look like the same person. */
-enum class DuplicateReason(val label: String) { SameNumber("같은 번호"), SameName("같은 이름") }
+enum class DuplicateReason(val label: String) { SameNumber(str(R.string.t_same_number)), SameName(str(R.string.t_same_name)) }
 
 data class DuplicateGroup(val contacts: List<Contact>, val reason: DuplicateReason)
 

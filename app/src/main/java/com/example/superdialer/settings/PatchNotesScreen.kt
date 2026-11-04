@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,11 +49,11 @@ fun PatchNotesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val current = remember { UpdateChecker.currentVersion(context) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        ScreenHeader("패치노트", onBack)
+        ScreenHeader(str(R.string.t_patch_notes), onBack)
         when {
             entries.isEmpty() && loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             entries.isEmpty() -> Text(
-                "패치노트를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 열어 주세요.",
+                str(R.string.t_couldn_t_load_the_patch_notes),
                 modifier = Modifier.padding(24.dp).testTag("patch_notes_error"),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -63,7 +65,7 @@ fun PatchNotesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 if (offline) {
                     item {
                         Text(
-                            "인터넷에 연결되지 않아 저장해 둔 내용을 보여줘요.",
+                            str(R.string.t_you_re_offline_so_this_shows),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 8.dp),
@@ -86,7 +88,7 @@ fun PatchNotesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                         modifier = Modifier.padding(start = 8.dp),
                                     ) {
                                         Text(
-                                            "현재 버전",
+                                            str(R.string.t_current_version),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
@@ -99,7 +101,7 @@ fun PatchNotesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                             }
                             if (entry.lines.isEmpty()) {
                                 Text(
-                                    "기록된 변경 내용이 없어요.",
+                                    str(R.string.t_no_changes_recorded),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(top = 8.dp),

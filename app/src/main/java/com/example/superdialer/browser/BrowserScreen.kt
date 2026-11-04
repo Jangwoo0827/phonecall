@@ -1,5 +1,7 @@
 package com.example.superdialer.browser
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.material.icons.filled.LockOpen
@@ -237,10 +239,10 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
     viewModel.pendingDownload?.let { request ->
         AlertDialog(
             onDismissRequest = viewModel::dismissDownload,
-            title = { Text("파일 다운로드") },
-            text = { Text("${request.fileName}\n\n이 파일을 다운로드할까요?") },
-            confirmButton = { TextButton(onClick = viewModel::confirmDownload) { Text("다운로드") } },
-            dismissButton = { TextButton(onClick = viewModel::dismissDownload) { Text("취소") } },
+            title = { Text(str(R.string.t_download_file)) },
+            text = { Text(str(R.string.t_download_this_file, request.fileName)) },
+            confirmButton = { TextButton(onClick = viewModel::confirmDownload) { Text(str(R.string.t_download)) } },
+            dismissButton = { TextButton(onClick = viewModel::dismissDownload) { Text(str(R.string.cancel)) } },
         )
     }
 }
@@ -314,9 +316,9 @@ private fun PrivateBanner() {
     ) {
         Icon(Icons.Filled.VisibilityOff, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         Column(modifier = Modifier.padding(start = 12.dp)) {
-            Text("비공개 탭", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(str(R.string.t_private_tab), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Text(
-                "방문 기록과 쿠키를 남기지 않아요. 탭을 모두 닫으면 사이트 데이터도 지워져요.",
+                str(R.string.t_no_history_or_cookies_are_kept),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -496,12 +498,12 @@ private fun WebTopBar(
             modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onExit) { Icon(Icons.Filled.Close, contentDescription = "나가기") }
+            IconButton(onClick = onExit) { Icon(Icons.Filled.Close, contentDescription = str(R.string.t_exit)) }
             AddressField(initial = tab.url, resetKey = tab.id, onSubmit = onSubmit, modifier = Modifier.weight(1f), privateTab = tab.isPrivate, pageMode = true)
             IconButton(onClick = onToggleBookmark) {
                 Icon(
                     if (bookmarked) Icons.Filled.Star else Icons.Filled.StarBorder,
-                    contentDescription = if (bookmarked) "북마크 해제" else "북마크 추가",
+                    contentDescription = if (bookmarked) str(R.string.t_remove_bookmark) else str(R.string.t_add_bookmark),
                     tint = if (bookmarked) Color(0xFFF9A825) else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -550,13 +552,13 @@ private fun AddressField(
             focused = state.isFocused
         },
         singleLine = true,
-        placeholder = { Text("주소 또는 검색어") },
+        placeholder = { Text(str(R.string.t_address_or_search)) },
         leadingIcon = when {
-            privateTab -> ({ Icon(Icons.Filled.VisibilityOff, contentDescription = "비공개 탭", tint = MaterialTheme.colorScheme.primary) })
+            privateTab -> ({ Icon(Icons.Filled.VisibilityOff, contentDescription = str(R.string.t_private_tab), tint = MaterialTheme.colorScheme.primary) })
             pageMode -> ({
                 Icon(
                     if (secure) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                    contentDescription = if (secure) "보안 연결" else "보안되지 않은 연결",
+                    contentDescription = if (secure) str(R.string.t_secure_connection) else str(R.string.t_not_secure),
                     modifier = Modifier.size(18.dp),
                     tint = if (secure) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
                 )
@@ -574,7 +576,7 @@ private fun AddressField(
         },
         trailingIcon = {
             if (!compact && field.text.isNotEmpty()) {
-                IconButton(onClick = { field = TextFieldValue("") }) { Icon(Icons.Filled.Close, contentDescription = "지우기") }
+                IconButton(onClick = { field = TextFieldValue("") }) { Icon(Icons.Filled.Close, contentDescription = str(R.string.t_clear)) }
             }
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
@@ -611,33 +613,33 @@ private fun OverflowMenu(
     var open by remember { mutableStateOf(false) }
     LaunchedEffect(open) { onOpenChange(open) }
     Box {
-        IconButton(onClick = { open = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "더보기") }
+        IconButton(onClick = { open = true }) { Icon(Icons.Filled.MoreVert, contentDescription = str(R.string.t_more)) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             // This page
             if (onFind != null) {
                 DropdownMenuItem(
-                    text = { Text("페이지에서 찾기") },
+                    text = { Text(str(R.string.t_find_in_page)) },
                     leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                     onClick = { open = false; onFind() },
                 )
             }
             if (onToggleDesktop != null) {
                 DropdownMenuItem(
-                    text = { Text("PC 사이트 보기") },
+                    text = { Text(str(R.string.t_desktop_site)) },
                     leadingIcon = { Icon(Icons.Filled.DesktopWindows, contentDescription = null) },
-                    trailingIcon = { if (desktopMode) Icon(Icons.Filled.Check, contentDescription = "켜짐") },
+                    trailingIcon = { if (desktopMode) Icon(Icons.Filled.Check, contentDescription = str(R.string.t_on)) },
                     onClick = { open = false; onToggleDesktop() },
                 )
             }
             if (onFind != null || onToggleDesktop != null) HorizontalDivider()
             // Tabs
             DropdownMenuItem(
-                text = { Text("새 탭") },
+                text = { Text(str(R.string.t_new_tab)) },
                 leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
                 onClick = { open = false; onNewTab() },
             )
             DropdownMenuItem(
-                text = { Text("새 비공개 탭") },
+                text = { Text(str(R.string.t_new_private_tab)) },
                 leadingIcon = { Icon(Icons.Filled.VisibilityOff, contentDescription = null) },
                 onClick = { open = false; onNewPrivateTab() },
                 modifier = Modifier.testTag("menu_new_private_tab"),
@@ -645,24 +647,24 @@ private fun OverflowMenu(
             HorizontalDivider()
             // Library
             DropdownMenuItem(
-                text = { Text("북마크") },
+                text = { Text(str(R.string.t_bookmarks)) },
                 leadingIcon = { Icon(Icons.Filled.Bookmarks, contentDescription = null) },
                 onClick = { open = false; onOpenBookmarks() },
             )
             DropdownMenuItem(
-                text = { Text("방문 기록") },
+                text = { Text(str(R.string.t_history)) },
                 leadingIcon = { Icon(Icons.Filled.History, contentDescription = null) },
                 onClick = { open = false; onOpenHistory() },
             )
             DropdownMenuItem(
-                text = { Text("다운로드") },
+                text = { Text(str(R.string.t_download)) },
                 leadingIcon = { Icon(Icons.Filled.Download, contentDescription = null) },
                 onClick = { open = false; onOpenDownloads() },
             )
             if (onShareKakao != null) {
                 HorizontalDivider()
                 DropdownMenuItem(
-                    text = { Text("카카오톡으로 공유") },
+                    text = { Text(str(R.string.t_share_to_kakaotalk)) },
                     leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
                     onClick = { open = false; onShareKakao() },
                 )
@@ -699,20 +701,20 @@ private fun BottomToolbar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack, modifier = Modifier.weight(1f)) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = str(R.string.t_back))
             }
             IconButton(onClick = onForward, enabled = tab.canGoForward, modifier = Modifier.weight(1f)) {
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "앞으로")
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = str(R.string.t_forward))
             }
             IconButton(onClick = onReloadOrStop, modifier = Modifier.weight(1f)) {
                 if (tab.loading) {
-                    Icon(Icons.Filled.Close, contentDescription = "중지")
+                    Icon(Icons.Filled.Close, contentDescription = str(R.string.t_stop))
                 } else {
-                    Icon(Icons.Filled.Refresh, contentDescription = "새로고침")
+                    Icon(Icons.Filled.Refresh, contentDescription = str(R.string.t_reload))
                 }
             }
             IconButton(onClick = onHome, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Filled.Home, contentDescription = "시작 페이지")
+                Icon(Icons.Filled.Home, contentDescription = str(R.string.t_start_page))
             }
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) { TabCountButton(tabCount, onTabs) }
         }

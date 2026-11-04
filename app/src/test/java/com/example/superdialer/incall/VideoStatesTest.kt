@@ -6,6 +6,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VideoStatesTest {
+    @org.junit.Before
+    fun koreanTexts() = com.example.superdialer.i18n.TestStrings.install()
+
     @Test fun voiceCallsHaveNoVideo() {
         assertFalse(VideoStates.hasVideo(VideoStates.AUDIO_ONLY))
         assertFalse(VideoStates.hasVideo(VideoStates.PAUSED)) // a paused flag alone is not video

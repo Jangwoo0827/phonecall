@@ -1,5 +1,7 @@
 package com.example.superdialer.browser
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,7 +37,7 @@ import androidx.compose.ui.unit.dp
 /** "2/7" while there are matches, "결과 없음" when the page has none, nothing while the box is empty. [active] counts from 1. */
 internal fun findLabel(query: String, active: Int, total: Int): String = when {
     query.isBlank() -> ""
-    total <= 0 -> "결과 없음"
+    total <= 0 -> str(R.string.t_no_results_2)
     else -> "${active.coerceIn(1, total)}/$total"
 }
 
@@ -55,13 +57,13 @@ internal fun FindBar(
 
     Surface(modifier = modifier.fillMaxWidth().testTag("find_bar"), color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
         Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onClose) { Icon(Icons.Filled.Close, contentDescription = "찾기 닫기") }
+            IconButton(onClick = onClose) { Icon(Icons.Filled.Close, contentDescription = str(R.string.t_close_find)) }
             TextField(
                 value = query,
                 onValueChange = { query = it; onQuery(it) },
                 modifier = Modifier.weight(1f).focusRequester(focus),
                 singleLine = true,
-                placeholder = { Text("페이지에서 찾기") },
+                placeholder = { Text(str(R.string.t_find_in_page)) },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onNext(true) }),
                 colors = TextFieldDefaults.colors(
@@ -77,8 +79,8 @@ internal fun FindBar(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 4.dp),
             )
-            IconButton(onClick = { onNext(false) }, enabled = total > 0) { Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "이전 결과") }
-            IconButton(onClick = { onNext(true) }, enabled = total > 0) { Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "다음 결과") }
+            IconButton(onClick = { onNext(false) }, enabled = total > 0) { Icon(Icons.Filled.KeyboardArrowUp, contentDescription = str(R.string.t_previous_result)) }
+            IconButton(onClick = { onNext(true) }, enabled = total > 0) { Icon(Icons.Filled.KeyboardArrowDown, contentDescription = str(R.string.t_next_result)) }
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.example.superdialer.messages
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -42,7 +44,7 @@ internal fun MmsAttachments(attachments: List<MmsAttachment>) {
                 MmsPicture(attachment, maxPx = THUMB_PX, modifier = Modifier.heightIn(max = 220.dp).clickable { opened = attachment })
             } else {
                 Text(
-                    "첨부 · ${attachment.label}",
+                    str(R.string.t_attachment_2, attachment.label),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -66,11 +68,11 @@ private fun MmsPicture(attachment: MmsAttachment, maxPx: Int, modifier: Modifier
     }
     val loaded = bitmap
     if (loaded == null) {
-        Text("사진을 불러오는 중…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(str(R.string.t_loading_photo), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     } else {
         Image(
             bitmap = loaded.asImageBitmap(),
-            contentDescription = "받은 사진",
+            contentDescription = str(R.string.t_received_photo),
             contentScale = if (fit) ContentScale.Fit else ContentScale.Crop,
             modifier = modifier.clip(RoundedCornerShape(12.dp)),
         )

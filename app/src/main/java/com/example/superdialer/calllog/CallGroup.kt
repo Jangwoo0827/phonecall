@@ -1,5 +1,7 @@
 package com.example.superdialer.calllog
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import com.example.superdialer.contacts.Contact
 import com.example.superdialer.contacts.ContactSorting
 import java.time.Instant
@@ -32,10 +34,10 @@ fun groupCalls(entries: List<CallLogEntry>, zone: ZoneId = ZoneId.systemDefault(
 }
 
 enum class CallFilter(val label: String) {
-    All("전체"),
-    Missed("부재중"),
-    Incoming("수신"),
-    Outgoing("발신");
+    All(str(R.string.t_all)),
+    Missed(str(R.string.t_missed)),
+    Incoming(str(R.string.t_incoming)),
+    Outgoing(str(R.string.t_outgoing));
 
     fun accepts(entry: CallLogEntry): Boolean = when (this) {
         All -> true

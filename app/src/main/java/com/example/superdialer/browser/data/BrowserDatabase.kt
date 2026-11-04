@@ -1,5 +1,7 @@
 package com.example.superdialer.browser.data
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.Context
 import androidx.room.Dao
 import androidx.room.Database
@@ -125,14 +127,14 @@ abstract class BrowserDatabase : RoomDatabase() {
         @Volatile private var instance: BrowserDatabase? = null
 
         /** The checklist web app (extension/Summarizer, GitHub Pages) is the first tile; see ChecklistLink. */
-        const val CHECKLIST_TITLE = "체크리스트"
+        val CHECKLIST_TITLE: String get() = str(R.string.t_checklist)
         const val CHECKLIST_URL = "https://jangwoo0827.github.io/checklist_summarizer/"
 
         /**
          * The shared drawing board (onlinedraw, GitHub Pages). The address names a fixed room, so everyone who opens it
          * from this app lands on the same canvas (without `?room=` the site makes a new private room each time).
          */
-        const val DRAW_TITLE = "같이 그리기"
+        val DRAW_TITLE: String get() = str(R.string.t_draw_together)
         const val DRAW_URL = "https://jangwoo0827.github.io/onlinedraw/?room=superdialer"
 
         /** Insert used on a fresh install; must name every NOT NULL column of [SpeedDial] (see BrowserDatabaseSeedTest). */
@@ -142,12 +144,12 @@ abstract class BrowserDatabase : RoomDatabase() {
         private val DEFAULT_TILES = listOf(
             CHECKLIST_TITLE to CHECKLIST_URL,
             DRAW_TITLE to DRAW_URL,
-            "네이버" to "https://m.naver.com",
-            "구글" to "https://www.google.com",
-            "유튜브" to "https://m.youtube.com",
-            "다음" to "https://m.daum.net",
-            "쿠팡" to "https://m.coupang.com",
-            "위키백과" to "https://ko.m.wikipedia.org",
+            str(R.string.t_naver) to "https://m.naver.com",
+            str(R.string.t_google) to "https://www.google.com",
+            str(R.string.t_youtube) to "https://m.youtube.com",
+            str(R.string.t_daum) to "https://m.daum.net",
+            str(R.string.t_coupang) to "https://m.coupang.com",
+            str(R.string.t_wikipedia) to "https://ko.m.wikipedia.org",
         )
 
         /**

@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,9 +20,9 @@ import com.example.superdialer.browser.SearchEngine
 @Composable
 internal fun BrowserPreferences() {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Text("검색 엔진", style = MaterialTheme.typography.bodyLarge)
+        Text(str(R.string.t_search_engine), style = MaterialTheme.typography.bodyLarge)
         Text(
-            "주소창에 주소가 아닌 글을 입력하면 이 검색엔진으로 찾아요.",
+            str(R.string.t_text_in_the_address_bar_that),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -36,9 +38,9 @@ internal fun BrowserPreferences() {
             }
         }
 
-        Text("웹 페이지 다크 모드", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 20.dp))
+        Text(str(R.string.t_web_page_dark_mode), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 20.dp))
         Text(
-            "어두운 버전이 없는 사이트도 어둡게 바꿔서 보여줘요. 일부 사이트는 색이 이상하게 보일 수 있어요.",
+            str(R.string.t_also_darkens_sites_that_have_no),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

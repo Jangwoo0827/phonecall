@@ -1,5 +1,7 @@
 package com.example.superdialer.kakao
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.app.PendingIntent
 import android.app.RemoteInput
 import android.content.Context
@@ -126,7 +128,7 @@ object KakaoInbox {
             val fill = Intent()
             RemoteInput.addResultsToIntent(handle.inputs, fill, results)
             handle.reply.send(context, 0, fill)
-            add(listOf(KakaoMessage(room, "나", clean, now, outgoing = true)))
+            add(listOf(KakaoMessage(room, str(R.string.t_me_2), clean, now, outgoing = true)))
             true
         } catch (e: PendingIntent.CanceledException) {
             handles.remove(room)
@@ -199,7 +201,7 @@ object KakaoNotificationParser {
         lines: List<Line>,
         postTime: Long,
     ): List<KakaoMessage> {
-        val room = (conversationTitle?.takeIf { it.isNotBlank() } ?: title?.takeIf { it.isNotBlank() } ?: "카카오톡")
+        val room = (conversationTitle?.takeIf { it.isNotBlank() } ?: title?.takeIf { it.isNotBlank() } ?: str(R.string.t_kakaotalk_2))
         if (lines.isNotEmpty()) {
             return lines.filter { it.text.isNotBlank() }.map {
                 KakaoMessage(room, it.sender?.takeIf { s -> s.isNotBlank() } ?: title.orEmpty().ifBlank { room }, it.text.trim(), it.timeMillis)

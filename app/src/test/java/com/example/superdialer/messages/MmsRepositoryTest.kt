@@ -6,6 +6,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MmsRepositoryTest {
+    @org.junit.Before
+    fun koreanTexts() = com.example.superdialer.i18n.TestStrings.install()
+
     @Test fun mmsDatesAreSecondsNotMillis() {
         assertEquals(1_791_469_000_000L, MmsRepository.mmsDateMillis(1_791_469_000L))
     }

@@ -361,3 +361,12 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - **통화 중 전환**: 음성 통화에서 회선이 영상을 지원하면(`canVideo`, `CAPABILITY_SUPPORTS_VT_LOCAL_BIDIRECTIONAL` + `videoCall != null`) "영상 전환" 버튼 → `sendSessionModifyRequest`. **상대나 다른 앱이 영상 전환을 요청하면**(`VideoCall.Callback.onSessionModifyRequestReceived`) "영상통화 요청" 수락/거절 창(`upgradeRequest`), 거절하면 통화는 그대로. 영상 화면에서 마이크 끄기·카메라 끄기(상대 화면은 계속 봄, `VideoStates.cameraTarget`)·전/후면 전환·스피커·"음성으로" 되돌리기
 - **영상 화면**(`InCallScreen.VideoCallLayout`): 상대 화면 `TextureView` 전체(상대 크기를 알면 비율 유지, `onPeerDimensionsChanged`) + 내 화면 작은 `TextureView` 오른쪽 위. 두 Surface를 `videoCall.setDisplaySurface/setPreviewSurface`로 Telecom에 넘기고 화면이 없어지면 null로 돌려줌, 켜져 있는 동안 화면 꺼짐 방지, 카메라는 `setCamera(CameraManager로 찾은 전/후면 id)` + `setDeviceOrientation(0)`. 순수 계산은 `incall/VideoStates`(테스트 `VideoStatesTest`), UI 테스트 `VideoCallTest`(키패드·연락처 버튼)
 - **검증 범위/한계**: 에뮬레이터 모뎀은 영상(IMS)을 지원하지 않아 영상으로 건 통화가 음성으로 연결됨 → 버튼·발신 경로·통화 화면이 죽지 않는 것까지만 확인. **실제 영상 화면·수신·전환 요청은 실기기(통신사 영상통화 가입 필요)에서만 확인 가능**, 삼성 폰이 서드파티 기본 전화 앱의 영상통화를 허용하는지도 폰에서 확인 필요. 카카오톡 페이스톡은 별개(연락처 상세의 카톡 버튼)
+
+## 영어 지원 (v0.12.0, i18n/)
+- 모든 화면 글자는 `str(R.string.키, 인자...)`로만 쓴다(코드에 한글 리터럴 금지). `i18n/Strings`가 선택된 언어의 Context로 문자열을 읽음. 기본(영어) `res/values/`, 한국어 `res/values-ko/`. 자동 생성 키는 `t_` 접두사(`strings.xml`), 손으로 쓴 키는 `strings_manual.xml`(두 언어 모두). **새 글자를 추가하면 두 언어 파일에 같은 키·같은 `%s/%d` 자리표시자로 넣을 것** (`StringResourcesTest`가 키/자리표시자 일치와 영어 파일에 한글이 없는지 검사)
+- 언어 설정: `AppLanguage`(시스템/한국어/영어), 설정 > 화면 맨 위 `LanguageRow`. 언어는 프로세스 시작 때 한 번 적용(`SuperDialerApplication.onCreate`에서 `Strings.init`을 `AppSettings.init`보다 먼저 — enum 라벨이 클래스 초기화 때 `str()`을 부르기 때문). 바꾸면 확인 후 앱을 다시 시작(`LanguageSwitcher`)
+- 상수에서 `str()`을 쓰면 시작 때 값이 굳으므로 `const val` 대신 getter로. 날짜 형식은 언어별(`CallLogFormat`, `ConversationRepository`)
+- 게임 HTML은 `?lang=ko|en` 쿼리로 언어를 받음(`T(ko,en)` 도우미), `games.json`의 `title_en/description_en`. **Crossy Chicks 게임 안 글자는 한국어뿐**(별도 repo)
+- 단위 테스트는 `TestStrings`(XML을 직접 읽는 `Strings.resolver`)로 한국어 고정(`@Before koreanTexts()`). UI 테스트는 `SuperDialerTestRunner`가 한국어로 고정, 문자열 id는 테스트 앱 R과 달라서 `getIdentifier`로 이름 조회(`LanguageTest`)
+- 개인정보처리방침 영어판 `docs/privacy-en.html`(한국어판과 서로 링크, 앱은 언어에 맞는 쪽을 엶 `privacyPolicyUrl()`). **방침을 고치면 두 파일 모두**. README.md는 영어
+- 기존 설치의 DB 시드 타일 이름(네이버 등)은 한국어로 남음

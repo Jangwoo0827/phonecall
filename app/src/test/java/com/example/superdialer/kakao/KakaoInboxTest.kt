@@ -5,6 +5,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class KakaoInboxTest {
+    @org.junit.Before
+    fun koreanTexts() = com.example.superdialer.i18n.TestStrings.install()
+
     private fun msg(room: String, text: String, time: Long, sender: String = room, outgoing: Boolean = false) =
         KakaoMessage(room, sender, text, time, outgoing)
 

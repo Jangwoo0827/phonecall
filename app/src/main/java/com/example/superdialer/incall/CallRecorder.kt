@@ -1,5 +1,7 @@
 package com.example.superdialer.incall
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.ContentValues
 import android.content.Context
 import android.media.MediaRecorder
@@ -96,6 +98,6 @@ object CallRecorder {
     fun fileName(atMillis: Long, who: String): String {
         val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.KOREA).format(Date(atMillis))
         val safe = who.filter { it.isLetterOrDigit() || it == '-' || it == '_' }.take(20)
-        return "통화_${stamp}${if (safe.isEmpty()) "" else "_$safe"}.m4a"
+        return str(R.string.t_call_m4a, stamp, if (safe.isEmpty()) "" else "_$safe")
     }
 }

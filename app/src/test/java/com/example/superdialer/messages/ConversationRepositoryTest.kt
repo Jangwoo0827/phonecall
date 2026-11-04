@@ -8,6 +8,9 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 class ConversationRepositoryTest {
+    @org.junit.Before
+    fun koreanTexts() = com.example.superdialer.i18n.TestStrings.install()
+
     private fun conversation(
         id: Long,
         addresses: List<String>,

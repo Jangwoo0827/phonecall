@@ -1,5 +1,7 @@
 package com.example.superdialer.account
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import com.example.superdialer.settings.TextSize
 import org.json.JSONObject
 import com.example.superdialer.settings.ThemeMode
@@ -91,7 +93,7 @@ object AccountManager {
     /** The name shown on leaderboards: the chosen one, or "플레이어" + the first characters of the account id. */
     val nickname: String
         get() = prefs?.getString(KEY_NICKNAME, null)?.takeIf { it.isNotBlank() }
-            ?: "플레이어" + (prefs?.getString(KEY_USER, "").orEmpty().take(4))
+            ?: str(R.string.t_player) + (prefs?.getString(KEY_USER, "").orEmpty().take(4))
 
     fun updateNickname(value: String) {
         val clean = value.trim().take(20)
@@ -126,7 +128,7 @@ object AccountManager {
         scope.launch {
             val result = try {
                 val session = freshSession()
-                if (session == null) Triple(null, "로그인이 필요합니다.", null)
+                if (session == null) Triple(null, str(R.string.t_you_need_to_sign_in), null)
                 else Triple(SupabaseApi.fetchLeaderboard(session.accessToken, gameId), null, session.userId)
             } catch (e: ApiError) {
                 Triple(null, e.userMessage, null)
@@ -163,7 +165,7 @@ object AccountManager {
     private fun authenticate(emailInput: String, password: String, create: Boolean, onDone: (Boolean) -> Unit) {
         val address = emailInput.trim()
         if (address.isEmpty() || password.isEmpty()) {
-            message = "이메일과 비밀번호를 입력해 주세요."
+            message = str(R.string.t_enter_your_email_and_password)
             onDone(false)
             return
         }
@@ -174,7 +176,7 @@ object AccountManager {
             try {
                 val session = if (create) SupabaseApi.signUp(address, password) else SupabaseApi.signIn(address, password)
                 if (session == null) {
-                    post("가입 완료! 메일로 보낸 인증 링크를 누른 뒤 로그인해 주세요.")
+                    post(str(R.string.t_account_created_tap_the_verification_l))
                 } else {
                     saveSession(session)
                     ok = true
@@ -220,7 +222,7 @@ object AccountManager {
                             .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                     )
                 } catch (e: android.content.ActivityNotFoundException) {
-                    message = "웹 브라우저를 열 수 없어요."
+                    message = str(R.string.t_can_t_open_a_web_browser)
                 }
             }
         }
@@ -243,7 +245,7 @@ object AccountManager {
                 val started = p?.getLong(KEY_PKCE_STARTED, 0L) ?: 0L
                 p?.edit()?.remove(KEY_PKCE_VERIFIER)?.remove(KEY_PKCE_STARTED)?.apply()
                 if (verifier == null || !GoogleSignIn.isPendingFresh(started, System.currentTimeMillis())) {
-                    message = "로그인 요청이 만료되었거나 이 앱에서 시작한 것이 아니에요. 다시 시도해 주세요."
+                    message = str(R.string.t_the_sign_in_request_expired_or)
                     return true
                 }
                 busy = true
@@ -267,14 +269,14 @@ object AccountManager {
     fun sendPasswordReset(emailInput: String) {
         val address = emailInput.trim()
         if (address.isEmpty()) {
-            message = "비밀번호를 재설정할 이메일을 먼저 입력해 주세요."
+            message = str(R.string.t_enter_the_email_to_reset_the)
             return
         }
         busy = true
         scope.launch {
             try {
                 SupabaseApi.sendPasswordReset(address)
-                post("재설정 메일을 보냈습니다. 메일함을 확인해 주세요.")
+                post(str(R.string.t_we_sent_a_reset_email_please))
             } catch (e: ApiError) {
                 post(e.userMessage)
             }
@@ -305,7 +307,7 @@ object AccountManager {
                 busy = false
                 if (ok) {
                     signOut()
-                    message = "계정을 삭제했습니다. 서버에 있던 동기화 데이터와 로그인 정보가 지워졌고, 이 폰의 데이터는 그대로 남아 있습니다."
+                    message = str(R.string.t_your_account_was_deleted_the_synced)
                 }
                 onDone(ok)
             }
@@ -317,7 +319,7 @@ object AccountManager {
         prefs?.edit()?.clear()?.apply()
         email = null
         lastSyncMs = 0L
-        message = "로그아웃했습니다. 이 폰의 데이터는 그대로 남아 있습니다."
+        message = str(R.string.t_signed_out_the_data_on_this)
     }
 
     // --- Sync -----------------------------------------------------------------------------------

@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,7 +32,7 @@ import com.example.superdialer.ui.theme.accentSwatch
 @Composable
 internal fun ThemeRows() {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Text("테마", style = MaterialTheme.typography.bodyLarge)
+        Text(str(R.string.t_theme), style = MaterialTheme.typography.bodyLarge)
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
             ThemeMode.entries.forEachIndexed { index, mode ->
                 SegmentedButton(
@@ -45,7 +47,7 @@ internal fun ThemeRows() {
             }
         }
 
-        Text("강조 색", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 16.dp))
+        Text(str(R.string.t_accent_color), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 16.dp))
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -66,13 +68,13 @@ internal fun ThemeRows() {
                             .clickable { AppSettings.updateAccent(accent) },
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (selected) Icon(Icons.Filled.Check, contentDescription = "선택됨", tint = Color.White)
+                        if (selected) Icon(Icons.Filled.Check, contentDescription = str(R.string.t_selected_3), tint = Color.White)
                     }
                     Text(accent.label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }
-        Text("글자 크기", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 16.dp))
+        Text(str(R.string.t_text_size), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 16.dp))
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
             TextSize.entries.forEachIndexed { index, size ->
                 SegmentedButton(
@@ -88,7 +90,7 @@ internal fun ThemeRows() {
         }
         if (AppSettings.dynamicColor) {
             Text(
-                "아래 '배경화면 색상 따라가기'가 켜져 있으면 강조 색은 적용되지 않습니다.",
+                str(R.string.t_if_follow_wallpaper_colors_below_is),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp),

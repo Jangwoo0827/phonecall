@@ -1,5 +1,7 @@
 package com.example.superdialer.update
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -61,8 +63,8 @@ object UpdateInstaller {
 
     /** Blocking download to [apkFile]; [onProgress] gets 0..100 (or -1 when the size is unknown). Throws IOException. */
     fun download(context: Context, info: ReleaseInfo, onProgress: (Int) -> Unit): File {
-        val url = info.apkUrl ?: throw IOException("릴리스에 APK가 없습니다.")
-        if (!isAllowedUrl(url)) throw IOException("허용되지 않는 다운로드 주소입니다.")
+        val url = info.apkUrl ?: throw IOException(str(R.string.t_the_release_has_no_apk))
+        if (!isAllowedUrl(url)) throw IOException(str(R.string.t_that_download_address_isn_t_allowed))
         val target = apkFile(context, info.version)
         val partial = File(target.path + ".part")
         val connection = URL(url).openConnection() as HttpURLConnection
@@ -71,7 +73,7 @@ object UpdateInstaller {
             connection.connectTimeout = 15_000
             connection.readTimeout = 30_000
             connection.setRequestProperty("User-Agent", "SuperDialer")
-            if (connection.responseCode != 200) throw IOException("받지 못했습니다 (${connection.responseCode}).")
+            if (connection.responseCode != 200) throw IOException(str(R.string.t_couldn_t_download, connection.responseCode))
             val total = connection.contentLengthLong
             var done = 0L
             var lastPercent = -2
@@ -88,8 +90,8 @@ object UpdateInstaller {
                     }
                 }
             }
-            if (total > 0 && done != total) throw IOException("다운로드가 끊겼습니다.")
-            if (!partial.renameTo(target)) throw IOException("파일을 저장하지 못했습니다.")
+            if (total > 0 && done != total) throw IOException(str(R.string.t_the_download_was_interrupted))
+            if (!partial.renameTo(target)) throw IOException(str(R.string.t_couldn_t_save_the_file))
             return target
         } finally {
             connection.disconnect()
@@ -101,14 +103,14 @@ object UpdateInstaller {
     fun verify(context: Context, file: File): String? {
         val pm = context.packageManager
         val flags = PackageManager.GET_SIGNING_CERTIFICATES
-        val archive = pm.getPackageArchiveInfo(file.path, flags) ?: return "받은 파일을 읽을 수 없습니다."
-        if (archive.packageName != context.packageName) return "SuperDialer 설치 파일이 아닙니다."
+        val archive = pm.getPackageArchiveInfo(file.path, flags) ?: return str(R.string.t_can_t_read_the_downloaded_file)
+        if (archive.packageName != context.packageName) return str(R.string.t_this_isn_t_a_superdialer_installer)
         val installed = pm.getPackageInfo(context.packageName, flags)
-        if (archive.longVersionCode <= installed.longVersionCode) return "이미 같거나 더 새로운 버전이 설치되어 있습니다."
+        if (archive.longVersionCode <= installed.longVersionCode) return str(R.string.t_the_same_or_a_newer_version)
         val newSigners = archive.signingInfo?.apkContentsSigners?.map { sha256(it.toByteArray()) }.orEmpty().toSet()
         val oldSigners = installed.signingInfo?.apkContentsSigners?.map { sha256(it.toByteArray()) }.orEmpty().toSet()
         if (newSigners.isEmpty() || newSigners != oldSigners) {
-            return "설치된 앱과 서명이 달라 덮어 설치할 수 없습니다. (adb로 깐 디버그 빌드라면 앱을 지우고 릴리스 APK를 설치해야 합니다)"
+            return str(R.string.t_the_signature_differs_from_the_install)
         }
         return null
     }
@@ -155,10 +157,10 @@ class InstallStatusReceiver : BroadcastReceiver() {
     }
 
     private fun failureText(status: Int, detail: String?): String = when (status) {
-        PackageInstaller.STATUS_FAILURE_ABORTED -> "설치를 취소했습니다."
+        PackageInstaller.STATUS_FAILURE_ABORTED -> str(R.string.t_installation_cancelled)
         PackageInstaller.STATUS_FAILURE_CONFLICT, PackageInstaller.STATUS_FAILURE_INCOMPATIBLE ->
-            "설치된 앱과 서명이 달라 덮어 설치할 수 없습니다. 디버그 빌드라면 앱을 지우고 릴리스 APK를 설치해 주세요."
-        PackageInstaller.STATUS_FAILURE_STORAGE -> "저장 공간이 부족합니다."
-        else -> "설치하지 못했습니다${if (detail.isNullOrBlank()) "" else " ($detail)"}."
+            str(R.string.t_the_signature_differs_from_the_install_2)
+        PackageInstaller.STATUS_FAILURE_STORAGE -> str(R.string.t_not_enough_storage)
+        else -> str(R.string.t_couldn_t_install, if (detail.isNullOrBlank()) "" else " ($detail)")
     }
 }

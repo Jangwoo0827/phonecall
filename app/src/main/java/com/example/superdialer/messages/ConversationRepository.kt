@@ -1,5 +1,7 @@
 package com.example.superdialer.messages
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
@@ -9,7 +11,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import com.example.superdialer.i18n.Strings
 
 /** One text conversation (a thread of the system message store): who it is with, and its latest message. */
 data class Conversation(
@@ -31,7 +33,7 @@ data class Conversation(
 
     /** Names where known, numbers otherwise, joined for groups. */
     val title: String
-        get() = addresses.mapIndexed { i, address -> names.getOrNull(i) ?: address }.joinToString(", ").ifEmpty { "(알 수 없음)" }
+        get() = addresses.mapIndexed { i, address -> names.getOrNull(i) ?: address }.joinToString(", ").ifEmpty { str(R.string.t_unknown) }
 }
 
 /**
@@ -109,8 +111,8 @@ class ConversationRepository(private val context: Context) {
             return digits.isNotEmpty() && conversation.addresses.any { numberKey(it).contains(digits) }
         }
 
-        private val TIME = DateTimeFormatter.ofPattern("a h:mm", Locale.KOREAN)
-        private val DAY = DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN)
+        private val TIME = DateTimeFormatter.ofPattern(if (Strings.isKorean) "a h:mm" else "h:mm a", Strings.locale)
+        private val DAY = DateTimeFormatter.ofPattern(if (Strings.isKorean) "M월 d일" else "MMM d", Strings.locale)
 
         /** "오후 2:33" today, "어제", else "10월 8일". */
         fun timeLabel(millis: Long, now: Long = System.currentTimeMillis(), zone: ZoneId = ZoneId.systemDefault()): String {
@@ -119,7 +121,7 @@ class ConversationRepository(private val context: Context) {
             val day: LocalDate = moment.toLocalDate()
             return when (day) {
                 today -> moment.format(TIME)
-                today.minusDays(1) -> "어제"
+                today.minusDays(1) -> str(R.string.t_yesterday_2)
                 else -> moment.format(DAY)
             }
         }

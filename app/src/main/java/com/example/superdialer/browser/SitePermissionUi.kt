@@ -1,5 +1,7 @@
 package com.example.superdialer.browser
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -83,25 +85,25 @@ internal fun SitePermissionSheet(request: SitePermissionRequest, onAnswer: (allo
             Text(hostOf(request.origin), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             Spacer(Modifier.height(4.dp))
             Text(
-                "이 사이트가 ${request.permissions.joinToString(" · ") { it.label }} 사용을 요청하고 있어요.",
+                str(R.string.t_this_site_is_asking_to_use, request.permissions.joinToString(" · ") { it.label }),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(20.dp))
-            Button(onClick = { onAnswer(true, false) }, modifier = Modifier.fillMaxWidth()) { Text("이번만 허용") }
+            Button(onClick = { onAnswer(true, false) }, modifier = Modifier.fillMaxWidth()) { Text(str(R.string.t_allow_this_time)) }
             if (!request.isPrivate) {
                 FilledTonalButton(onClick = { onAnswer(true, true) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    Text("이 사이트에서 항상 허용")
+                    Text(str(R.string.t_always_allow_on_this_site))
                 }
             }
             OutlinedButton(onClick = { onAnswer(false, !request.isPrivate) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                Text(if (request.isPrivate) "허용 안 함" else "차단")
+                Text(if (request.isPrivate) str(R.string.t_don_t_allow) else str(R.string.t_block))
             }
             Spacer(Modifier.height(12.dp))
             Text(
-                if (request.isPrivate) "비공개 탭에서는 선택을 저장하지 않아요."
-                else "나중에 설정 > 브라우저 > 사이트 권한에서 바꿀 수 있어요.",
+                if (request.isPrivate) str(R.string.t_choices_are_not_saved_in_private)
+                else str(R.string.t_you_can_change_this_later_in),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -116,18 +118,18 @@ fun SitePermissionsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var confirmAll by remember { mutableStateOf(false) }
     val origins = SitePermissions.origins
     Column(modifier = modifier.fillMaxSize()) {
-        ScreenHeader("사이트 권한", onBack) {
-            if (origins.isNotEmpty()) TextButton(onClick = { confirmAll = true }) { Text("모두 초기화") }
+        ScreenHeader(str(R.string.t_site_permissions), onBack) {
+            if (origins.isNotEmpty()) TextButton(onClick = { confirmAll = true }) { Text(str(R.string.t_reset_all)) }
         }
         Text(
-            "사이트가 카메라·마이크·위치를 쓰려고 할 때 한 선택이 여기 저장돼요. 초기화하면 다음에 그 사이트가 요청할 때 다시 물어봐요.",
+            str(R.string.t_your_choices_when_a_site_wants),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
         )
         if (origins.isEmpty()) {
             Text(
-                "저장된 사이트가 없어요.",
+                str(R.string.t_no_saved_sites),
                 modifier = Modifier.padding(24.dp).testTag("no_site_permissions"),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -151,7 +153,7 @@ fun SitePermissionsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                     color = if (decision == SiteDecision.Allow) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                 )
                                 IconButton(onClick = { SitePermissions.resetPermission(origin, permission) }) {
-                                    Icon(Icons.Filled.Close, contentDescription = "${permission.label} 초기화")
+                                    Icon(Icons.Filled.Close, contentDescription = str(R.string.t_reset, permission.label))
                                 }
                             }
                         }
@@ -163,10 +165,10 @@ fun SitePermissionsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     if (confirmAll) {
         AlertDialog(
             onDismissRequest = { confirmAll = false },
-            title = { Text("모두 초기화") },
-            text = { Text("저장된 모든 사이트의 선택을 지울까요? 다음에 사이트가 요청하면 다시 물어봐요.") },
-            confirmButton = { TextButton(onClick = { confirmAll = false; SitePermissions.resetAll() }) { Text("초기화") } },
-            dismissButton = { TextButton(onClick = { confirmAll = false }) { Text("취소") } },
+            title = { Text(str(R.string.t_reset_all)) },
+            text = { Text(str(R.string.t_clear_the_choices_for_all_saved)) },
+            confirmButton = { TextButton(onClick = { confirmAll = false; SitePermissions.resetAll() }) { Text(str(R.string.t_reset_2)) } },
+            dismissButton = { TextButton(onClick = { confirmAll = false }) { Text(str(R.string.cancel)) } },
         )
     }
 }

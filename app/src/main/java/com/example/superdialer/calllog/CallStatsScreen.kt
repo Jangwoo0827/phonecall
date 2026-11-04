@@ -1,5 +1,7 @@
 package com.example.superdialer.calllog
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.Manifest
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -53,7 +55,7 @@ fun CallStatsScreen(viewModel: CallLogViewModel, onBack: () -> Unit, modifier: M
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        ScreenHeader("통화 통계", onBack)
+        ScreenHeader(str(R.string.t_call_statistics), onBack)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -69,7 +71,7 @@ fun CallStatsScreen(viewModel: CallLogViewModel, onBack: () -> Unit, modifier: M
             item { SummaryCard(stats) }
             item {
                 Text(
-                    "자주 통화한 사람",
+                    str(R.string.t_most_called),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 20.dp, bottom = 8.dp),
@@ -78,7 +80,7 @@ fun CallStatsScreen(viewModel: CallLogViewModel, onBack: () -> Unit, modifier: M
             if (stats.top.isEmpty()) {
                 item {
                     Text(
-                        "이 기간에는 통화 기록이 없습니다.",
+                        str(R.string.t_no_calls_in_this_period),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                     )
@@ -95,10 +97,10 @@ fun CallStatsScreen(viewModel: CallLogViewModel, onBack: () -> Unit, modifier: M
                     leadingContent = { InitialAvatar(caller.name ?: caller.number) },
                     headlineContent = { Text(title, fontWeight = FontWeight.SemiBold) },
                     supportingContent = {
-                        Text(if (talk.isEmpty()) "통화 ${caller.calls}번" else "통화 ${caller.calls}번 · 총 $talk")
+                        Text(if (talk.isEmpty()) str(R.string.t_calls, caller.calls) else str(R.string.t_calls_total, caller.calls, talk))
                     },
                     trailingContent = {
-                        Text("${index + 1}위", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text(str(R.string.t_text, index + 1), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     },
                 )
             }
@@ -114,11 +116,11 @@ private fun SummaryCard(stats: CallStats) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text("통화", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("${stats.total}번", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
+            Text(str(R.string.t_call_2), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(str(R.string.t_text_2, stats.total), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
             val talk = formatDuration(stats.talkSeconds)
             Text(
-                if (talk.isEmpty()) "통화한 시간 없음" else "통화한 시간 $talk",
+                if (talk.isEmpty()) str(R.string.t_no_talk_time) else str(R.string.t_talk_time, talk),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -127,10 +129,10 @@ private fun SummaryCard(stats: CallStats) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Tile("수신", stats.incoming, incomingColor())
-                Tile("발신", stats.outgoing, outgoingColor())
-                Tile("부재중", stats.missed, MaterialTheme.colorScheme.error)
-                Tile("거절·차단", stats.declined, MaterialTheme.colorScheme.onSurfaceVariant)
+                Tile(str(R.string.t_incoming), stats.incoming, incomingColor())
+                Tile(str(R.string.t_outgoing), stats.outgoing, outgoingColor())
+                Tile(str(R.string.t_missed), stats.missed, MaterialTheme.colorScheme.error)
+                Tile(str(R.string.t_declined_blocked), stats.declined, MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

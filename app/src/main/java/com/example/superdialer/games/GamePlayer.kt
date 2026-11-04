@@ -1,5 +1,6 @@
 package com.example.superdialer.games
 
+import com.example.superdialer.i18n.Strings
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.MutableContextWrapper
@@ -89,7 +90,7 @@ private fun createGameWebView(context: Context, game: GameInfo): WebView {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
                 request.url.host != WebViewAssetLoader.DEFAULT_DOMAIN
         }
-        loadUrl("https://${WebViewAssetLoader.DEFAULT_DOMAIN}/assets/games/${game.path}")
+        loadUrl("https://${WebViewAssetLoader.DEFAULT_DOMAIN}/assets/games/${game.path}?lang=${if (Strings.isKorean) "ko" else "en"}")
     }
 }
 
@@ -105,7 +106,7 @@ fun GamePlayer(game: GameInfo, onClose: () -> Unit, modifier: Modifier = Modifie
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        ScreenHeader(game.title, onClose)
+        ScreenHeader(game.shownTitle, onClose)
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { FrameLayout(it) },

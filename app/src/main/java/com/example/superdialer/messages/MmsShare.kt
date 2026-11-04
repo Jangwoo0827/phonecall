@@ -1,5 +1,7 @@
 package com.example.superdialer.messages
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
@@ -81,7 +83,7 @@ object MmsShare {
         } catch (e: ActivityNotFoundException) {
             // no messaging app answered to its package: let the user pick any app that can take it
             try {
-                val chooser = Intent.createChooser(buildIntent(number, staged, text, null), "보낼 앱 선택")
+                val chooser = Intent.createChooser(buildIntent(number, staged, text, null), str(R.string.t_choose_an_app_to_send_with))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(chooser)
                 true

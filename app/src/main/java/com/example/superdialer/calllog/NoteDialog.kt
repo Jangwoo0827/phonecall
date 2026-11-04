@@ -1,5 +1,7 @@
 package com.example.superdialer.calllog
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
@@ -24,12 +26,12 @@ fun NoteDialog(title: String, initial: String, onSave: (String) -> Unit, onDismi
                 value = text,
                 onValueChange = { text = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("메모") },
+                label = { Text(str(R.string.t_note_2)) },
                 minLines = 3,
                 maxLines = 6,
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text); onDismiss() }) { Text("저장") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
+        confirmButton = { TextButton(onClick = { onSave(text); onDismiss() }) { Text(str(R.string.t_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }

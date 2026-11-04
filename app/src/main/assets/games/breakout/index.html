@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>벽돌깨기</title>
+<title>Breakout</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: #1a1a2e; color: #eee; font-family: sans-serif; overflow: hidden; touch-action: none; }
@@ -15,11 +15,14 @@
 </head>
 <body>
 <div id="app">
-  <div class="bar"><span>점수 <span id="score">0</span></span><span id="lives">♥♥♥</span><span>최고 <span id="best">0</span></span></div>
+  <div class="bar"><span><span data-en="Score">점수</span> <span id="score">0</span></span><span id="lives">♥♥♥</span><span><span data-en="Best">최고</span> <span id="best">0</span></span></div>
   <canvas id="c" width="360" height="480"></canvas>
-  <div class="hint" id="hint">탭해서 시작 · 손가락을 좌우로 움직여 패들 조작</div>
+  <div class="hint" id="hint" data-en="Tap to start · drag left and right to move the paddle">탭해서 시작 · 손가락을 좌우로 움직여 패들 조작</div>
 </div>
 <script>
+  var EN = /[?&]lang=en/.test(location.search);
+  function T(ko, en) { return EN ? en : ko; }
+  if (EN) { document.documentElement.lang = 'en'; Array.prototype.forEach.call(document.querySelectorAll('[data-en]'), function (el) { el.textContent = el.getAttribute('data-en'); }); }
 (function () {
   var W = 360, H = 480;
   var canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
@@ -54,7 +57,7 @@
     paddle = { x: W / 2 - 40, y: H - 30, w: 80, h: 10 };
     score = 0; lives = 3; level = 1; state = 'ready';
     scoreEl.textContent = 0; updateLives(); buildBricks(); resetBall();
-    hint.textContent = '탭해서 시작 · 손가락을 좌우로 움직여 패들 조작';
+    hint.textContent = T('탭해서 시작 · 손가락을 좌우로 움직여 패들 조작', 'Tap to start · drag left and right to move the paddle');
     persist();
   }
 
@@ -76,7 +79,7 @@
       score = o.s | 0; lives = o.l; level = o.v || 1; state = 'ready';
       buildBricks(); bricks.forEach(function (b, i) { b.alive = !!o.b[i]; });
       scoreEl.textContent = score; updateLives(); resetBall();
-      hint.textContent = '이어하기 · 탭해서 시작';
+      hint.textContent = T('이어하기 · 탭해서 시작', 'Resume · tap to start');
       return true;
     } catch (e) { return false; }
   }
@@ -116,13 +119,13 @@
       }
     }
 
-    if (alive === 0) { level++; buildBricks(); resetBall(); state = 'ready'; hint.textContent = '레벨 ' + level + ' · 탭해서 시작'; persist(); }
+    if (alive === 0) { level++; buildBricks(); resetBall(); state = 'ready'; hint.textContent = T('레벨 ', 'Level ') + level + T(' · 탭해서 시작', ' · tap to start'); persist(); }
     if (ball.y > H + ball.r) {
       lives--; updateLives();
       if (lives <= 0) {
-        state = 'over'; hint.textContent = '게임 오버 · 점수 ' + score + ' · 탭해서 다시 시작'; persist();
+        state = 'over'; hint.textContent = T('게임 오버 · 점수 ', 'Game over · Score ') + score + T(' · 탭해서 다시 시작', ' · tap to restart'); persist();
         try { if (window.Native) Native.submitScore(score); } catch (e) {}
-      } else { state = 'ready'; resetBall(); hint.textContent = '탭해서 계속'; persist(); }
+      } else { state = 'ready'; resetBall(); hint.textContent = T('탭해서 계속', 'Tap to continue'); persist(); }
     }
   }
 
@@ -158,7 +161,7 @@
     if (e.key === 'ArrowRight') paddle.x = Math.min(W - paddle.w, paddle.x + 24);
     if (e.key === ' ') tap();
   });
-  document.addEventListener('visibilitychange', function () { if (document.hidden && state === 'playing') { state = 'ready'; hint.textContent = '일시정지 · 탭해서 계속'; persist(); } });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && state === 'playing') { state = 'ready'; hint.textContent = T('일시정지 · 탭해서 계속', 'Paused · tap to continue'); persist(); } });
   window.addEventListener('resize', fit);
 
   if (!restore()) newGame();

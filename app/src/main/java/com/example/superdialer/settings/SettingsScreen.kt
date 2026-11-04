@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import com.example.superdialer.kakao.openNotificationAccessSettings
 import com.example.superdialer.kakao.notificationAccessGranted
 import com.example.superdialer.kakao.KakaoLinks
@@ -64,7 +66,7 @@ fun SettingsScreen(
     val defaultDialer = rememberDefaultDialerStatus { granted ->
         Toast.makeText(
             context,
-            if (granted) "기본 전화 앱으로 설정되었습니다." else "기본 전화 앱으로 설정하지 않았습니다.",
+            if (granted) str(R.string.t_set_as_the_default_phone_app) else str(R.string.t_not_set_as_the_default_phone),
             Toast.LENGTH_SHORT,
         ).show()
     }
@@ -73,13 +75,10 @@ fun SettingsScreen(
     if (showLockShortcutHelp) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showLockShortcutHelp = false },
-            title = { Text("잠금 화면 전화 바로가기") },
+            title = { Text(str(R.string.t_lock_screen_phone_shortcut)) },
             text = {
                 Text(
-                    "잠금 화면 모서리 아이콘은 삼성 시스템 설정이라 앱이 바꿀 수 없습니다. 직접 바꾸려면:\n\n" +
-                        "1. 휴대폰 설정 > 잠금 화면 > 바로가기\n" +
-                        "2. 왼쪽(또는 오른쪽) 바로가기를 고르고 앱 목록에서 SuperDialer를 선택\n\n" +
-                        "기본 전화 앱이 SuperDialer이면 전화 아이콘으로 들어갈 때도 이 앱이 열립니다."
+                    str(R.string.t_the_lock_screen_corner_icon_is)
                 )
             },
             confirmButton = {
@@ -88,11 +87,11 @@ fun SettingsScreen(
                     try {
                         context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     } catch (e: android.content.ActivityNotFoundException) {
-                        Toast.makeText(context, "설정을 열 수 없습니다.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, str(R.string.t_can_t_open_the_settings), Toast.LENGTH_SHORT).show()
                     }
-                }) { Text("설정 열기") }
+                }) { Text(str(R.string.t_open_settings)) }
             },
-            dismissButton = { TextButton(onClick = { showLockShortcutHelp = false }) { Text("닫기") } },
+            dismissButton = { TextButton(onClick = { showLockShortcutHelp = false }) { Text(str(R.string.t_close)) } },
         )
     }
 
@@ -106,46 +105,46 @@ fun SettingsScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        ScreenHeader("설정", onBack = null)
+        ScreenHeader(str(R.string.t_settings), onBack = null)
         UpdateBanner()
 
-        SettingsGroup("계정") {
+        SettingsGroup(str(R.string.t_account)) {
             AccountRows()
         }
 
-        SettingsGroup("전화") {
+        SettingsGroup(str(R.string.t_call)) {
             ListItem(
                 colors = transparentListItem(),
-                headlineContent = { Text("기본 전화 앱") },
+                headlineContent = { Text(str(R.string.t_default_phone_app)) },
                 supportingContent = {
                     Text(
                         if (defaultDialer.isDefault) {
-                            "SuperDialer가 기본 전화 앱입니다 (되돌리기: 휴대폰 설정 > 앱 > 기본 앱 > 전화 앱)"
+                            str(R.string.t_superdialer_is_the_default_phone_app)
                         } else {
-                            "수신·통화 화면과 번호 차단에 필요합니다"
+                            str(R.string.t_needed_for_the_incoming_and_in)
                         }
                     )
                 },
                 trailingContent = {
                     if (defaultDialer.isDefault) {
-                        TextButton(onClick = defaultDialer.request) { Text("다시 요청") }
+                        TextButton(onClick = defaultDialer.request) { Text(str(R.string.t_ask_again)) }
                     } else {
-                        Button(onClick = defaultDialer.request) { Text("설정") }
+                        Button(onClick = defaultDialer.request) { Text(str(R.string.t_settings)) }
                     }
                 },
             )
-            Clickable("잠금 화면 전화 바로가기", "잠금 화면 아래 모서리 전화 아이콘을 SuperDialer로 바꾸는 방법") { showLockShortcutHelp = true }
-            Clickable("차단 관리", "차단한 번호 보기·추가·해제", onOpenBlocked)
-            Clickable("거절 메시지", "수신 거절 시 보낼 문구 관리", onOpenRejectMessages)
-            Clickable("착신전환·통화 부가서비스", "통신사 통화 설정 열기 (착신전환 등)") { openCallSettings(context) }
+            Clickable(str(R.string.t_lock_screen_phone_shortcut), str(R.string.t_how_to_change_the_lock_screen)) { showLockShortcutHelp = true }
+            Clickable(str(R.string.t_blocked_numbers), str(R.string.t_view_add_and_remove_blocked_numbers), onOpenBlocked)
+            Clickable(str(R.string.t_decline_messages), str(R.string.t_manage_the_messages_sent_when_declinin), onOpenRejectMessages)
+            Clickable(str(R.string.t_call_forwarding_call_services), str(R.string.t_open_carrier_call_settings_call_forwar)) { openCallSettings(context) }
         }
 
-        SettingsGroup("카카오톡") {
+        SettingsGroup(str(R.string.t_kakaotalk_2)) {
             ListItem(
                 colors = transparentListItem(),
-                headlineContent = { Text("카톡 알림 모아 보기") },
+                headlineContent = { Text(str(R.string.t_collect_kakaotalk_notifications)) },
                 supportingContent = {
-                    Text("켜고 알림 접근을 허용하면 카톡 알림(보낸 사람·미리보기)을 이 폰 안에 모아 최근기록 > 카톡에서 보여 줍니다. 서버로 보내지 않습니다")
+                    Text(str(R.string.t_when_on_and_notification_access_is))
                 },
                 trailingContent = {
                     Switch(
@@ -158,28 +157,29 @@ fun SettingsScreen(
                     )
                 },
             )
-            Clickable("알림 접근 설정", "시스템에서 SuperDialer의 알림 접근을 켜고 끕니다") { openNotificationAccessSettings(context) }
-            Clickable("카카오톡 열기", "카카오톡 앱을 엽니다") { KakaoLinks.openApp(context) }
+            Clickable(str(R.string.t_notification_access_settings), str(R.string.t_turn_superdialer_s_notification_access)) { openNotificationAccessSettings(context) }
+            Clickable(str(R.string.t_open_kakaotalk), str(R.string.t_opens_the_kakaotalk_app)) { KakaoLinks.openApp(context) }
         }
 
-        SettingsGroup("화면") {
+        SettingsGroup(str(R.string.t_display)) {
+            LanguageRow()
             ThemeRows()
             ListItem(
                 colors = transparentListItem(),
-                headlineContent = { Text("배경화면 색상 따라가기") },
-                supportingContent = { Text("켜면 폰 배경화면에서 뽑은 색을 씁니다. 기본값은 앱 고유 색상입니다") },
+                headlineContent = { Text(str(R.string.t_follow_wallpaper_colors)) },
+                supportingContent = { Text(str(R.string.t_when_on_the_colors_are_taken)) },
                 trailingContent = {
                     Switch(checked = AppSettings.dynamicColor, onCheckedChange = AppSettings::updateDynamicColor)
                 },
             )
         }
 
-        SettingsGroup("키패드") {
-            Clickable("단축 다이얼", "숫자를 길게 눌러 자주 거는 번호 불러오기", onOpenQuickDial)
+        SettingsGroup(str(R.string.t_keypad)) {
+            Clickable(str(R.string.t_speed_dial), str(R.string.t_long_press_a_digit_to_dial), onOpenQuickDial)
             ListItem(
                 colors = transparentListItem(),
-                headlineContent = { Text("키패드음") },
-                supportingContent = { Text("번호를 누를 때 DTMF 소리를 재생합니다") },
+                headlineContent = { Text(str(R.string.t_keypad_sound)) },
+                supportingContent = { Text(str(R.string.t_plays_a_dtmf_tone_when_you)) },
                 trailingContent = {
                     Switch(
                         checked = AppSettings.dtmfEnabled,
@@ -190,23 +190,23 @@ fun SettingsScreen(
             )
         }
 
-        SettingsGroup("브라우저") {
+        SettingsGroup(str(R.string.shortcut_browser)) {
             BrowserPreferences()
             HorizontalDivider()
-            Clickable("사이트 권한", "카메라·마이크·위치를 쓰게 허용하거나 차단한 사이트 보기", onOpenSitePermissions)
-            Clickable("비밀번호·자동 완성", "삼성 패스·구글 같은 자동 완성 서비스를 골라 두면 사이트 로그인 정보를 저장하고 채워 줘요") {
+            Clickable(str(R.string.t_site_permissions), str(R.string.t_view_sites_allowed_or_blocked_from), onOpenSitePermissions)
+            Clickable(str(R.string.t_passwords_autofill), str(R.string.t_pick_an_autofill_service_such_as)) {
                 try {
                     context.startActivity(Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 } catch (e: android.content.ActivityNotFoundException) {
-                    Toast.makeText(context, "자동 완성 설정을 열 수 없습니다. 휴대폰 설정 > 일반 > 비밀번호 및 자동 완성에서 정하세요.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, str(R.string.t_can_t_open_the_autofill_settings), Toast.LENGTH_LONG).show()
                 }
             }
             var externalLinks by remember { mutableStateOf(ExternalLinks.isEnabled(context)) }
             ListItem(
                 colors = transparentListItem(),
-                headlineContent = { Text("외부 링크를 이 브라우저로 열기") },
+                headlineContent = { Text(str(R.string.t_open_external_links_in_this_browser)) },
                 supportingContent = {
-                    Text("켜면 다른 앱의 웹 링크를 열 때 SuperDialer가 선택지에 나옵니다. 기본값은 꺼짐입니다.")
+                    Text(str(R.string.t_when_on_superdialer_appears_as_an))
                 },
                 trailingContent = {
                     Switch(checked = externalLinks, onCheckedChange = {
@@ -217,15 +217,15 @@ fun SettingsScreen(
             )
         }
 
-        SettingsGroup("권한") {
-            PermissionRow(context, "전화", Manifest.permission.CALL_PHONE)
-            PermissionRow(context, "통화 기록", Manifest.permission.READ_CALL_LOG)
-            PermissionRow(context, "통화 기록 삭제", Manifest.permission.WRITE_CALL_LOG)
-            PermissionRow(context, "연락처", Manifest.permission.READ_CONTACTS)
-            PermissionRow(context, "연락처 수정 (즐겨찾기)", Manifest.permission.WRITE_CONTACTS)
-            PermissionRow(context, "문자 읽기 (연락처·기록의 메시지 보기)", Manifest.permission.READ_SMS)
+        SettingsGroup(str(R.string.t_permissions)) {
+            PermissionRow(context, str(R.string.t_call), Manifest.permission.CALL_PHONE)
+            PermissionRow(context, str(R.string.t_calls_3), Manifest.permission.READ_CALL_LOG)
+            PermissionRow(context, str(R.string.t_delete_call_history), Manifest.permission.WRITE_CALL_LOG)
+            PermissionRow(context, str(R.string.shortcut_contacts), Manifest.permission.READ_CONTACTS)
+            PermissionRow(context, str(R.string.t_edit_contacts_favorites), Manifest.permission.WRITE_CONTACTS)
+            PermissionRow(context, str(R.string.t_read_texts_messages_in_contacts_and), Manifest.permission.READ_SMS)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                PermissionRow(context, "알림", Manifest.permission.POST_NOTIFICATIONS)
+                PermissionRow(context, str(R.string.t_notifications), Manifest.permission.POST_NOTIFICATIONS)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 val allowed = context.getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
@@ -237,34 +237,34 @@ fun SettingsScreen(
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         )
                     },
-                    headlineContent = { Text("전체 화면 알림") },
-                    supportingContent = { Text("잠금 화면에서 수신 전화를 크게 표시합니다 · " + if (allowed) "허용됨" else "허용 안 됨") },
+                    headlineContent = { Text(str(R.string.t_full_screen_notifications)) },
+                    supportingContent = { Text(str(R.string.t_shows_incoming_calls_full_screen_on) + if (allowed) str(R.string.t_allowed) else str(R.string.t_not_allowed)) },
                 )
             }
         }
 
-        SettingsGroup("앱 정보") {
+        SettingsGroup(str(R.string.t_about)) {
             AppInfoRows()
             ListItem(
                 colors = transparentListItem(),
-                headlineContent = { Text("버전") },
+                headlineContent = { Text(str(R.string.t_version)) },
                 supportingContent = { Text(appVersion(context)) },
             )
-            Clickable("패치노트", "지금까지 나온 모든 버전의 바뀐 내용", onOpenPatchNotes)
-            Clickable("개인정보처리방침", "어떤 정보가 어디에 저장되는지, 계정 삭제 방법") {
+            Clickable(str(R.string.t_patch_notes), str(R.string.t_what_changed_in_every_version_so), onOpenPatchNotes)
+            Clickable(str(R.string.t_privacy_policy), str(R.string.t_what_is_stored_where_and_how)) {
                 try {
                     context.startActivity(
-                        Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        Intent(Intent.ACTION_VIEW, Uri.parse(privacyPolicyUrl())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     )
                 } catch (e: android.content.ActivityNotFoundException) {
-                    Toast.makeText(context, "웹 브라우저를 열 수 없습니다.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, str(R.string.t_can_t_open_a_web_browser_2), Toast.LENGTH_SHORT).show()
                 }
             }
             ListItem(
                 colors = transparentListItem(),
-                headlineContent = { Text("통화 녹음") },
+                headlineContent = { Text(str(R.string.t_call_recording)) },
                 supportingContent = {
-                    Text("통화 화면의 녹음 버튼은 마이크로 녹음합니다. 안드로이드는 통화 음성 자체의 녹음을 허용하지 않아 내 목소리와, 스피커를 켰을 때의 상대 목소리만 담깁니다. 파일은 내 파일 > 음악 > SuperDialer에 저장되며 녹음 관련 법을 확인하고 사용하세요")
+                    Text(str(R.string.t_the_recording_button_on_the_call))
                 },
             )
         }
@@ -310,7 +310,7 @@ private fun PermissionRow(context: Context, label: String, permission: String) {
         colors = transparentListItem(),
         modifier = Modifier.clickable { context.openAppSettings() },
         headlineContent = { Text(label) },
-        supportingContent = { Text(if (granted) "허용됨" else "허용 안 됨 · 눌러서 설정 열기") },
+        supportingContent = { Text(if (granted) str(R.string.t_allowed) else str(R.string.t_not_allowed_tap_to_open_settings)) },
     )
 }
 
@@ -318,7 +318,7 @@ private fun openCallSettings(context: Context) {
     try {
         context.startActivity(Intent(TelecomManager.ACTION_SHOW_CALL_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (e: ActivityNotFoundException) {
-        Toast.makeText(context, "통화 설정 화면을 열 수 없습니다.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, str(R.string.t_can_t_open_the_call_settings), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -330,3 +330,7 @@ private fun appVersion(context: Context): String = try {
 
 /** The privacy policy page (docs/privacy.html of the repository, served by GitHub Pages). */
 const val PRIVACY_POLICY_URL = "https://jangwoo0827.github.io/phonecall/privacy.html"
+const val PRIVACY_POLICY_URL_EN = "https://jangwoo0827.github.io/phonecall/privacy-en.html"
+
+/** The privacy policy page in the app's language. */
+fun privacyPolicyUrl(): String = if (com.example.superdialer.i18n.Strings.isKorean) PRIVACY_POLICY_URL else PRIVACY_POLICY_URL_EN

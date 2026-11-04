@@ -1,5 +1,7 @@
 package com.example.superdialer.onboarding
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -53,24 +55,21 @@ fun DefaultDialerOnboarding(onFinished: () -> Unit, modifier: Modifier = Modifie
         )
         Spacer(Modifier.height(24.dp))
         Text(
-            "기본 전화 앱으로 설정해 주세요",
+            str(R.string.t_set_as_your_default_phone_app),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            "SuperDialer가 기본 전화 앱이 되면\n" +
-                "· 수신·발신·통화 중 화면을 SuperDialer가 보여주고\n" +
-                "· 잠금 화면에서도 전화를 받을 수 있으며\n" +
-                "· 번호 차단을 사용할 수 있습니다.",
+            str(R.string.t_when_superdialer_is_your_default_phone),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (denied) {
             Spacer(Modifier.height(16.dp))
             Text(
-                "기본 전화 앱으로 설정하지 않았습니다. 설정 탭에서 언제든 다시 요청할 수 있어요.",
+                str(R.string.t_superdialer_isn_t_your_default_phone),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,
@@ -78,10 +77,10 @@ fun DefaultDialerOnboarding(onFinished: () -> Unit, modifier: Modifier = Modifie
         }
         Spacer(Modifier.height(32.dp))
         Button(onClick = status.request, modifier = Modifier.fillMaxWidth()) {
-            Text(if (denied) "다시 시도" else "기본 전화 앱으로 설정")
+            Text(if (denied) str(R.string.t_try_again) else str(R.string.t_set_as_default_phone_app))
         }
         TextButton(onClick = onFinished, modifier = Modifier.fillMaxWidth()) {
-            Text(if (denied) "계속" else "나중에")
+            Text(if (denied) str(R.string.t_continue_text) else str(R.string.t_later))
         }
     }
 }

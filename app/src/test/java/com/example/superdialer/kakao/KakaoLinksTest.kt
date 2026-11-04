@@ -4,6 +4,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class KakaoLinksTest {
+    @org.junit.Before
+    fun koreanTexts() = com.example.superdialer.i18n.TestStrings.install()
+
     private fun action(id: Long, mime: String, label: String) = KakaoAction(id, mime, KakaoLinks.kindOf(mime, label), label)
 
     @Test fun kindIsReadFromTheMediaTypeOrTheLabel() {

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texts written by hand (the rest of the app's texts are in strings.xml). English is the default; Korean is in values-ko. -->
+<resources>
+    <string name="language_title">Language</string>
+    <string name="language_hint">Follows the phone by default. Changing it restarts the app.</string>
+    <string name="language_follow_phone">Phone</string>
+    <string name="language_restart_title">Change language</string>
+    <string name="language_restart_text">The app restarts to switch to %1$s.</string>
+    <string name="language_restart_confirm">Restart</string>
+    <string name="cancel">Cancel</string>
+    <string name="app_name">SuperDialer</string>
+    <string name="shortcut_calllog">Recents</string>
+    <string name="shortcut_contacts">Contacts</string>
+    <string name="shortcut_games">Games</string>
+    <string name="shortcut_browser">Browser</string>
+    <string name="permission_needed_video">Video calls need the \'%1$s\' permission.</string>
+    <string name="permission_needed_call">Calls need the \'%1$s\' permission.</string>
+</resources>

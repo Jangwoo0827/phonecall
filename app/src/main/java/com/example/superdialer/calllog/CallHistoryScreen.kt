@@ -1,5 +1,7 @@
 package com.example.superdialer.calllog
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.clickable
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
@@ -77,12 +79,12 @@ fun CallHistoryScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         IconButton(onClick = onBack, modifier = Modifier.padding(4.dp)) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = str(R.string.t_back))
         }
 
         if (entry == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                if (viewModel.loading) CircularProgressIndicator() else Text("통화 기록을 찾을 수 없습니다.")
+                if (viewModel.loading) CircularProgressIndicator() else Text(str(R.string.t_can_t_find_the_call_record))
             }
             return@Column
         }
@@ -109,11 +111,11 @@ fun CallHistoryScreen(
                         .padding(vertical = 16.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
-                    ActionButton(Icons.Filled.Call, "전화", { dial(entry.number) })
-                    ActionButton(Icons.AutoMirrored.Filled.Message, "메시지", { context.sendSms(entry.number) })
+                    ActionButton(Icons.Filled.Call, str(R.string.t_call), { dial(entry.number) })
+                    ActionButton(Icons.AutoMirrored.Filled.Message, str(R.string.t_messages), { context.sendSms(entry.number) })
                     ActionButton(
                         Icons.Filled.Person,
-                        if (entry.contactId != null) "연락처" else "연락처 추가",
+                        if (entry.contactId != null) str(R.string.shortcut_contacts) else str(R.string.t_add_contact),
                         {
                             val id = entry.contactId
                             if (id != null) onOpenContact(id) else context.addContact(entry.number)
@@ -128,7 +130,7 @@ fun CallHistoryScreen(
         var memoEntry by remember { mutableStateOf<CallLogEntry?>(null) }
         memoEntry?.let { target ->
             NoteDialog(
-                title = "통화 메모",
+                title = str(R.string.t_call_note),
                 initial = CallNotes.noteFor(target)?.text.orEmpty(),
                 onSave = { CallNotes.setFor(target, it) },
                 onDismiss = { memoEntry = null },
@@ -162,7 +164,7 @@ fun CallHistoryScreen(
                         )
                         val memo = CallNotes.noteFor(item)?.text
                         Text(
-                            if (memo != null) "메모 · $memo" else "눌러서 메모 추가",
+                            if (memo != null) str(R.string.t_note, memo) else str(R.string.t_tap_to_add_a_note),
                             style = MaterialTheme.typography.bodySmall,
                             color = if (memo != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                         )

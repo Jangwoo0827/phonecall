@@ -1,5 +1,7 @@
 package com.example.superdialer.ui
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -10,13 +12,13 @@ import android.widget.Toast
 fun Context.sendSms(number: String) {
     startActivityOrToast(
         Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${Uri.encode(number)}")),
-        "문자 앱을 찾을 수 없습니다.",
+        str(R.string.t_can_t_find_the_messages_app),
     )
 }
 
 fun Context.shareText(text: String) {
     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
-    startActivityOrToast(Intent.createChooser(send, "공유"), "공유할 앱이 없습니다.")
+    startActivityOrToast(Intent.createChooser(send, str(R.string.t_share)), str(R.string.t_no_app_to_share_with))
 }
 
 /** Opens the system "add to contacts" screen with [number] filled in. */
@@ -26,7 +28,7 @@ fun Context.addContact(number: String) {
             type = ContactsContract.Contacts.CONTENT_ITEM_TYPE
             putExtra(ContactsContract.Intents.Insert.PHONE, number)
         },
-        "연락처 앱을 찾을 수 없습니다.",
+        str(R.string.t_can_t_find_the_contacts_app),
     )
 }
 

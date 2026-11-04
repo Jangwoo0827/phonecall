@@ -1,5 +1,7 @@
 package com.example.superdialer.browser
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.app.DownloadManager
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -97,7 +99,7 @@ private fun openDownload(context: Context, item: DownloadItem) {
     val manager = context.getSystemService(DownloadManager::class.java)
     val uri = manager.getUriForDownloadedFile(item.id)
     if (uri == null) {
-        Toast.makeText(context, "파일을 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, str(R.string.t_can_t_find_the_file), Toast.LENGTH_SHORT).show()
         return
     }
     val view = Intent(Intent.ACTION_VIEW).setDataAndType(uri, item.mimeType ?: "*/*")
@@ -105,7 +107,7 @@ private fun openDownload(context: Context, item: DownloadItem) {
     try {
         context.startActivity(view)
     } catch (e: ActivityNotFoundException) {
-        Toast.makeText(context, "이 파일을 열 수 있는 앱이 없습니다.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, str(R.string.t_no_app_can_open_this_file), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -129,9 +131,9 @@ internal fun DownloadsPanel(onBack: () -> Unit) {
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Column {
-            ScreenHeader("다운로드", onBack)
+            ScreenHeader(str(R.string.t_download), onBack)
             if (loaded && items.isEmpty()) {
-                Text("받은 파일이 없습니다.", modifier = Modifier.padding(24.dp))
+                Text(str(R.string.t_no_downloaded_files), modifier = Modifier.padding(24.dp))
             }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(items, key = { it.id }) { item ->
@@ -149,17 +151,17 @@ internal fun DownloadsPanel(onBack: () -> Unit) {
                                 tint = if (item.failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                             )
                         },
-                        headlineContent = { Text(item.title.ifBlank { "파일" }, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        headlineContent = { Text(item.title.ifBlank { str(R.string.t_file) }, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         supportingContent = {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 when {
-                                    item.done -> Text("${formatBytes(item.totalBytes)} · ${formatDateTime(item.modifiedAt)} · 눌러서 열기")
-                                    item.failed -> Text("다운로드하지 못했습니다 (오류 ${item.reason})")
+                                    item.done -> Text(str(R.string.t_tap_to_open, formatBytes(item.totalBytes), formatDateTime(item.modifiedAt)))
+                                    item.failed -> Text(str(R.string.t_couldn_t_download_error, item.reason))
                                     else -> {
                                         val p = item.progress
                                         Text(
                                             if (p != null) "${formatBytes(item.doneBytes)} / ${formatBytes(item.totalBytes)} (${(p * 100).toInt()}%)"
-                                            else "${formatBytes(item.doneBytes)} 받는 중…"
+                                            else str(R.string.t_downloading_2, formatBytes(item.doneBytes))
                                         )
                                         if (p != null) LinearProgressIndicator(progress = { p }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
                                         else LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
@@ -171,7 +173,7 @@ internal fun DownloadsPanel(onBack: () -> Unit) {
                             IconButton(onClick = { if (item.running) removeNow(context, item) { refreshTick++ } else confirmRemove = item }) {
                                 Icon(
                                     if (item.running) Icons.Filled.Close else Icons.Filled.Delete,
-                                    contentDescription = if (item.running) "취소" else "삭제",
+                                    contentDescription = if (item.running) str(R.string.cancel) else str(R.string.t_delete),
                                 )
                             }
                         },
@@ -184,12 +186,12 @@ internal fun DownloadsPanel(onBack: () -> Unit) {
     confirmRemove?.let { item ->
         AlertDialog(
             onDismissRequest = { confirmRemove = null },
-            title = { Text("삭제") },
-            text = { Text("'${item.title}'을(를) 목록에서 지웁니다. 받은 파일도 함께 삭제됩니다.") },
+            title = { Text(str(R.string.t_delete)) },
+            text = { Text(str(R.string.t_will_be_removed_from_the_list, item.title)) },
             confirmButton = {
-                TextButton(onClick = { removeNow(context, item) { refreshTick++ }; confirmRemove = null }) { Text("삭제") }
+                TextButton(onClick = { removeNow(context, item) { refreshTick++ }; confirmRemove = null }) { Text(str(R.string.t_delete)) }
             },
-            dismissButton = { TextButton(onClick = { confirmRemove = null }) { Text("취소") } },
+            dismissButton = { TextButton(onClick = { confirmRemove = null }) { Text(str(R.string.cancel)) } },
         )
     }
 }

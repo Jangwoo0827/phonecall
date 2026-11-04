@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,17 +45,17 @@ fun QuickDialScreen(contactsViewModel: ContactsViewModel, onBack: () -> Unit, mo
     val transparent = ListItemDefaults.colors(containerColor = Color.Transparent)
 
     Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        ScreenHeader("단축 다이얼", onBack)
+        ScreenHeader(str(R.string.t_speed_dial), onBack)
         Text(
-            "키패드에서 숫자를 길게 누르면 지정한 번호가 입력됩니다. 이 설정은 이 폰에만 저장되고 계정과 동기화되지 않습니다.",
+            str(R.string.t_long_pressing_a_digit_on_the),
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         ListItem(
             colors = transparent,
-            headlineContent = { Text("길게 누르면 바로 발신") },
-            supportingContent = { Text("꺼 두면 번호만 입력되고 통화 버튼을 눌러야 걸립니다 (실수 방지)") },
+            headlineContent = { Text(str(R.string.t_long_press_places_the_call_at)) },
+            supportingContent = { Text(str(R.string.t_when_off_the_number_is_only)) },
             trailingContent = {
                 Switch(checked = AppSettings.quickDialCallsDirectly, onCheckedChange = AppSettings::updateQuickDialCallsDirectly)
             },
@@ -65,7 +67,7 @@ fun QuickDialScreen(contactsViewModel: ContactsViewModel, onBack: () -> Unit, mo
                 modifier = Modifier.clickable { picking = digit },
                 colors = transparent,
                 leadingContent = { Text(digit.toString(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) },
-                headlineContent = { Text(dial?.name ?: "지정 안 함") },
+                headlineContent = { Text(dial?.name ?: str(R.string.t_not_set)) },
                 supportingContent = { if (dial != null) Text(PhoneNumberFormatter.formatLoose(dial.number)) },
             )
         }
@@ -101,13 +103,13 @@ private fun PickDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("${digit}번 단축 다이얼") },
+        title = { Text(str(R.string.t_speed_dial_2, digit)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("연락처 검색") },
+                    label = { Text(str(R.string.t_search_contacts)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -124,7 +126,7 @@ private fun PickDialog(
                 OutlinedTextField(
                     value = manual,
                     onValueChange = { manual = it },
-                    label = { Text("또는 번호 직접 입력") },
+                    label = { Text(str(R.string.t_or_enter_a_number)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -135,12 +137,12 @@ private fun PickDialog(
             TextButton(
                 enabled = manual.any { it.isDigit() },
                 onClick = { onPick(QuickDial(manual.trim(), manual.filter { it.isDigit() || it == '+' })) },
-            ) { Text("입력한 번호 사용") }
+            ) { Text(str(R.string.t_use_the_entered_number)) }
         },
         dismissButton = {
             Column {
-                if (QuickDials.get(digit) != null) TextButton(onClick = onClear) { Text("지정 해제") }
-                TextButton(onClick = onDismiss) { Text("취소") }
+                if (QuickDials.get(digit) != null) TextButton(onClick = onClear) { Text(str(R.string.t_remove)) }
+                TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) }
             }
         },
     )

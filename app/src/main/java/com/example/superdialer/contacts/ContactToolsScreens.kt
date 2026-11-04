@@ -1,5 +1,7 @@
 package com.example.superdialer.contacts
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.Manifest
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -63,12 +65,12 @@ fun ContactGroupsScreen(viewModel: ContactsViewModel, onBack: () -> Unit, modifi
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        ScreenHeader("연락처 그룹", onBack) {
-            IconButton(onClick = { creating = true }) { Icon(Icons.Filled.Add, contentDescription = "새 그룹") }
+        ScreenHeader(str(R.string.t_contact_groups), onBack) {
+            IconButton(onClick = { creating = true }) { Icon(Icons.Filled.Add, contentDescription = str(R.string.t_new_group)) }
         }
         if (ContactGroups.groups.isEmpty()) {
             Text(
-                "그룹이 없습니다. 오른쪽 위 +로 만들고, 연락처 화면 위의 그룹 칩으로 모아 볼 수 있습니다. 그룹은 이 앱 안에서만 쓰이고 폰 연락처는 바뀌지 않습니다.",
+                str(R.string.t_no_groups_create_one_with_at),
                 modifier = Modifier.padding(24.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -79,14 +81,14 @@ fun ContactGroupsScreen(viewModel: ContactsViewModel, onBack: () -> Unit, modifi
                     modifier = Modifier.clickable { editingId = group.id },
                     colors = transparentItem,
                     headlineContent = { Text(group.name, fontWeight = FontWeight.SemiBold) },
-                    supportingContent = { Text("${group.members.size}명") },
+                    supportingContent = { Text(str(R.string.t_text_3, group.members.size)) },
                 )
             }
         }
     }
 
     if (creating) {
-        NameDialog(title = "새 그룹", initial = "", onDismiss = { creating = false }) { name ->
+        NameDialog(title = str(R.string.t_new_group), initial = "", onDismiss = { creating = false }) { name ->
             ContactGroups.create(name)?.let { editingId = it.id }
         }
     }
@@ -101,18 +103,18 @@ private fun GroupEditor(viewModel: ContactsViewModel, group: ContactGroup, onBac
 
     Column(modifier = modifier.fillMaxSize()) {
         ScreenHeader(group.name, onBack) {
-            IconButton(onClick = { renaming = true }) { Icon(Icons.Filled.Edit, contentDescription = "이름 변경") }
-            IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, contentDescription = "그룹 삭제") }
+            IconButton(onClick = { renaming = true }) { Icon(Icons.Filled.Edit, contentDescription = str(R.string.t_rename)) }
+            IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, contentDescription = str(R.string.t_delete_group)) }
         }
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text("연락처 검색") },
+            label = { Text(str(R.string.t_search_contacts)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         )
         Text(
-            "${group.members.size}명 선택됨",
+            str(R.string.t_selected_2, group.members.size),
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
@@ -132,15 +134,15 @@ private fun GroupEditor(viewModel: ContactsViewModel, group: ContactGroup, onBac
     }
 
     if (renaming) {
-        NameDialog(title = "그룹 이름", initial = group.name, onDismiss = { renaming = false }) { ContactGroups.rename(group.id, it) }
+        NameDialog(title = str(R.string.t_group_name), initial = group.name, onDismiss = { renaming = false }) { ContactGroups.rename(group.id, it) }
     }
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("그룹 삭제") },
-            text = { Text("'${group.name}' 그룹을 삭제합니다. 연락처는 삭제되지 않습니다.") },
-            confirmButton = { TextButton(onClick = { ContactGroups.delete(group.id); confirmDelete = false; onBack() }) { Text("삭제") } },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("취소") } },
+            title = { Text(str(R.string.t_delete_group)) },
+            text = { Text(str(R.string.t_the_group_will_be_deleted_contacts, group.name)) },
+            confirmButton = { TextButton(onClick = { ContactGroups.delete(group.id); confirmDelete = false; onBack() }) { Text(str(R.string.t_delete)) } },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(str(R.string.cancel)) } },
         )
     }
 }
@@ -151,9 +153,9 @@ private fun NameDialog(title: String, initial: String, onDismiss: () -> Unit, on
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { OutlinedTextField(value = text, onValueChange = { text = it }, label = { Text("이름") }, singleLine = true) },
-        confirmButton = { TextButton(enabled = text.isNotBlank(), onClick = { onSave(text); onDismiss() }) { Text("저장") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
+        text = { OutlinedTextField(value = text, onValueChange = { text = it }, label = { Text(str(R.string.t_name)) }, singleLine = true) },
+        confirmButton = { TextButton(enabled = text.isNotBlank(), onClick = { onSave(text); onDismiss() }) { Text(str(R.string.t_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }
 
@@ -171,7 +173,7 @@ fun DuplicateContactsScreen(viewModel: ContactsViewModel, onBack: () -> Unit, mo
         val action = afterPermission
         afterPermission = null
         if (granted) action?.invoke()
-        else Toast.makeText(context, "연락처 수정 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+        else Toast.makeText(context, str(R.string.t_needs_the_contacts_edit_permission), Toast.LENGTH_SHORT).show()
     }
     fun withWritePermission(action: () -> Unit) {
         if (context.hasPermission(Manifest.permission.WRITE_CONTACTS)) action()
@@ -179,9 +181,9 @@ fun DuplicateContactsScreen(viewModel: ContactsViewModel, onBack: () -> Unit, mo
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        ScreenHeader("중복 연락처 정리", onBack)
+        ScreenHeader(str(R.string.t_clean_up_duplicate_contacts), onBack)
         if (groups.isEmpty()) {
-            Text("중복된 연락처가 없습니다.", modifier = Modifier.padding(24.dp))
+            Text(str(R.string.t_no_duplicate_contacts), modifier = Modifier.padding(24.dp))
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -208,12 +210,12 @@ fun DuplicateContactsScreen(viewModel: ContactsViewModel, onBack: () -> Unit, mo
                                 headlineContent = { Text(contact.name, fontWeight = FontWeight.SemiBold) },
                                 supportingContent = { Text(contact.numbers.joinToString(", ") { PhoneNumberFormatter.formatLoose(it) }) },
                                 trailingContent = {
-                                    IconButton(onClick = { pendingDelete = contact }) { Icon(Icons.Filled.Delete, contentDescription = "삭제") }
+                                    IconButton(onClick = { pendingDelete = contact }) { Icon(Icons.Filled.Delete, contentDescription = str(R.string.t_delete)) }
                                 },
                             )
                         }
                         Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                            Button(onClick = { pendingMerge = group }) { Text("하나로 합치기") }
+                            Button(onClick = { pendingMerge = group }) { Text(str(R.string.t_merge_into_one)) }
                         }
                     }
                 }
@@ -224,37 +226,37 @@ fun DuplicateContactsScreen(viewModel: ContactsViewModel, onBack: () -> Unit, mo
     pendingMerge?.let { group ->
         AlertDialog(
             onDismissRequest = { pendingMerge = null },
-            title = { Text("하나로 합치기") },
-            text = { Text("${group.contacts.size}개 연락처를 하나로 합칩니다. 번호와 정보는 모두 남고, 필요하면 폰의 연락처 앱에서 다시 나눌 수 있습니다.") },
+            title = { Text(str(R.string.t_merge_into_one)) },
+            text = { Text(str(R.string.t_merge_contacts_into_one_all_numbers, group.contacts.size)) },
             confirmButton = {
                 TextButton(onClick = {
                     pendingMerge = null
                     withWritePermission {
                         viewModel.mergeContacts(group.contacts.map { it.id }) { ok ->
-                            Toast.makeText(context, if (ok) "합쳤습니다." else "합치지 못했습니다.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, if (ok) str(R.string.t_merged) else str(R.string.t_couldn_t_merge), Toast.LENGTH_SHORT).show()
                         }
                     }
-                }) { Text("합치기") }
+                }) { Text(str(R.string.t_merge)) }
             },
-            dismissButton = { TextButton(onClick = { pendingMerge = null }) { Text("취소") } },
+            dismissButton = { TextButton(onClick = { pendingMerge = null }) { Text(str(R.string.cancel)) } },
         )
     }
     pendingDelete?.let { contact ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            title = { Text("연락처 삭제") },
-            text = { Text("'${contact.name}' 연락처를 폰에서 삭제합니다. 되돌릴 수 없습니다.") },
+            title = { Text(str(R.string.t_delete_contact)) },
+            text = { Text(str(R.string.t_the_contact_will_be_deleted_from, contact.name)) },
             confirmButton = {
                 TextButton(onClick = {
                     pendingDelete = null
                     withWritePermission {
                         viewModel.deleteContact(contact.id) { ok ->
-                            Toast.makeText(context, if (ok) "삭제했습니다." else "삭제하지 못했습니다.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, if (ok) str(R.string.t_deleted) else str(R.string.t_couldn_t_delete), Toast.LENGTH_SHORT).show()
                         }
                     }
-                }) { Text("삭제") }
+                }) { Text(str(R.string.t_delete)) }
             },
-            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("취소") } },
+            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text(str(R.string.cancel)) } },
         )
     }
 }

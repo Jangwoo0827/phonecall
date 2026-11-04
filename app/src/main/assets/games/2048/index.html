@@ -32,16 +32,19 @@
   <div class="top">
     <div class="title">2048</div>
     <div class="scores">
-      <div class="box">점수<b id="score">0</b></div>
-      <div class="box">최고<b id="best">0</b></div>
+      <div class="box"><span data-en="Score">점수</span><b id="score">0</b></div>
+      <div class="box"><span data-en="Best">최고</span><b id="best">0</b></div>
     </div>
   </div>
-  <div class="hint">화면을 밀어서 타일을 움직이세요</div>
+  <div class="hint" data-en="Swipe to move the tiles">화면을 밀어서 타일을 움직이세요</div>
   <div id="board"></div>
   <div id="msg"></div>
-  <button id="new">새 게임</button>
+  <button id="new" data-en="New game">새 게임</button>
 </div>
 <script>
+  var EN = /[?&]lang=en/.test(location.search);
+  function T(ko, en) { return EN ? en : ko; }
+  if (EN) { document.documentElement.lang = 'en'; Array.prototype.forEach.call(document.querySelectorAll('[data-en]'), function (el) { el.textContent = el.getAttribute('data-en'); }); }
 (function () {
   var N = 4, grid, score, best = 0, over, won;
   var boardEl = document.getElementById('board');
@@ -132,11 +135,11 @@
     var full = true, can = false;
     for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) {
       var v = grid[r][c];
-      if (v === 2048 && !won) { won = true; msgEl.textContent = '2048 달성! 계속 해보세요'; }
+      if (v === 2048 && !won) { won = true; msgEl.textContent = T('2048 달성! 계속 해보세요', 'You made 2048! Keep going'); }
       if (!v) full = false;
       if ((c < N - 1 && v === grid[r][c + 1]) || (r < N - 1 && v === grid[r + 1][c])) can = true;
     }
-    if (full && !can) { over = true; msgEl.textContent = '게임 오버 · 점수 ' + score; submit(); }
+    if (full && !can) { over = true; msgEl.textContent = T('게임 오버 · 점수 ', 'Game over · Score ') + score; submit(); }
   }
 
   function render() {

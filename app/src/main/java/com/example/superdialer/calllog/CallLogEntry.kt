@@ -1,15 +1,17 @@
 package com.example.superdialer.calllog
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.provider.CallLog
 
 enum class CallType(val label: String) {
-    Incoming("수신"),
-    Outgoing("발신"),
-    Missed("부재중"),
-    Rejected("거절"),
-    Blocked("차단"),
-    Voicemail("음성메일"),
-    Other("통화");
+    Incoming(str(R.string.t_incoming)),
+    Outgoing(str(R.string.t_outgoing)),
+    Missed(str(R.string.t_missed)),
+    Rejected(str(R.string.t_declined)),
+    Blocked(str(R.string.t_block)),
+    Voicemail(str(R.string.t_voicemail)),
+    Other(str(R.string.t_call_2));
 
     companion object {
         fun fromCallLog(type: Int): CallType = when (type) {

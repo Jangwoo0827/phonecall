@@ -1,5 +1,7 @@
 package com.example.superdialer.ui
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import android.app.role.RoleManager
 import android.content.Context
 import android.widget.Toast
@@ -59,7 +61,7 @@ fun DefaultDialerBanner(modifier: Modifier = Modifier) {
     val status = rememberDefaultDialerStatus { granted ->
         Toast.makeText(
             context,
-            if (granted) "기본 전화 앱으로 설정되었습니다." else "기본 전화 앱으로 설정하지 않았습니다.",
+            if (granted) str(R.string.t_set_as_the_default_phone_app) else str(R.string.t_not_set_as_the_default_phone),
             Toast.LENGTH_SHORT,
         ).show()
     }
@@ -75,11 +77,11 @@ fun DefaultDialerBanner(modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                "기본 전화 앱으로 설정하면 수신·통화 화면을 사용할 수 있어요.",
+                str(R.string.t_set_this_app_as_the_default_2),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodySmall,
             )
-            Button(onClick = status.request) { Text("설정") }
+            Button(onClick = status.request) { Text(str(R.string.t_settings)) }
         }
     }
 }

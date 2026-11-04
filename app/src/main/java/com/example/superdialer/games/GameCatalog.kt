@@ -1,6 +1,7 @@
 package com.example.superdialer.games
 
 import android.content.Context
+import com.example.superdialer.i18n.Strings
 import org.json.JSONArray
 import org.json.JSONException
 
@@ -16,7 +17,15 @@ data class GameInfo(
     val path: String,
     /** Card accent color as "#RRGGBB". */
     val color: String,
-)
+    /** English title and description (games.json "title_en" / "description_en"); empty = use the main ones. */
+    val titleEn: String = "",
+    val descriptionEn: String = "",
+) {
+    /** The title in the app's language. */
+    val shownTitle: String get() = if (!Strings.isKorean && titleEn.isNotBlank()) titleEn else title
+
+    val shownDescription: String get() = if (!Strings.isKorean && descriptionEn.isNotBlank()) descriptionEn else description
+}
 
 object GameCatalog {
     private const val FILE = "games/games.json"
@@ -37,7 +46,7 @@ object GameCatalog {
                 val title = o.optString("title")
                 val path = o.optString("path")
                 if (id.isBlank() || title.isBlank() || path.isBlank() || path.contains("..") || path.startsWith("/")) continue
-                add(GameInfo(id, title, o.optString("description"), path, o.optString("color", "#607D8B")))
+                add(GameInfo(id, title, o.optString("description"), path, o.optString("color", "#607D8B"), o.optString("title_en"), o.optString("description_en")))
             }
         }.distinctBy { it.id }
     } catch (e: JSONException) {

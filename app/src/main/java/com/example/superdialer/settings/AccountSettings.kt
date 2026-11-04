@@ -1,5 +1,7 @@
 package com.example.superdialer.settings
 
+import com.example.superdialer.R
+import com.example.superdialer.i18n.str
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,16 +44,16 @@ internal fun AccountRows() {
         ListItem(
             colors = transparent,
             modifier = Modifier.clickable(enabled = !AccountManager.busy) { AccountManager.startGoogleSignIn(context) },
-            headlineContent = { Text("Google로 계속하기") },
-            supportingContent = { Text("구글 계정으로 로그인합니다 (브라우저가 열렸다가 돌아옵니다)") },
+            headlineContent = { Text(str(R.string.t_continue_with_google)) },
+            supportingContent = { Text(str(R.string.t_sign_in_with_your_google_account)) },
             trailingContent = { if (AccountManager.busy) CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(4.dp)) },
         )
         ListItem(
             colors = transparent,
             modifier = Modifier.clickable { dialogOpen = true },
-            headlineContent = { Text("이메일로 로그인 / 회원가입") },
+            headlineContent = { Text(str(R.string.t_sign_in_with_email_sign_up)) },
             supportingContent = {
-                Text("로그인하면 스피드 다이얼·북마크·게임 점수·설정이 다른 폰과 동기화되고, 체크리스트에 자동 로그인됩니다. 로그인 없이도 모든 기능을 쓸 수 있습니다")
+                Text(str(R.string.t_signing_in_syncs_speed_dials_bookmarks))
             },
         )
     } else {
@@ -60,8 +62,8 @@ internal fun AccountRows() {
             headlineContent = { Text(AccountManager.email.orEmpty()) },
             supportingContent = {
                 Text(
-                    if (AccountManager.lastSyncMs > 0) "마지막 동기화 ${formatDateTime(AccountManager.lastSyncMs)}"
-                    else "아직 동기화하지 않았습니다"
+                    if (AccountManager.lastSyncMs > 0) str(R.string.t_last_synced, formatDateTime(AccountManager.lastSyncMs))
+                    else str(R.string.t_not_synced_yet)
                 )
             },
             trailingContent = { if (AccountManager.busy) CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(4.dp)) },
@@ -70,7 +72,7 @@ internal fun AccountRows() {
         ListItem(
             modifier = Modifier.clickable { editingNickname = true },
             colors = transparent,
-            headlineContent = { Text("닉네임 (랭킹에 표시)") },
+            headlineContent = { Text(str(R.string.t_nickname_shown_on_the_leaderboard)) },
             supportingContent = { Text(AccountManager.nickname.also { AccountManager.nicknameVersion }) },
         )
         if (editingNickname) NicknameDialog(AccountManager.nickname, onDismiss = { editingNickname = false })
@@ -78,32 +80,30 @@ internal fun AccountRows() {
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Button(onClick = AccountManager::syncNow, enabled = !AccountManager.busy) { Text("지금 동기화") }
-            OutlinedButton(onClick = AccountManager::signOut) { Text("로그아웃") }
+            Button(onClick = AccountManager::syncNow, enabled = !AccountManager.busy) { Text(str(R.string.t_sync_now)) }
+            OutlinedButton(onClick = AccountManager::signOut) { Text(str(R.string.t_sign_out)) }
         }
         var confirmDelete by rememberSaveable { mutableStateOf(false) }
         TextButton(
             onClick = { confirmDelete = true },
             enabled = !AccountManager.busy,
             modifier = Modifier.padding(horizontal = 8.dp),
-        ) { Text("계정 삭제", color = MaterialTheme.colorScheme.error) }
+        ) { Text(str(R.string.t_delete_account), color = MaterialTheme.colorScheme.error) }
         if (confirmDelete) {
             AlertDialog(
                 onDismissRequest = { confirmDelete = false },
-                title = { Text("계정을 삭제할까요?") },
+                title = { Text(str(R.string.t_delete_your_account)) },
                 text = {
                     Text(
-                        "서버에 저장된 이 계정의 데이터(시작 페이지 링크, 북마크, 게임 점수와 랭킹, 설정, 거절 메시지)와 " +
-                            "로그인 정보가 모두 지워지고, 같은 계정을 쓰는 체크리스트 노트의 데이터도 함께 지워집니다. " +
-                            "되돌릴 수 없습니다.\n\n이 폰에 있는 데이터는 그대로 남습니다."
+                        str(R.string.t_all_of_this_account_s_data)
                     )
                 },
                 confirmButton = {
                     TextButton(onClick = { confirmDelete = false; AccountManager.deleteAccount { } }) {
-                        Text("삭제", color = MaterialTheme.colorScheme.error)
+                        Text(str(R.string.t_delete), color = MaterialTheme.colorScheme.error)
                     }
                 },
-                dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("취소") } },
+                dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(str(R.string.cancel)) } },
             )
         }
     }
@@ -117,7 +117,7 @@ internal fun AccountRows() {
     }
     ListItem(
         colors = transparent,
-        supportingContent = { Text("동기화하는 것: 시작 페이지 링크, 북마크, 게임 최고 점수, 키패드음·화면 색 설정, 거절 메시지. 통화·연락처·문자는 올리지 않습니다") },
+        supportingContent = { Text(str(R.string.t_what_is_synced_start_page_links)) },
         headlineContent = {},
     )
 
@@ -134,20 +134,20 @@ private fun LoginDialog(onDismiss: () -> Unit, onSignedIn: () -> Unit) {
 
     AlertDialog(
         onDismissRequest = { if (!busy) onDismiss() },
-        title = { Text("계정") },
+        title = { Text(str(R.string.t_account)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("이메일") },
+                    label = { Text(str(R.string.t_email)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 )
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("비밀번호 (6자 이상)") },
+                    label = { Text(str(R.string.t_password_6_characters)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -155,7 +155,7 @@ private fun LoginDialog(onDismiss: () -> Unit, onSignedIn: () -> Unit) {
                 AccountManager.message?.let {
                     Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 }
-                TextButton(onClick = { AccountManager.sendPasswordReset(email) }, enabled = !busy) { Text("비밀번호를 잊었어요") }
+                TextButton(onClick = { AccountManager.sendPasswordReset(email) }, enabled = !busy) { Text(str(R.string.t_i_forgot_my_password)) }
             }
         },
         confirmButton = {
@@ -163,14 +163,14 @@ private fun LoginDialog(onDismiss: () -> Unit, onSignedIn: () -> Unit) {
                 TextButton(
                     enabled = !busy,
                     onClick = { AccountManager.signUp(email, password) { if (it) onSignedIn() } },
-                ) { Text("회원가입") }
+                ) { Text(str(R.string.t_sign_up)) }
                 Button(
                     enabled = !busy,
                     onClick = { AccountManager.signIn(email, password) { if (it) onSignedIn() } },
-                ) { Text(if (busy) "확인 중…" else "로그인") }
+                ) { Text(if (busy) str(R.string.t_checking) else str(R.string.t_sign_in)) }
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text("취소") } },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text(str(R.string.cancel)) } },
     )
 }
 
@@ -179,16 +179,16 @@ private fun NicknameDialog(current: String, onDismiss: () -> Unit) {
     var text by remember { mutableStateOf(current) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("닉네임") },
+        title = { Text(str(R.string.t_nickname)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it.take(20) },
                 singleLine = true,
-                supportingText = { Text("랭킹에서 다른 사람들에게 보입니다 (이메일은 보이지 않아요)") },
+                supportingText = { Text(str(R.string.t_other_people_see_this_on_the)) },
             )
         },
-        confirmButton = { TextButton(enabled = text.isNotBlank(), onClick = { AccountManager.updateNickname(text); onDismiss() }) { Text("저장") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
+        confirmButton = { TextButton(enabled = text.isNotBlank(), onClick = { AccountManager.updateNickname(text); onDismiss() }) { Text(str(R.string.t_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }

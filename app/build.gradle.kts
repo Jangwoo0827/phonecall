@@ -16,7 +16,7 @@ android {
         // CI sets these from the release tag (v1.2.3 -> "1.2.3") and the run number; local builds use the defaults.
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = System.getenv("VERSION_NAME") ?: "0.1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.example.superdialer.SuperDialerTestRunner"
     }
 
     // Release signing comes from the environment (GitHub Secrets in CI). Without KEYSTORE_FILE no signing
