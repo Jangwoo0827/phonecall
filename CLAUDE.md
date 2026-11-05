@@ -370,3 +370,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 단위 테스트는 `TestStrings`(XML을 직접 읽는 `Strings.resolver`)로 한국어 고정(`@Before koreanTexts()`). UI 테스트는 `SuperDialerTestRunner`가 한국어로 고정, 문자열 id는 테스트 앱 R과 달라서 `getIdentifier`로 이름 조회(`LanguageTest`)
 - 개인정보처리방침 영어판 `docs/privacy-en.html`(한국어판과 서로 링크, 앱은 언어에 맞는 쪽을 엶 `privacyPolicyUrl()`). **방침을 고치면 두 파일 모두**. README.md는 영어
 - 기존 설치의 DB 시드 타일 이름(네이버 등)은 한국어로 남음
+
+## 게임 10종 (v0.13.0)
+- 추가: Flap(`flap/`, 탭으로 파이프 사이 비행), Blocks(`tetris/`, 탭=회전·좌우 끌기=이동·아래로 튕기기=하드드롭, 줄 지우기), Whack-a-Mole(`moles/`, 30초, 금색 3점), Stack(`stack/`, 타이밍 맞춰 블록 쌓기, 층 수=점수), Dodge(`dodge/`, 끌어서 낙하물 피하기, 점수=초×10), Memory Pads(`simon/`, 빛나는 순서 따라 누르기, 점수=단계). 모두 단일 HTML, `T(ko,en)`/`data-en` 두 언어, `Native.getBest/submitScore` 사용, 탭하면 시작·화면이 가려지면 일시정지. 판 저장(`saveState`)은 안 씀(짧은 아케이드). 카드 아이콘은 `GameIcon.drawFlap/Blocks/Moles/Stack/Dodge/Simon`
+- 공통 틀: 고정 논리 크기 캔버스(`W×H`)를 `fit()`으로 화면에 맞춤, `pointerdown/move/up`으로 입력, `requestAnimationFrame` 시간 기반(dt 상한). 새 게임도 이 모양을 따르면 됨
+- `GameCatalogTest.everyBundledGameIsListedWithItsFilesAndBothLanguages`: 10개·id 중복 없음·파일 존재·영어 제목·점수 보고·`?lang` 처리를 검사(새 게임을 추가하면 개수도 같이 고칠 것)
+- 브라우저(로컬 `python -m http.server`)에서 각 게임을 실행해 콘솔 오류 없음 확인, 에뮬레이터(360dp)에서 목록·Blocks 화면 확인. 손가락 조작 감각과 프레임은 실기기 확인 필요

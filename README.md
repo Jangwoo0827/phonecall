@@ -11,7 +11,7 @@ The app is available in **English and Korean** (it follows the phone's language,
 - **Recents & contacts**: search (name, Korean initials, number), filters, grouping of repeated numbers, select / delete all, favorites, contact groups, duplicate clean-up and merging, blocked numbers, call statistics, text (SMS/MMS) history next to the calls, text conversations, sending photos through the messages app
 - **KakaoTalk helpers**: chat / VoiceTalk / FaceTalk buttons on a contact, and an opt-in inbox of KakaoTalk notifications with notification replies (KakaoTalk has no public API, so only what Android allows)
 - **Browser**: speed-dial start page with folders and drag-to-reorder, full-screen pages, tab grid with page previews, **private tabs** (separate WebView profile, no history), bookmarks, history, downloads and uploads, find in page, desktop site, search engine choice (Google / Naver / Microsoft), dark mode for web pages, per-site camera / microphone / location permissions, full-screen video
-- **Games**: 2048, Snake, Breakout, Crossy Chicks (best scores, saved games, optional online leaderboard)
+- **Games**: 10 games — 2048, Snake, Breakout, Crossy Chicks, Flap, Blocks, Whack-a-Mole, Stack, Dodge, Memory Pads (best scores, saved games, optional online leaderboard)
 - **Account (optional)**: email or Google sign-in syncs start-page links, bookmarks, game scores and settings; everything works without it
 - **Settings**: default phone app, blocked numbers, decline messages, keypad sound, themes and accent colors, text size, language, permissions, in-app updates, patch notes, error log
 

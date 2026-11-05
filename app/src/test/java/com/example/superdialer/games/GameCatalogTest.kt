@@ -37,4 +37,20 @@ class GameCatalogTest {
         assertTrue(GameCatalog.parse("not json").isEmpty())
         assertTrue(GameCatalog.parse("{}").isEmpty())
     }
+    @Test fun everyBundledGameIsListedWithItsFilesAndBothLanguages() {
+        val assets = java.io.File("src/main/assets/games")
+        val games = GameCatalog.parse(java.io.File(assets, "games.json").readText())
+        assertEquals(10, games.size)
+        assertEquals(games.size, games.map { it.id }.toSet().size)
+        games.forEach { g ->
+            val html = java.io.File(assets, g.path)
+            assertTrue("${g.id}: ${g.path} is missing", html.isFile)
+            assertTrue("${g.id}: no English title", g.titleEn.isNotBlank() && g.descriptionEn.isNotBlank())
+            if (g.id != "crossyroads") {
+                val text = html.readText()
+                assertTrue("${g.id}: does not report scores", text.contains("Native.submitScore"))
+                assertTrue("${g.id}: does not read ?lang", text.contains("lang=en"))
+            }
+        }
+    }
 }

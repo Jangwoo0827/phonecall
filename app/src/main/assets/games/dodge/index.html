@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Dodge</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { margin: 0; height: 100%; background: #2a1020; color: #fce4ec; font-family: sans-serif; overflow: hidden; touch-action: none; }
+  #app { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 12px; }
+  .bar { width: 100%; max-width: 480px; display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; }
+  canvas { border-radius: 8px; touch-action: none; }
+  .hint { font-size: 13px; opacity: .75; text-align: center; min-height: 18px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="bar"><span><span data-en="Score">점수</span> <span id="score">0</span></span><span><span data-en="Best">최고</span> <span id="best">0</span></span></div>
+  <canvas id="c"></canvas>
+  <div class="hint" id="hint" data-en="Tap to start · drag left and right to dodge">탭해서 시작 · 좌우로 끌어서 피하세요</div>
+</div>
+<script>
+  var EN = /[?&]lang=en/.test(location.search);
+  function T(ko, en) { return EN ? en : ko; }
+  if (EN) { document.documentElement.lang = 'en'; Array.prototype.forEach.call(document.querySelectorAll('[data-en]'), function (el) { el.textContent = el.getAttribute('data-en'); }); }
+(function () {
+  var W = 320, H = 480, PY = H - 56, PR = 13;
+  var c = document.getElementById('c'), ctx = c.getContext('2d');
+  var scoreEl = document.getElementById('score'), bestEl = document.getElementById('best'), hint = document.getElementById('hint');
+  c.width = W; c.height = H;
+  var best = 0;
+  try { if (window.Native) best = Native.getBest() | 0; } catch (e) {}
+  bestEl.textContent = best;
+
+  var state = 'idle', px, tx, rocks, t, score, spawnIn, last = 0, overAt = 0, stars = [];
+  for (var i = 0; i < 28; i++) stars.push({ x: Math.random() * W, y: Math.random() * H, s: 0.4 + Math.random() * 1.2 });
+
+  function fit() {
+    var s = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 110) / H);
+    c.style.width = Math.floor(W * s) + 'px'; c.style.height = Math.floor(H * s) + 'px';
+  }
+  function reset() { px = tx = W / 2; rocks = []; t = 0; score = 0; spawnIn = 500; scoreEl.textContent = 0; }
+  function toX(e) { var r = c.getBoundingClientRect(); return (e.clientX - r.left) * W / r.width; }
+
+  function step(dt) {
+    t += dt / 1000;
+    score = Math.floor(t * 10); scoreEl.textContent = score;
+    px += (tx - px) * Math.min(1, 0.3 * dt); px = Math.max(PR, Math.min(W - PR, px));
+    spawnIn -= dt;
+    if (spawnIn <= 0) {
+      var w = 22 + Math.random() * 52;
+      rocks.push({ x: Math.random() * (W - w), y: -30, w: w, h: 18 + Math.random() * 16, vy: Math.min(8.5, 2.7 + t * 0.07 + Math.random() * 1.2), hue: Math.floor(Math.random() * 40) });
+      spawnIn = Math.max(170, 620 - t * 9) * (0.7 + Math.random() * 0.6);
+    }
+    var k = dt / 16.667;
+    for (var i = rocks.length - 1; i >= 0; i--) {
+      var r = rocks[i]; r.y += r.vy * k;
+      if (r.y > H + 40) { rocks.splice(i, 1); continue; }
+      if (px + PR - 3 > r.x && px - PR + 3 < r.x + r.w && PY + PR - 3 > r.y && PY - PR + 3 < r.y + r.h) return die();
+    }
+  }
+  function die() {
+    state = 'over'; overAt = performance.now();
+    hint.textContent = T('게임 오버 · 점수 ', 'Game over · Score ') + score + T(' · 탭해서 다시 시작', ' · tap to restart');
+    if (score > best) { best = score; bestEl.textContent = best; }
+    try { if (window.Native) Native.submitScore(score); } catch (e) {}
+  }
+
+  function draw(now) {
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#1a0a1a'); g.addColorStop(1, '#4a1a3a');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    stars.forEach(function (s) { s.y += s.s * (state === 'play' ? 1.4 : 0.3); if (s.y > H) s.y = 0; ctx.fillRect(s.x, s.y, s.s + 0.6, s.s + 0.6); });
+    rocks.forEach(function (r) {
+      ctx.fillStyle = 'hsl(' + (340 + r.hue) + ',70%,60%)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(r.x, r.y, r.w, 4);
+    });
+    var bob = state === 'idle' ? Math.sin(now / 300) * 3 : 0;
+    ctx.fillStyle = '#80deea'; ctx.beginPath(); ctx.arc(px, PY + bob, PR, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px - 4, PY - 3 + bob, 3, 0, Math.PI * 2); ctx.arc(px + 4, PY - 3 + bob, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#006064'; ctx.beginPath(); ctx.arc(px - 4, PY - 3 + bob, 1.4, 0, Math.PI * 2); ctx.arc(px + 4, PY - 3 + bob, 1.4, 0, Math.PI * 2); ctx.fill();
+    if (state === 'over' || state === 'paused') { ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(0, 0, W, H); }
+  }
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    var dt = Math.min(50, now - last); last = now;
+    if (state === 'play') step(dt);
+    draw(now);
+  }
+
+  var down = false;
+  document.addEventListener('pointerdown', function (e) {
+    if (state === 'idle') { state = 'play'; hint.textContent = ''; tx = toX(e); down = true; return; }
+    if (state === 'paused') { state = 'play'; hint.textContent = ''; tx = toX(e); down = true; return; }
+    if (state === 'over') { if (performance.now() - overAt > 450) { reset(); state = 'idle'; hint.textContent = T('탭해서 시작', 'Tap to start'); } return; }
+    down = true; tx = toX(e);
+  });
+  document.addEventListener('pointermove', function (e) { if (down && state === 'play') tx = toX(e); });
+  document.addEventListener('pointerup', function () { down = false; });
+  document.addEventListener('pointercancel', function () { down = false; });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && state === 'play') { state = 'paused'; hint.textContent = T('일시정지 · 탭해서 계속', 'Paused · tap to continue'); } });
+  window.addEventListener('resize', fit);
+  reset(); fit(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

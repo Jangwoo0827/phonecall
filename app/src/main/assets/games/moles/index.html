@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Whack-a-Mole</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { margin: 0; height: 100%; background: #2e2118; color: #f3e5d8; font-family: sans-serif; overflow: hidden; touch-action: none; }
+  #app { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 12px; }
+  .bar { width: 100%; max-width: 480px; display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; }
+  canvas { border-radius: 8px; touch-action: none; }
+  .hint { font-size: 13px; opacity: .75; text-align: center; min-height: 18px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="bar"><span><span data-en="Score">점수</span> <span id="score">0</span></span><span><span data-en="Best">최고</span> <span id="best">0</span></span></div>
+  <canvas id="c"></canvas>
+  <div class="hint" id="hint" data-en="Tap to start · whack the moles (gold = 3 points)">탭해서 시작 · 두더지를 잡으세요 (금색 = 3점)</div>
+</div>
+<script>
+  var EN = /[?&]lang=en/.test(location.search);
+  function T(ko, en) { return EN ? en : ko; }
+  if (EN) { document.documentElement.lang = 'en'; Array.prototype.forEach.call(document.querySelectorAll('[data-en]'), function (el) { el.textContent = el.getAttribute('data-en'); }); }
+(function () {
+  var W = 320, H = 400, TOTAL = 30000;
+  var c = document.getElementById('c'), ctx = c.getContext('2d');
+  var scoreEl = document.getElementById('score'), bestEl = document.getElementById('best'), hint = document.getElementById('hint');
+  c.width = W; c.height = H;
+  var best = 0;
+  try { if (window.Native) best = Native.getBest() | 0; } catch (e) {}
+  bestEl.textContent = best;
+
+  var holes = [];
+  for (var j = 0; j < 3; j++) for (var i = 0; i < 3; i++) holes.push({ x: 60 + i * 100, y: 130 + j * 92, mole: null });
+  var state = 'idle', score = 0, elapsed = 0, spawnIn = 0, last = 0, overAt = 0, pops = [];
+
+  function fit() {
+    var s = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 110) / H);
+    c.style.width = Math.floor(W * s) + 'px'; c.style.height = Math.floor(H * s) + 'px';
+  }
+  function reset() {
+    score = 0; elapsed = 0; spawnIn = 400; pops = []; scoreEl.textContent = 0;
+    holes.forEach(function (h) { h.mole = null; });
+  }
+  function spawn() {
+    var free = holes.filter(function (h) { return !h.mole; });
+    if (!free.length) return;
+    var h = free[Math.floor(Math.random() * free.length)], p = elapsed / TOTAL;
+    h.mole = { t: 0, life: 950 - p * 450, gold: Math.random() < 0.12, hit: 0 };
+  }
+  function step(dt) {
+    elapsed += dt;
+    if (elapsed >= TOTAL) { elapsed = TOTAL; return finish(); }
+    spawnIn -= dt;
+    if (spawnIn <= 0) { spawn(); spawnIn = 720 - (elapsed / TOTAL) * 380 + Math.random() * 160; }
+    holes.forEach(function (h) {
+      var m = h.mole; if (!m) return;
+      m.t += dt;
+      if (m.hit) { m.hit += dt; if (m.hit > 220) h.mole = null; }
+      else if (m.t > m.life) h.mole = null;
+    });
+    pops = pops.filter(function (p) { p.t += dt; return p.t < 600; });
+  }
+  function finish() {
+    state = 'over'; overAt = performance.now();
+    hint.textContent = T('시간 종료! 점수 ', "Time's up! Score ") + score + T(' · 탭해서 다시 시작', ' · tap to restart');
+    if (score > best) { best = score; bestEl.textContent = best; }
+    try { if (window.Native) Native.submitScore(score); } catch (e) {}
+  }
+
+  function drawMole(h, now) {
+    var m = h.mole, f;
+    if (m.hit) f = Math.max(0, 1 - (m.hit - 0) / 220);
+    else f = Math.min(1, m.t / 130, (m.life - m.t) / 130);
+    f = Math.max(0, Math.min(1, f));
+    ctx.save();
+    ctx.beginPath(); ctx.rect(h.x - 60, h.y - 90, 120, 96); ctx.clip();
+    var cy = h.y + 34 - 62 * f;
+    ctx.fillStyle = m.gold ? '#ffca28' : '#8d6e63';
+    ctx.beginPath(); ctx.arc(h.x, cy, 31, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = m.gold ? '#fff3c4' : '#d7b9a4'; ctx.beginPath(); ctx.ellipse(h.x, cy + 10, 17, 12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#222';
+    if (m.hit) { ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('x  x', h.x, cy - 6); }
+    else { ctx.beginPath(); ctx.arc(h.x - 11, cy - 7, 4, 0, Math.PI * 2); ctx.arc(h.x + 11, cy - 7, 4, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = '#e57373'; ctx.beginPath(); ctx.arc(h.x, cy + 3, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  function draw(now) {
+    ctx.fillStyle = '#6a8f3c'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#5b8033'; for (var i = 0; i < 14; i++) ctx.fillRect((i * 67) % W, 70 + (i * 41) % (H - 80), 14, 4);
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(16, 18, W - 32, 14);
+    ctx.fillStyle = elapsed > TOTAL * 0.8 ? '#ef5350' : '#ffd54f';
+    ctx.fillRect(16, 18, (W - 32) * (1 - elapsed / TOTAL), 14);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(Math.ceil((TOTAL - elapsed) / 1000) + 's', W / 2, 56);
+    holes.forEach(function (h) {
+      ctx.fillStyle = '#3e2a1b'; ctx.beginPath(); ctx.ellipse(h.x, h.y + 8, 44, 17, 0, 0, Math.PI * 2); ctx.fill();
+      if (h.mole) drawMole(h, now);
+      ctx.fillStyle = '#4e342e'; ctx.beginPath(); ctx.ellipse(h.x, h.y + 10, 46, 16, 0, 0, Math.PI); ctx.fill();
+    });
+    pops.forEach(function (p) {
+      ctx.globalAlpha = 1 - p.t / 600; ctx.fillStyle = '#fff'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('+' + p.v, p.x, p.y - p.t / 12); ctx.globalAlpha = 1;
+    });
+    if (state === 'over' || state === 'paused') { ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(0, 0, W, H); }
+  }
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    var dt = Math.min(80, now - last); last = now;
+    if (state === 'play') step(dt);
+    draw(now);
+  }
+
+  document.addEventListener('pointerdown', function (e) {
+    if (state === 'idle') { reset(); state = 'play'; hint.textContent = ''; return; }
+    if (state === 'paused') { state = 'play'; hint.textContent = ''; return; }
+    if (state === 'over') { if (performance.now() - overAt > 450) { reset(); state = 'idle'; hint.textContent = T('탭해서 시작', 'Tap to start'); } return; }
+    var r = c.getBoundingClientRect(), x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+    for (var i = 0; i < holes.length; i++) {
+      var h = holes[i], m = h.mole;
+      if (m && !m.hit && Math.abs(x - h.x) < 46 && y > h.y - 62 && y < h.y + 24) {
+        m.hit = 1; var v = m.gold ? 3 : 1; score += v; scoreEl.textContent = score; pops.push({ x: h.x, y: h.y - 40, v: v, t: 0 });
+        return;
+      }
+    }
+  });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && state === 'play') { state = 'paused'; hint.textContent = T('일시정지 · 탭해서 계속', 'Paused · tap to continue'); } });
+  window.addEventListener('resize', fit);
+  reset(); fit(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

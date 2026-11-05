@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Blocks</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { margin: 0; height: 100%; background: #1b1530; color: #ede7f6; font-family: sans-serif; overflow: hidden; touch-action: none; }
+  #app { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 12px; }
+  .bar { width: 100%; max-width: 480px; display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; }
+  canvas { border-radius: 8px; touch-action: none; }
+  .hint { font-size: 13px; opacity: .75; text-align: center; min-height: 18px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="bar"><span><span data-en="Score">점수</span> <span id="score">0</span></span><span><span data-en="Best">최고</span> <span id="best">0</span></span></div>
+  <canvas id="c"></canvas>
+  <div class="hint" id="hint" data-en="Tap to start · tap rotates · drag moves · flick down drops">탭해서 시작 · 탭=회전 · 좌우로 밀기=이동 · 아래로 튕기기=떨어뜨리기</div>
+</div>
+<script>
+  var EN = /[?&]lang=en/.test(location.search);
+  function T(ko, en) { return EN ? en : ko; }
+  if (EN) { document.documentElement.lang = 'en'; Array.prototype.forEach.call(document.querySelectorAll('[data-en]'), function (el) { el.textContent = el.getAttribute('data-en'); }); }
+(function () {
+  var COLS = 10, ROWS = 20, CS = 24, W = COLS * CS, H = ROWS * CS;
+  var SHAPES = {
+    I: [[1, 1, 1, 1]], O: [[1, 1], [1, 1]], T: [[0, 1, 0], [1, 1, 1]], S: [[0, 1, 1], [1, 1, 0]],
+    Z: [[1, 1, 0], [0, 1, 1]], J: [[1, 0, 0], [1, 1, 1]], L: [[0, 0, 1], [1, 1, 1]]
+  };
+  var COLORS = { I: '#4dd0e1', O: '#ffd54f', T: '#ba68c8', S: '#81c784', Z: '#e57373', J: '#64b5f6', L: '#ffb74d' };
+  var KEYS = Object.keys(SHAPES), POINTS = [0, 100, 300, 500, 800];
+  var c = document.getElementById('c'), ctx = c.getContext('2d');
+  var scoreEl = document.getElementById('score'), bestEl = document.getElementById('best'), hint = document.getElementById('hint');
+  c.width = W; c.height = H;
+  var best = 0;
+  try { if (window.Native) best = Native.getBest() | 0; } catch (e) {}
+  bestEl.textContent = best;
+
+  var grid, cur, next, score, lines, level, state = 'idle', acc = 0, last = 0, overAt = 0;
+
+  function fit() {
+    var s = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 110) / H);
+    c.style.width = Math.floor(W * s) + 'px'; c.style.height = Math.floor(H * s) + 'px';
+  }
+  function cellPx() { return c.getBoundingClientRect().width / COLS; }
+
+  function newGrid() { var g = []; for (var r = 0; r < ROWS; r++) { var row = []; for (var q = 0; q < COLS; q++) row.push(0); g.push(row); } return g; }
+  function make() { var k = KEYS[Math.floor(Math.random() * KEYS.length)]; return { k: k, m: SHAPES[k].map(function (r) { return r.slice(); }), x: 0, y: 0 }; }
+  function collide(m, x, y) {
+    for (var r = 0; r < m.length; r++) for (var q = 0; q < m[r].length; q++) {
+      if (!m[r][q]) continue;
+      var nx = x + q, ny = y + r;
+      if (nx < 0 || nx >= COLS || ny >= ROWS) return true;
+      if (ny >= 0 && grid[ny][nx]) return true;
+    }
+    return false;
+  }
+  function spawn() {
+    cur = next || make(); next = make();
+    cur.x = Math.floor((COLS - cur.m[0].length) / 2); cur.y = 0;
+    if (collide(cur.m, cur.x, cur.y)) gameOver();
+  }
+  function reset() {
+    grid = newGrid(); score = 0; lines = 0; level = 1; acc = 0; next = null;
+    scoreEl.textContent = 0; spawn();
+  }
+  function rotate() {
+    var m = cur.m, h = m.length, w = m[0].length, n = [];
+    for (var r = 0; r < w; r++) { n.push([]); for (var q = 0; q < h; q++) n[r].push(m[h - 1 - q][r]); }
+    var kicks = [0, -1, 1, -2, 2];
+    for (var i = 0; i < kicks.length; i++) {
+      if (!collide(n, cur.x + kicks[i], cur.y)) { cur.m = n; cur.x += kicks[i]; return; }
+    }
+  }
+  function move(dx) { if (!collide(cur.m, cur.x + dx, cur.y)) cur.x += dx; }
+  function down() {
+    if (!collide(cur.m, cur.x, cur.y + 1)) { cur.y++; return true; }
+    lock(); return false;
+  }
+  function hardDrop() { var n = 0; while (!collide(cur.m, cur.x, cur.y + 1)) { cur.y++; n++; } score += n * 2; scoreEl.textContent = score; lock(); }
+  function lock() {
+    for (var r = 0; r < cur.m.length; r++) for (var q = 0; q < cur.m[r].length; q++) {
+      if (cur.m[r][q] && cur.y + r >= 0) grid[cur.y + r][cur.x + q] = cur.k;
+    }
+    var cleared = 0;
+    for (var y = ROWS - 1; y >= 0; y--) {
+      if (grid[y].every(function (v) { return v; })) { grid.splice(y, 1); var row = []; for (var i = 0; i < COLS; i++) row.push(0); grid.unshift(row); cleared++; y++; }
+    }
+    if (cleared) {
+      score += POINTS[cleared] * level; lines += cleared; level = 1 + Math.floor(lines / 10);
+      scoreEl.textContent = score;
+    }
+    spawn();
+  }
+  function gameOver() {
+    state = 'over'; overAt = performance.now();
+    hint.textContent = T('게임 오버 · 점수 ', 'Game over · Score ') + score + T(' · 탭해서 다시 시작', ' · tap to restart');
+    if (score > best) { best = score; bestEl.textContent = best; }
+    try { if (window.Native) Native.submitScore(score); } catch (e) {}
+  }
+
+  function block(x, y, color, size, alpha) {
+    ctx.globalAlpha = alpha == null ? 1 : alpha;
+    ctx.fillStyle = color; ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
+    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(x + 1, y + 1, size - 2, 3);
+    ctx.globalAlpha = 1;
+  }
+  function draw() {
+    ctx.fillStyle = '#251c42'; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 1;
+    for (var i = 1; i < COLS; i++) { ctx.beginPath(); ctx.moveTo(i * CS + .5, 0); ctx.lineTo(i * CS + .5, H); ctx.stroke(); }
+    for (var j = 1; j < ROWS; j++) { ctx.beginPath(); ctx.moveTo(0, j * CS + .5); ctx.lineTo(W, j * CS + .5); ctx.stroke(); }
+    for (var y = 0; y < ROWS; y++) for (var x = 0; x < COLS; x++) if (grid[y][x]) block(x * CS, y * CS, COLORS[grid[y][x]], CS);
+    if (state !== 'idle' || cur) {
+      var gy = cur.y; while (!collide(cur.m, cur.x, gy + 1)) gy++;
+      cur.m.forEach(function (row, r) { row.forEach(function (v, q) {
+        if (v) { block((cur.x + q) * CS, (gy + r) * CS, COLORS[cur.k], CS, .22); block((cur.x + q) * CS, (cur.y + r) * CS, COLORS[cur.k], CS); }
+      }); });
+      next.m.forEach(function (row, r) { row.forEach(function (v, q) { if (v) block(W - 62 + q * 12, 8 + r * 12, COLORS[next.k], 12, .8); }); });
+    }
+    if (state === 'over' || state === 'paused') { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(0, 0, W, H); }
+  }
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    var dt = Math.min(100, now - last); last = now;
+    if (state === 'play') {
+      acc += dt;
+      var interval = Math.max(90, 800 - (level - 1) * 70);
+      while (acc >= interval && state === 'play') { acc -= interval; down(); }
+    }
+    draw();
+  }
+
+  var sx, sy, lx, ly, st, tdx, tdy, moved, downAcc, active = false;
+  document.addEventListener('pointerdown', function (e) {
+    if (state === 'idle') { state = 'play'; hint.textContent = ''; return; }
+    if (state === 'paused') { state = 'play'; hint.textContent = ''; return; }
+    if (state === 'over') {
+      if (performance.now() - overAt > 450) { reset(); state = 'idle'; hint.textContent = T('탭해서 시작', 'Tap to start'); }
+      return;
+    }
+    active = true; sx = lx = e.clientX; sy = ly = e.clientY; st = performance.now(); tdx = 0; tdy = 0; moved = false; downAcc = 0;
+  });
+  document.addEventListener('pointermove', function (e) {
+    if (!active || state !== 'play') return;
+    var cp = cellPx(), dx = e.clientX - lx, dy = e.clientY - ly;
+    if (Math.abs(e.clientX - sx) > 10 || Math.abs(e.clientY - sy) > 10) moved = true;
+    if (Math.abs(dx) >= cp) { var n = Math.floor(Math.abs(dx) / cp); for (var i = 0; i < n; i++) move(dx > 0 ? 1 : -1); lx += (dx > 0 ? 1 : -1) * n * cp; }
+    if (dy > 0) { downAcc += dy; while (downAcc >= cp) { downAcc -= cp; if (state === 'play') { down(); score++; scoreEl.textContent = score; } } }
+    ly = e.clientY; tdx = e.clientX - sx; tdy = e.clientY - sy;
+  });
+  function release() {
+    if (!active) return; active = false;
+    if (state !== 'play') return;
+    var dt = performance.now() - st;
+    if (!moved && dt < 300) rotate();
+    else if (tdy > 60 && dt < 260 && Math.abs(tdy) > Math.abs(tdx) * 1.5) hardDrop();
+  }
+  document.addEventListener('pointerup', release);
+  document.addEventListener('pointercancel', function () { active = false; });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && state === 'play') { state = 'paused'; hint.textContent = T('일시정지 · 탭해서 계속', 'Paused · tap to continue'); } });
+  window.addEventListener('resize', fit);
+  reset(); fit(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

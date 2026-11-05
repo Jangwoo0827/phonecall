@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Memory Pads</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { margin: 0; height: 100%; background: #0f1d33; color: #e3f2fd; font-family: sans-serif; overflow: hidden; touch-action: none; }
+  #app { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 12px; }
+  .bar { width: 100%; max-width: 480px; display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; }
+  #pads { width: min(86vw, 62vh, 340px); aspect-ratio: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pad { border-radius: 22px; opacity: .42; transition: opacity .08s, transform .08s; touch-action: none; }
+  .pad.on { opacity: 1; transform: scale(.97); filter: brightness(1.25); }
+  .hint { font-size: 15px; font-weight: 600; opacity: .85; text-align: center; min-height: 22px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="bar"><span><span data-en="Round">단계</span> <span id="score">0</span></span><span><span data-en="Best">최고</span> <span id="best">0</span></span></div>
+  <div id="pads">
+    <div class="pad" data-i="0" style="background:#43a047"></div>
+    <div class="pad" data-i="1" style="background:#e53935"></div>
+    <div class="pad" data-i="2" style="background:#fdd835"></div>
+    <div class="pad" data-i="3" style="background:#1e88e5"></div>
+  </div>
+  <div class="hint" id="hint" data-en="Tap any pad to start">아무 칸이나 탭해서 시작</div>
+</div>
+<script>
+  var EN = /[?&]lang=en/.test(location.search);
+  function T(ko, en) { return EN ? en : ko; }
+  if (EN) { document.documentElement.lang = 'en'; Array.prototype.forEach.call(document.querySelectorAll('[data-en]'), function (el) { el.textContent = el.getAttribute('data-en'); }); }
+(function () {
+  var pads = Array.prototype.slice.call(document.querySelectorAll('.pad'));
+  var scoreEl = document.getElementById('score'), bestEl = document.getElementById('best'), hint = document.getElementById('hint');
+  var FREQ = [329.6, 261.6, 220, 164.8];
+  var best = 0;
+  try { if (window.Native) best = Native.getBest() | 0; } catch (e) {}
+  bestEl.textContent = best;
+
+  var state = 'idle', seq = [], pos = 0, score = 0, timers = [], audio = null;
+
+  function beep(i, ms) {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      var o = audio.createOscillator(), g = audio.createGain();
+      o.type = 'sine'; o.frequency.value = FREQ[i]; g.gain.value = 0.18;
+      o.connect(g); g.connect(audio.destination);
+      o.start(); g.gain.setTargetAtTime(0, audio.currentTime + ms / 1000 - 0.04, 0.02); o.stop(audio.currentTime + ms / 1000);
+    } catch (e) {}
+  }
+  function light(i, ms) {
+    pads[i].classList.add('on'); beep(i, ms);
+    later(function () { pads[i].classList.remove('on'); }, ms);
+  }
+  function later(fn, ms) { var id = setTimeout(fn, ms); timers.push(id); return id; }
+  function clearTimers() { timers.forEach(clearTimeout); timers = []; pads.forEach(function (p) { p.classList.remove('on'); }); }
+
+  function round() {
+    seq.push(Math.floor(Math.random() * 4)); state = 'show'; pos = 0;
+    hint.textContent = T('잘 보세요…', 'Watch…');
+    var gap = Math.max(260, 620 - seq.length * 18), dur = Math.max(160, gap - 130);
+    seq.forEach(function (p, k) { later(function () { light(p, dur); }, 600 + k * gap); });
+    later(function () { state = 'input'; hint.textContent = T('따라 누르세요', 'Your turn'); }, 600 + seq.length * gap + 100);
+  }
+  function start() { clearTimers(); seq = []; score = 0; scoreEl.textContent = 0; round(); }
+
+  function fail() {
+    state = 'over';
+    hint.textContent = T('틀렸어요 · ', 'Wrong · ') + score + T('단계 · 탭해서 다시 시작', ' rounds · tap to restart');
+    if (score > best) { best = score; bestEl.textContent = best; }
+    try { if (window.Native) Native.submitScore(score); } catch (e) {}
+  }
+
+  pads.forEach(function (p) {
+    p.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      var i = +p.getAttribute('data-i');
+      if (state === 'idle' || state === 'over') { start(); return; }
+      if (state !== 'input') return;
+      light(i, 220);
+      if (i !== seq[pos]) { fail(); return; }
+      pos++;
+      if (pos === seq.length) {
+        score = seq.length; scoreEl.textContent = score; state = 'wait';
+        hint.textContent = T('좋아요!', 'Nice!');
+        later(round, 800);
+      }
+    });
+  });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && (state === 'show' || state === 'wait')) { clearTimers(); state = 'idle'; seq = []; hint.textContent = T('아무 칸이나 탭해서 시작', 'Tap any pad to start'); } });
+})();
+</script>
+</body>
+</html>

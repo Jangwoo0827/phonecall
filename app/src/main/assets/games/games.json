@@ -34,5 +34,59 @@
     "description_en": "Keep crossing past cars, rivers and trains",
     "path": "crossyroads/index.html",
     "color": "#FF7A59"
+  },
+  {
+    "id": "flap",
+    "title": "새 날리기",
+    "description": "탭해서 파이프 사이를 날아가세요",
+    "title_en": "Flap",
+    "description_en": "Tap to fly through the gaps",
+    "path": "flap/index.html",
+    "color": "#29B6F6"
+  },
+  {
+    "id": "tetris",
+    "title": "블록 쌓기",
+    "description": "블록을 돌려 줄을 채우세요",
+    "title_en": "Blocks",
+    "description_en": "Rotate and drop blocks to clear lines",
+    "path": "tetris/index.html",
+    "color": "#7E57C2"
+  },
+  {
+    "id": "moles",
+    "title": "두더지 잡기",
+    "description": "30초 안에 최대한 많이 잡으세요",
+    "title_en": "Whack-a-Mole",
+    "description_en": "Hit as many as you can in 30 seconds",
+    "path": "moles/index.html",
+    "color": "#8D6E63"
+  },
+  {
+    "id": "stack",
+    "title": "타워 쌓기",
+    "description": "타이밍 맞춰 블록을 높이 쌓으세요",
+    "title_en": "Stack",
+    "description_en": "Time your taps to build a tall tower",
+    "path": "stack/index.html",
+    "color": "#26A69A"
+  },
+  {
+    "id": "dodge",
+    "title": "피하기",
+    "description": "떨어지는 블록을 피해 오래 버티세요",
+    "title_en": "Dodge",
+    "description_en": "Drag to dodge the falling blocks",
+    "path": "dodge/index.html",
+    "color": "#EC407A"
+  },
+  {
+    "id": "simon",
+    "title": "기억력 게임",
+    "description": "빛나는 순서를 기억해 따라 누르세요",
+    "title_en": "Memory Pads",
+    "description_en": "Repeat the sequence of lights",
+    "path": "simon/index.html",
+    "color": "#5C6BC0"
   }
 ]

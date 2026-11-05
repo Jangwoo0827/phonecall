@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Flap</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { margin: 0; height: 100%; background: #0d3b4f; color: #e6f7ff; font-family: sans-serif; overflow: hidden; touch-action: none; }
+  #app { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 12px; }
+  .bar { width: 100%; max-width: 480px; display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; }
+  canvas { border-radius: 8px; touch-action: none; }
+  .hint { font-size: 13px; opacity: .75; text-align: center; min-height: 18px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="bar"><span><span data-en="Score">점수</span> <span id="score">0</span></span><span><span data-en="Best">최고</span> <span id="best">0</span></span></div>
+  <canvas id="c"></canvas>
+  <div class="hint" id="hint" data-en="Tap to start · tap to flap">화면을 탭해서 시작 · 탭할 때마다 날아올라요</div>
+</div>
+<script>
+  var EN = /[?&]lang=en/.test(location.search);
+  function T(ko, en) { return EN ? en : ko; }
+  if (EN) { document.documentElement.lang = 'en'; Array.prototype.forEach.call(document.querySelectorAll('[data-en]'), function (el) { el.textContent = el.getAttribute('data-en'); }); }
+(function () {
+  var W = 320, H = 480, GROUND = 44, GAP = 124, PIPE_W = 54, BIRD_X = 90, R = 12;
+  var c = document.getElementById('c'), ctx = c.getContext('2d');
+  var scoreEl = document.getElementById('score'), bestEl = document.getElementById('best'), hint = document.getElementById('hint');
+  c.width = W; c.height = H;
+  var best = 0;
+  try { if (window.Native) best = Native.getBest() | 0; } catch (e) {}
+  bestEl.textContent = best;
+
+  var state = 'idle', bird, pipes, score, last = 0, overAt = 0, groundX = 0;
+
+  function fit() {
+    var s = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 110) / H);
+    c.style.width = Math.floor(W * s) + 'px'; c.style.height = Math.floor(H * s) + 'px';
+  }
+
+  function reset() {
+    bird = { y: (H - GROUND) / 2, vy: 0 };
+    pipes = []; score = 0; scoreEl.textContent = 0;
+  }
+
+  function flap() { bird.vy = -6.6; }
+
+  function step(dt) {
+    bird.vy += 0.4 * dt; bird.y += bird.vy * dt;
+    groundX = (groundX - 2.4 * dt) % 24;
+    if (!pipes.length || pipes[pipes.length - 1].x < W - 175) {
+      pipes.push({ x: W + 30, cy: 95 + Math.random() * (H - GROUND - 190), passed: false });
+    }
+    for (var i = 0; i < pipes.length; i++) {
+      var p = pipes[i]; p.x -= 2.4 * dt;
+      if (Math.abs(p.x - BIRD_X) < PIPE_W / 2 + R - 2 && (bird.y - R < p.cy - GAP / 2 || bird.y + R > p.cy + GAP / 2)) return die();
+      if (!p.passed && p.x + PIPE_W / 2 < BIRD_X - R) { p.passed = true; score++; scoreEl.textContent = score; }
+    }
+    while (pipes.length && pipes[0].x < -60) pipes.shift();
+    if (bird.y - R < 0) { bird.y = R; bird.vy = 0; }
+    if (bird.y + R > H - GROUND) { bird.y = H - GROUND - R; die(); }
+  }
+
+  function die() {
+    state = 'over'; overAt = performance.now();
+    hint.textContent = T('게임 오버 · 점수 ', 'Game over · Score ') + score + T(' · 탭해서 다시 시작', ' · tap to restart');
+    if (score > best) { best = score; bestEl.textContent = best; }
+    try { if (window.Native) Native.submitScore(score); } catch (e) {}
+  }
+
+  function draw(now) {
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#4fc3f7'); g.addColorStop(1, '#b3e5fc');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    pipes.forEach(function (p) {
+      ctx.fillStyle = '#43a047';
+      ctx.fillRect(p.x - PIPE_W / 2, 0, PIPE_W, p.cy - GAP / 2);
+      ctx.fillRect(p.x - PIPE_W / 2, p.cy + GAP / 2, PIPE_W, H);
+      ctx.fillStyle = '#2e7d32';
+      ctx.fillRect(p.x - PIPE_W / 2 - 4, p.cy - GAP / 2 - 18, PIPE_W + 8, 18);
+      ctx.fillRect(p.x - PIPE_W / 2 - 4, p.cy + GAP / 2, PIPE_W + 8, 18);
+    });
+    ctx.fillStyle = '#8d6e63'; ctx.fillRect(0, H - GROUND, W, GROUND);
+    ctx.fillStyle = '#6d4c41';
+    for (var x = groundX; x < W; x += 24) ctx.fillRect(x, H - GROUND, 12, 8);
+    var by = state === 'idle' ? (H - GROUND) / 2 + Math.sin(now / 280) * 7 : bird.y;
+    ctx.save(); ctx.translate(BIRD_X, by);
+    ctx.rotate(state === 'idle' ? 0 : Math.max(-0.5, Math.min(1.2, bird.vy / 9)));
+    ctx.fillStyle = '#ffd54f'; ctx.beginPath(); ctx.arc(0, 0, R + 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(6, -4, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(8, -4, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ff7043'; ctx.beginPath(); ctx.moveTo(11, 0); ctx.lineTo(21, 3); ctx.lineTo(11, 7); ctx.fill();
+    ctx.fillStyle = '#ffb300'; ctx.beginPath(); ctx.ellipse(-4, 4, 7, 4, -0.4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 4;
+    ctx.font = 'bold 44px sans-serif'; ctx.textAlign = 'center';
+    ctx.strokeText(score, W / 2, 70); ctx.fillText(score, W / 2, 70);
+    if (state === 'over' || state === 'paused') { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, 0, W, H); }
+  }
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    var dt = Math.min(2.5, (now - last) / 16.667); last = now;
+    if (state === 'play') step(dt);
+    draw(now);
+  }
+
+  function pos(e) { var r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
+  document.addEventListener('pointerdown', function () {
+    if (state === 'idle') { state = 'play'; hint.textContent = ''; flap(); }
+    else if (state === 'paused') { state = 'play'; hint.textContent = ''; }
+    else if (state === 'play') flap();
+    else if (state === 'over' && performance.now() - overAt > 450) { reset(); state = 'idle'; hint.textContent = T('화면을 탭해서 시작 · 탭할 때마다 날아올라요', 'Tap to start · tap to flap'); }
+  });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && state === 'play') { state = 'paused'; hint.textContent = T('일시정지 · 탭해서 계속', 'Paused · tap to continue'); } });
+  window.addEventListener('resize', fit);
+  reset(); fit(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

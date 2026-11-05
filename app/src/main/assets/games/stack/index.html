@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Stack</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { margin: 0; height: 100%; background: #10302d; color: #e0f2f1; font-family: sans-serif; overflow: hidden; touch-action: none; }
+  #app { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 12px; }
+  .bar { width: 100%; max-width: 480px; display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; }
+  canvas { border-radius: 8px; touch-action: none; }
+  .hint { font-size: 13px; opacity: .75; text-align: center; min-height: 18px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="bar"><span><span data-en="Floors">층</span> <span id="score">0</span></span><span><span data-en="Best">최고</span> <span id="best">0</span></span></div>
+  <canvas id="c"></canvas>
+  <div class="hint" id="hint" data-en="Tap to start · tap to drop the block">탭해서 시작 · 탭하면 블록이 떨어져요</div>
+</div>
+<script>
+  var EN = /[?&]lang=en/.test(location.search);
+  function T(ko, en) { return EN ? en : ko; }
+  if (EN) { document.documentElement.lang = 'en'; Array.prototype.forEach.call(document.querySelectorAll('[data-en]'), function (el) { el.textContent = el.getAttribute('data-en'); }); }
+(function () {
+  var W = 320, H = 480, BH = 24, BASE_W = 176, BASE_Y = H - 70;
+  var c = document.getElementById('c'), ctx = c.getContext('2d');
+  var scoreEl = document.getElementById('score'), bestEl = document.getElementById('best'), hint = document.getElementById('hint');
+  c.width = W; c.height = H;
+  var best = 0;
+  try { if (window.Native) best = Native.getBest() | 0; } catch (e) {}
+  bestEl.textContent = best;
+
+  var state = 'idle', blocks, cur, score, speed, cam = 0, last = 0, overAt = 0, falling = null, flash = 0;
+
+  function fit() {
+    var s = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 110) / H);
+    c.style.width = Math.floor(W * s) + 'px'; c.style.height = Math.floor(H * s) + 'px';
+  }
+  function color(i) { return 'hsl(' + ((i * 14 + 160) % 360) + ',62%,56%)'; }
+  function newCur() {
+    var top = blocks[blocks.length - 1], fromLeft = blocks.length % 2 === 0;
+    cur = { w: top.w, x: fromLeft ? -top.w + 20 : W - 20, dir: fromLeft ? 1 : -1 };
+  }
+  function reset() {
+    blocks = [{ x: (W - BASE_W) / 2, w: BASE_W }]; score = 0; speed = 2.4; cam = 0; falling = null; flash = 0;
+    scoreEl.textContent = 0; newCur();
+  }
+  function drop() {
+    var top = blocks[blocks.length - 1];
+    var l = Math.max(cur.x, top.x), r = Math.min(cur.x + cur.w, top.x + top.w), ow = r - l;
+    if (ow <= 0) { falling = { x: cur.x, w: cur.w, y: 0, i: blocks.length }; return die(); }
+    if (Math.abs(cur.x - top.x) < 5) { blocks.push({ x: top.x, w: top.w }); flash = 1; }
+    else {
+      falling = cur.x < top.x ? { x: cur.x, w: top.x - cur.x, y: 0, i: blocks.length } : { x: top.x + top.w, w: cur.x + cur.w - (top.x + top.w), y: 0, i: blocks.length };
+      blocks.push({ x: l, w: ow });
+    }
+    score++; scoreEl.textContent = score; speed = Math.min(6.2, 2.4 + score * 0.09);
+    newCur();
+  }
+  function die() {
+    state = 'over'; overAt = performance.now();
+    hint.textContent = T('게임 오버 · ', 'Game over · ') + score + T('층 · 탭해서 다시 시작', (score === 1 ? ' floor' : ' floors') + ' · tap to restart');
+    if (score > best) { best = score; bestEl.textContent = best; }
+    try { if (window.Native) Native.submitScore(score); } catch (e) {}
+  }
+
+  function step(dt) {
+    cur.x += cur.dir * speed * dt;
+    if (cur.x < -cur.w * 0.5) { cur.x = -cur.w * 0.5; cur.dir = 1; }
+    if (cur.x > W - cur.w * 0.5) { cur.x = W - cur.w * 0.5; cur.dir = -1; }
+  }
+  function draw(dt) {
+    var target = Math.max(0, (blocks.length - 6) * BH);
+    cam += (target - cam) * Math.min(1, 0.12 * dt);
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#0b4f4a'); g.addColorStop(1, '#1d7a70');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    blocks.forEach(function (b, i) {
+      var y = BASE_Y - i * BH + cam;
+      if (y > H || y < -BH) return;
+      ctx.fillStyle = color(i); ctx.fillRect(b.x, y, b.w, BH - 2);
+      ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.fillRect(b.x, y, b.w, 4);
+    });
+    if (state !== 'over' || falling) {
+      if (state !== 'over') {
+        var cy = BASE_Y - blocks.length * BH + cam;
+        ctx.fillStyle = color(blocks.length); ctx.fillRect(cur.x, cy, cur.w, BH - 2);
+        ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.fillRect(cur.x, cy, cur.w, 4);
+      }
+    }
+    if (falling) {
+      falling.y += 5 * dt;
+      var fy = BASE_Y - (falling.i) * BH + cam + falling.y;
+      ctx.globalAlpha = Math.max(0, 1 - falling.y / 260);
+      ctx.fillStyle = color(falling.i); ctx.fillRect(falling.x, fy, falling.w, BH - 2); ctx.globalAlpha = 1;
+      if (falling.y > 300) falling = null;
+    }
+    if (flash > 0) { ctx.fillStyle = 'rgba(255,255,255,' + (flash * 0.25) + ')'; ctx.fillRect(0, 0, W, H); flash -= 0.06 * dt; }
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 4; ctx.font = 'bold 44px sans-serif'; ctx.textAlign = 'center';
+    ctx.strokeText(score, W / 2, 64); ctx.fillText(score, W / 2, 64);
+    if (state === 'over' || state === 'paused') { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(0, 0, W, H); }
+  }
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    var dt = Math.min(2.5, (now - last) / 16.667); last = now;
+    if (state === 'play') step(dt);
+    else if (state === 'idle') { cur.x = (W - cur.w) / 2 + Math.sin(now / 400) * 70; }
+    draw(dt);
+  }
+
+  document.addEventListener('pointerdown', function () {
+    if (state === 'idle') { state = 'play'; hint.textContent = ''; }
+    else if (state === 'paused') { state = 'play'; hint.textContent = ''; }
+    else if (state === 'play') drop();
+    else if (state === 'over' && performance.now() - overAt > 450) { reset(); state = 'idle'; hint.textContent = T('탭해서 시작', 'Tap to start'); }
+  });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && state === 'play') { state = 'paused'; hint.textContent = T('일시정지 · 탭해서 계속', 'Paused · tap to continue'); } });
+  window.addEventListener('resize', fit);
+  reset(); fit(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
