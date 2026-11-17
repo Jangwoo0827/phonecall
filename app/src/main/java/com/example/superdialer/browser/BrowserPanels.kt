@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,6 +46,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.example.superdialer.browser.data.Bookmark
 import com.example.superdialer.browser.data.HistoryItem
 import com.example.superdialer.calllog.formatDateTime
@@ -140,36 +142,47 @@ internal fun HistoryPanel(
     }
 }
 
-/** Page video in full screen, above the app's bars. Back or the page's own exit button leaves it. */
+/**
+ * Page video in full screen. The video view is attached to the activity's own window (a separate Dialog window made
+ * YouTube pause the video), the system bars are hidden, and the screen turns to landscape and follows the sensor while
+ * it is up. Back or the page's own exit button leaves it, which restores the bars and the orientation.
+ */
 @Composable
 internal fun FullscreenVideo(video: View, onExit: () -> Unit) {
-    Dialog(
-        onDismissRequest = onExit,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) {
-        val dialogView = LocalView.current
-        DisposableEffect(dialogView) {
-            val window = (dialogView.parent as? DialogWindowProvider)?.window
-            val controller = window?.let { WindowCompat.getInsetsController(it, dialogView) }
-            controller?.hide(WindowInsetsCompat.Type.systemBars())
-            onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
+    var context = LocalContext.current
+    while (context is android.content.ContextWrapper && context !is android.app.Activity) context = context.baseContext
+    val activity = context as? android.app.Activity ?: return
+    DisposableEffect(video) {
+        val window = activity.window
+        val decor = window.decorView as ViewGroup
+        val container = FrameLayout(activity).apply {
+            setBackgroundColor(android.graphics.Color.BLACK)
+            keepScreenOn = true
+            isClickable = true
         }
-        AndroidView(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black),
-            factory = { context ->
-                FrameLayout(context).apply {
-                    setBackgroundColor(android.graphics.Color.BLACK)
-                    (video.parent as? ViewGroup)?.removeView(video)
-                    addView(
-                        video,
-                        FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
-                    )
-                }
-            },
-            onRelease = { it.removeAllViews() },
-        )
+        (video.parent as? ViewGroup)?.removeView(video)
+        container.addView(video, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        decor.addView(container, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+
+        val controller = WindowCompat.getInsetsController(window, decor)
+        val oldBehavior = controller.systemBarsBehavior
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.hide(WindowInsetsCompat.Type.systemBars())
+        val oldCutout = window.attributes.layoutInDisplayCutoutMode
+        window.attributes = window.attributes.apply {
+            layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+        val oldOrientation = activity.requestedOrientation
+        activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+
+        onDispose {
+            activity.requestedOrientation = oldOrientation
+            window.attributes = window.attributes.apply { layoutInDisplayCutoutMode = oldCutout }
+            controller.systemBarsBehavior = oldBehavior
+            controller.show(WindowInsetsCompat.Type.systemBars())
+            container.removeAllViews()
+            decor.removeView(container)
+        }
     }
 }
 

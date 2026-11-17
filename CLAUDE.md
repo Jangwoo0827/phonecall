@@ -376,3 +376,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 공통 틀: 고정 논리 크기 캔버스(`W×H`)를 `fit()`으로 화면에 맞춤, `pointerdown/move/up`으로 입력, `requestAnimationFrame` 시간 기반(dt 상한). 새 게임도 이 모양을 따르면 됨
 - `GameCatalogTest.everyBundledGameIsListedWithItsFilesAndBothLanguages`: 10개·id 중복 없음·파일 존재·영어 제목·점수 보고·`?lang` 처리를 검사(새 게임을 추가하면 개수도 같이 고칠 것)
 - 브라우저(로컬 `python -m http.server`)에서 각 게임을 실행해 콘솔 오류 없음 확인, 에뮬레이터(360dp)에서 목록·Blocks 화면 확인. 손가락 조작 감각과 프레임은 실기기 확인 필요
+
+## 동영상 전체화면 (v0.13.1, browser/BrowserPanels.kt `FullscreenVideo`)
+- 예전엔 별도 Dialog 창에 영상 뷰를 넣었고, YouTube에서 전체화면을 누르면 영상이 멈췄음. 지금은 **액티비티 창(decorView)에 영상 뷰를 붙이고**, 시스템 바를 숨기고(스와이프로 잠깐 표시), 노치 영역까지 쓰고(`SHORT_EDGES`), 켜져 있는 동안 화면을 가로로 돌려 센서를 따라감(`SCREEN_ORIENTATION_SENSOR_LANDSCAPE`), 나가면 방향·바 복원. 뒤로가기/페이지의 나가기 버튼 모두 `exitFullscreen`
+- **멈춤의 진짜 원인**: WebView가 전체화면 뷰로 바꿔 끼우는 동안 페이지가 약 0.2초 "hidden"이 됨(`visibilitychange` + `document.hidden`) → YouTube가 그걸 보고 영상을 비움/멈춤. 해결: 전체화면 진입·종료 순간(`BrowserViewModel.shieldVisibility`)에 JS로 `visibilitychange`를 삼키고 `document.hidden/visibilityState`를 1.5초 동안 `false/visible`로 속임. 실제로 앱이 가려질 때(`webView.onPause`)는 영향 없음
+- 확인: 에뮬레이터에서 m.youtube.com 영상 + 로컬 `<video>` 페이지로 진입(가로 전환·재생 유지)·종료(세로 복귀·재생 유지). 디버깅 방법: `webView.evaluateJavascript`로 `console.log`를 심으면 logcat `chromium: [INFO:CONSOLE` 로 보임

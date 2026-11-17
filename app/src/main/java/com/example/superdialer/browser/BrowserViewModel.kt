@@ -537,7 +537,30 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Fullscreen video / downloads ---------------------------------------------------------
 
+    /** The page whose video is full screen (the page goes briefly "hidden" while the video view swaps in and out). */
+    private var fullscreenOwner: WebView? = null
+
+    /**
+     * While the video view is swapped in or out, WebView hides and re-shows the page for a moment. Sites such as
+     * YouTube pause the video on that "visibilitychange"; swallow the event for a second and a half around the swap.
+     */
+    private fun shieldVisibility(view: WebView) {
+        view.evaluateJavascript(
+            "(function(){function stop(e){e.stopImmediatePropagation();}" +
+                "window.addEventListener('visibilitychange',stop,true);" +
+                "document.addEventListener('visibilitychange',stop,true);" +
+                "try{Object.defineProperty(document,'hidden',{configurable:true,get:function(){return false;}});" +
+                "Object.defineProperty(document,'visibilityState',{configurable:true,get:function(){return 'visible';}});}catch(e){}" +
+                "setTimeout(function(){window.removeEventListener('visibilitychange',stop,true);" +
+                "document.removeEventListener('visibilitychange',stop,true);" +
+                "try{delete document.hidden;delete document.visibilityState;}catch(e){}},1500);})()",
+            null,
+        )
+    }
+
     fun exitFullscreen() {
+        fullscreenOwner?.let { shieldVisibility(it) }
+        fullscreenOwner = null
         customViewCallback?.onCustomViewHidden()
         customViewCallback = null
         customView = null
@@ -735,6 +758,8 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                 }
                 customView = view
                 customViewCallback = callback
+                fullscreenOwner = webView
+                shieldVisibility(webView)
             }
 
             override fun onHideCustomView() {
