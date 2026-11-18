@@ -17,7 +17,7 @@ class AppSmokeTest : AppTestBase() {
 
     @Test
     fun startsOnTheKeypadWithAllFiveTabs() {
-        listOf("키패드", "최근기록", "연락처", "웹·게임", "설정").forEach {
+        listOf("키패드", "최근기록", "연락처", "앱", "설정").forEach {
             compose.onNode(tabMatcher(it)).assertIsDisplayed()
         }
         "1234567890*#".forEach { key(it).assertIsDisplayed() }
@@ -53,7 +53,7 @@ class AppSmokeTest : AppTestBase() {
         tab("연락처")
         waitForText("이름, 초성, 번호 검색")
 
-        tab("웹·게임")
+        tab("앱")
         waitForText("주소 또는 검색어")
 
         tab("설정")

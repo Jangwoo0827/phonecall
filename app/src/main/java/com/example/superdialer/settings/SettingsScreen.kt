@@ -217,6 +217,27 @@ fun SettingsScreen(
             )
         }
 
+        SettingsGroup(str(R.string.music_settings_title)) {
+            var confirmClear by remember { mutableStateOf(false) }
+            Clickable(str(R.string.music_clear_data), str(R.string.music_clear_data_desc)) { confirmClear = true }
+            if (confirmClear) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { confirmClear = false },
+                    title = { Text(str(R.string.music_clear_data)) },
+                    text = { Text(str(R.string.music_clear_data_confirm)) },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = {
+                            com.example.superdialer.music.MusicPlayer.stop()
+                            com.example.superdialer.music.MusicStore.clearAll()
+                            confirmClear = false
+                            Toast.makeText(context, str(R.string.music_data_cleared), Toast.LENGTH_SHORT).show()
+                        }) { Text(str(R.string.music_delete)) }
+                    },
+                    dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmClear = false }) { Text(str(R.string.cancel)) } },
+                )
+            }
+        }
+
         SettingsGroup(str(R.string.t_permissions)) {
             PermissionRow(context, str(R.string.t_call), Manifest.permission.CALL_PHONE)
             PermissionRow(context, str(R.string.t_calls_3), Manifest.permission.READ_CALL_LOG)

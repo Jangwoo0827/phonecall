@@ -1,6 +1,12 @@
 package com.example.superdialer.navigation
 
 import com.example.superdialer.kakao.KakaoRoomScreen
+import com.example.superdialer.music.ui.MiniPlayer
+import com.example.superdialer.music.ui.MusicOverlays
+import com.example.superdialer.music.ui.MusicUi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import com.example.superdialer.messages.MessagesScreen
 import com.example.superdialer.calllog.numberKey
 import com.example.superdialer.dialer.recentCallSuggestions
@@ -135,16 +141,28 @@ fun SuperDialerApp(
         }
     }
 
+    // A page of the Music tab asked for from elsewhere (the full player, a notification): switch to Apps > Music and open it.
+    LaunchedEffect(MusicUi.pendingDest, navReady) {
+        val dest = MusicUi.pendingDest
+        if (navReady && dest != null) {
+            browserViewModel.hubSection = 2
+            navigateToTab(TopLevelDestination.Hub.route)
+            MusicUi.open(dest)
+            MusicUi.pendingDest = null
+        }
+    }
+
     // A website open in the browser takes the whole screen, so the app's own tab bar steps aside.
     val hideBottomBar = currentRoute == TopLevelDestination.Hub.route && browserViewModel.immersive
 
+    Box(Modifier.fillMaxSize()) {
     Scaffold(
         bottomBar = {
             AnimatedVisibility(
                 visible = !hideBottomBar,
                 enter = slideInVertically(tween(260)) { it } + fadeIn(tween(260)),
                 exit = slideOutVertically(tween(220)) { it } + fadeOut(tween(220)),
-            ) { NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+            ) { Column { MiniPlayer(); NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
                 TopLevelDestination.entries.forEach { destination ->
                     // Sub-screens such as "contacts/{id}" keep their tab highlighted.
                     val selected = currentRoute == destination.route ||
@@ -169,7 +187,7 @@ fun SuperDialerApp(
                         ),
                     )
                 }
-            } }
+            } } }
         },
     ) { innerPadding ->
         NavHost(
@@ -292,5 +310,7 @@ fun SuperDialerApp(
             }
             composable(TopLevelDestination.Hub.route) { WebGamesScreen(browserViewModel) }
         }
+    }
+        MusicOverlays()
     }
 }

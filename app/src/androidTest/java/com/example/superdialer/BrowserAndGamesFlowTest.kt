@@ -31,7 +31,7 @@ class BrowserAndGamesFlowTest : AppTestBase() {
 
     @Test
     fun addingAStartPageLinkShowsItsTile() {
-        tab("웹·게임")
+        tab("앱")
         waitFor(hasText("네이버"))
         compose.onNodeWithContentDescription("추가").performClick()
         waitFor(hasText("링크 추가"))
@@ -46,7 +46,7 @@ class BrowserAndGamesFlowTest : AppTestBase() {
 
     @Test
     fun aWrongAddressIsRejectedBeforeSaving() {
-        tab("웹·게임")
+        tab("앱")
         waitFor(hasText("네이버"))
         compose.onNodeWithContentDescription("추가").performClick()
         waitFor(hasText("링크 추가"))
@@ -58,7 +58,7 @@ class BrowserAndGamesFlowTest : AppTestBase() {
 
     @Test
     fun aGameOpensAndBackReturnsToTheList() {
-        tab("웹·게임")
+        tab("앱")
         waitForText("주소 또는 검색어")
         compose.onNodeWithText("게임").performClick()
         waitFor(hasText("스네이크"))

@@ -16,7 +16,7 @@ class GamesAndBrowserTest : AppTestBase() {
 
     @Test
     fun startPageShowsTheDefaultTiles() {
-        tab("웹·게임")
+        tab("앱")
         waitFor(hasText("네이버"))
         // "구글" is also the name of the chosen search engine shown in the address field, so more than one node may match
         listOf("체크리스트", "네이버", "구글", "유튜브").forEach { compose.onAllNodesWithText(it).onFirst().assertIsDisplayed() }
@@ -24,7 +24,7 @@ class GamesAndBrowserTest : AppTestBase() {
 
     @Test
     fun gameListShowsEveryBundledGame() {
-        tab("웹·게임")
+        tab("앱")
         waitForText("주소 또는 검색어")
         // the "브라우저 / 게임" switch at the top of the tab
         compose.onNodeWithText("게임").performClick()

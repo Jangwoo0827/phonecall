@@ -126,6 +126,7 @@ class MainActivity : ComponentActivity() {
             when (target) {
                 SHORTCUT_GAMES -> { browserViewModel.hubSection = 1; requestedRoute = TopLevelDestination.Hub.route }
                 SHORTCUT_BROWSER -> { browserViewModel.hubSection = 0; requestedRoute = TopLevelDestination.Hub.route }
+                SHORTCUT_MUSIC -> { browserViewModel.hubSection = 2; requestedRoute = TopLevelDestination.Hub.route }
                 else -> TopLevelDestination.entries.firstOrNull { it.route == target }?.let { requestedRoute = it.route }
             }
             return
@@ -153,5 +154,6 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_OPEN_ROUTE = "open_route"
         const val SHORTCUT_GAMES = "games"
         const val SHORTCUT_BROWSER = "browser"
+        const val SHORTCUT_MUSIC = "music"
     }
 }

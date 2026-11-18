@@ -22,6 +22,12 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Music tab: background playback with a media notification, and reading the music files on the phone. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
     <uses-feature
         android:name="android.hardware.telephony"
@@ -48,6 +54,8 @@
         </intent>
         <!-- KakaoTalk, to open its chat / 보이스톡 / 페이스톡 entries of a contact and to share to it (kakao/) -->
         <package android:name="com.kakao.talk" />
+        <!-- Spotify, for "Search on Spotify" in a song's menu (music/MusicUi.kt) -->
+        <package android:name="com.spotify.music" />
     </queries>
 
     <application
@@ -161,6 +169,12 @@
             android:theme="@style/Theme.SuperDialer" />
 
         <!-- Notification access (the user switches it on in the system settings): collects KakaoTalk's notifications, see kakao/KakaoInbox -->
+        <!-- Music tab playback (media3 session + notification); only this app talks to it. -->
+        <service
+            android:name=".music.MusicService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
         <service
             android:name=".kakao.KakaoNotificationService"
             android:exported="true"

@@ -527,7 +527,7 @@
     <string name="t_waiting_for_the_other_side_s">상대 화면을 기다리는 중</string>
     <string name="t_watching_their_video">상대 영상 보는 중</string>
     <string name="t_we_sent_a_reset_email_please">재설정 메일을 보냈습니다. 메일함을 확인해 주세요.</string>
-    <string name="t_web_games">웹·게임</string>
+    <string name="t_web_games">앱</string>
     <string name="t_web_page_dark_mode">웹 페이지 다크 모드</string>
     <string name="t_what_changed_in_every_version_so">지금까지 나온 모든 버전의 바뀐 내용</string>
     <string name="t_what_is_stored_where_and_how">어떤 정보가 어디에 저장되는지, 계정 삭제 방법</string>

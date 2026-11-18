@@ -25,10 +25,10 @@ import com.example.superdialer.browser.BrowserScreen
 import com.example.superdialer.browser.BrowserViewModel
 import com.example.superdialer.games.GamesScreen
 
-private val sections = listOf(str(R.string.shortcut_browser), str(R.string.shortcut_games))
+private val sections = listOf(str(R.string.shortcut_browser), str(R.string.shortcut_games), str(R.string.music_title))
 
 /**
- * One bottom tab that hosts the built-in browser and the built-in games behind a top switcher.
+ * The "Apps" bottom tab: the built-in browser, the built-in games and the music player behind a top switcher.
  * While a website is open the switcher is hidden (and the app's bottom bar too) so the page gets the screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,7 +66,8 @@ fun WebGamesScreen(browserViewModel: BrowserViewModel, modifier: Modifier = Modi
         ) { section ->
             when (section) {
                 0 -> BrowserScreen(browserViewModel)
-                else -> GamesScreen()
+                1 -> GamesScreen()
+                else -> com.example.superdialer.music.ui.MusicScreen()
             }
         }
     }

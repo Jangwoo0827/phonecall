@@ -44,7 +44,7 @@ class BrowserModesTest : AppTestBase() {
 
     @Test
     fun aPrivateTabShowsItsBannerAndTheTabListSwitchesBetweenKinds() {
-        tab("웹·게임")
+        tab("앱")
         waitForText("주소 또는 검색어")
         compose.onNodeWithContentDescription("더보기").performClick()
         compose.onNodeWithTag("menu_new_private_tab").performClick()
@@ -96,7 +96,7 @@ class BrowserModesTest : AppTestBase() {
     @Test
     fun theStartPageNamesTheChosenSearchEngine() {
         AppSettings.updateSearchEngine(SearchEngine.BING)
-        tab("웹·게임")
+        tab("앱")
         waitForText("주소 또는 검색어")
         compose.onNodeWithText("마이크로소프트").assertIsDisplayed()
     }
@@ -128,7 +128,7 @@ class BrowserModesTest : AppTestBase() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("browser_private", Context.MODE_PRIVATE).edit().putBoolean("dirty", true).commit()
         launch()
-        tab("웹·게임")
+        tab("앱")
         waitForText("주소 또는 검색어")
     }
 }
