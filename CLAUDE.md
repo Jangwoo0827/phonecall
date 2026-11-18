@@ -397,3 +397,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - `ValorantChampions`(홈 "VALORANT Champions" 줄): Deezer 곡 id 6개(Die For You, Ticking Away, Fire Again, Die For You Zedd/Dabin 리믹스, If The Sun Burns Out Tonight)를 실행 때 `/track/<id>`로 불러옴. 연도별 챔피언스 주제곡이 정확히 무엇인지는 Deezer 자료로 확인하지 못함(Die For You=2021, Ticking Away=2023, If The Sun…=2026은 Deezer 검색 결과의 "Champions" 표기로 확인, 나머지는 같은 아티스트 곡) — 곡을 바꾸려면 `ids`만 고치면 됨
 - **화면이 꺼져도 재생**: 코드 변경 없이 이미 동작(MediaSessionService + 포그라운드 서비스 + `WAKE_MODE_NETWORK`). 에뮬레이터에서 화면을 끈 채 40초 이상 재생·다음 곡 넘어감 확인, 알림은 `category=transport`, `vis=PUBLIC`(잠금 화면에 표시), 채널 이름 "지금 재생 중"(`setChannelName`). 곡이 하나뿐인 대기열은 끝나면 멈춤. 삼성 폰의 배터리 최적화가 백그라운드 재생을 끊으면 설정 > 앱 > SuperDialer > 배터리 > "제한 없음"
 - 테스트 `AudiusJsonTest`
+
+## 음악: 전곡 우선 / YouTube Music (v0.14.0)
+- **전곡 우선**(설정 > 음악 > "전곡 우선 재생", `AppSettings.preferFullSongs`, 기본 켜짐): Deezer 곡을 재생할 때 `MusicPlayer`의 `ResolvingDataSource`가 Audius에서 같은 곡의 전곡(`AudiusApi.fullStreamUrlBlocking`, 곡당 1번 검색하고 결과·실패를 세션 동안 기억, 네트워크 오류는 기억 안 함)을 먼저 찾고 **없을 때만 30초 미리듣기**로 재생. 로딩 스레드에서 처리라 곡이 다시 시작되지 않음. 전곡으로 재생 중인 곡 id는 `MusicPlayer.fullIds`(Compose 목록)에 들어가 "30초 미리듣기" 배지·"전곡으로 재생" 메뉴가 숨겨짐. 에뮬레이터에서 VALORANT "Die For You"를 한 번 눌러 3:38 전곡 재생 확인
+- **YouTube Music 연결은 뺐음**(사용자 결정): 우리 플레이어 안에서 재생할 수 없어서(공식 API 없음, 스트림 추출은 약관 위반) 곡 메뉴·재생 화면·안내 창의 YouTube Music 이동을 모두 제거. Audius에 전곡이 없는 곡은 30초 미리듣기로 재생되고, 배지/메뉴의 "전곡으로 재생"을 누르면 "이 곡의 전곡이 없어요"라고 알려 줌

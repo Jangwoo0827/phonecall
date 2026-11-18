@@ -54,6 +54,7 @@ object AppSettings {
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_ACCENT = "accent"
     private const val KEY_QUICK_DIRECT = "quick_dial_direct"
+    private const val KEY_PREFER_FULL = "music_prefer_full"
     private const val KEY_AUTO_UPDATE = "auto_download_updates"
     private const val KEY_TEXT_SIZE = "text_size"
     private const val KEY_SEARCH_ENGINE = "search_engine"
@@ -98,6 +99,10 @@ object AppSettings {
     var quickDialCallsDirectly by mutableStateOf(false)
         private set
 
+    /** Music: play the full-length version of an online song when one exists, the 30-second preview only otherwise. */
+    var preferFullSongs by mutableStateOf(true)
+        private set
+
     /** Whether the first-run "make this your default phone app" screen has been dealt with. */
     var onboardingDone by mutableStateOf(false)
         private set
@@ -112,6 +117,7 @@ object AppSettings {
         themeMode = ThemeMode.fromKey(p.getString(KEY_THEME_MODE, null))
         accent = AccentColor.fromKey(p.getString(KEY_ACCENT, null))
         quickDialCallsDirectly = p.getBoolean(KEY_QUICK_DIRECT, false)
+        preferFullSongs = p.getBoolean(KEY_PREFER_FULL, true)
         autoDownloadUpdates = p.getBoolean(KEY_AUTO_UPDATE, false)
         textSize = TextSize.fromKey(p.getString(KEY_TEXT_SIZE, null))
         searchEngine = com.example.superdialer.browser.SearchEngine.fromKey(p.getString(KEY_SEARCH_ENGINE, null))
@@ -143,6 +149,11 @@ object AppSettings {
     fun updateAutoDownloadUpdates(enabled: Boolean) {
         autoDownloadUpdates = enabled
         prefs?.edit()?.putBoolean(KEY_AUTO_UPDATE, enabled)?.apply()
+    }
+
+    fun updatePreferFullSongs(enabled: Boolean) {
+        preferFullSongs = enabled
+        prefs?.edit()?.putBoolean(KEY_PREFER_FULL, enabled)?.apply()
     }
 
     fun updateQuickDialCallsDirectly(enabled: Boolean) {

@@ -55,8 +55,6 @@ object MusicUi {
     /** The "add to playlist" chooser; also used for several songs at once (album / playlist menus). */
     var addTracks by mutableStateOf<List<Track>?>(null)
 
-    /** A song that has no full version on Audius: a dialog offers the YouTube search instead. */
-    var fullHelpTrack by mutableStateOf<Track?>(null)
 
     /** Name dialogs: create (with songs to put in it) and rename. */
     var createPlaylistWith by mutableStateOf<List<Track>?>(null)
@@ -111,21 +109,14 @@ fun openInSpotify(context: Context, track: Track) {
     runCatching { context.startActivity(app) }.recoverCatching { context.startActivity(web) }
 }
 
-/** Opens the song's full version on YouTube (the YouTube app when installed, otherwise the web page). */
-fun openFullOnYoutube(context: Context, track: Track) {
-    val q = Uri.encode("${track.title} ${track.artist}")
-    val web = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=$q")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    runCatching { context.startActivity(web) }
-}
-
 /**
  * Plays the full-length version of a 30-second preview: looks the song up on Audius (full songs) and, when it is there,
- * replaces the current song with it. When Audius does not have it, a dialog offers the YouTube search instead.
+ * replaces the current song with it, or says that there is none.
  */
 fun playFullVersion(context: Context, scope: kotlinx.coroutines.CoroutineScope, track: Track) {
     toast(context, R.string.music_looking_for_full)
     scope.launch {
         val full = runCatching { com.example.superdialer.music.AudiusApi.fullVersionOf(track) }.getOrNull()
-        if (full != null) com.example.superdialer.music.MusicPlayer.replaceCurrent(full) else MusicUi.fullHelpTrack = track
+        if (full != null) com.example.superdialer.music.MusicPlayer.replaceCurrent(full) else toast(context, R.string.music_no_full_version)
     }
 }

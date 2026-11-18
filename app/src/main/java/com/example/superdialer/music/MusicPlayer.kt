@@ -42,6 +42,9 @@ object MusicPlayer {
     /** Songs the player has been handed, by id, so a MediaItem can be turned back into a [Track]. */
     private val known = HashMap<String, Track>()
 
+    /** Ids of online songs whose full-length version is the one being played (the preview badge is hidden for them). */
+    val fullIds = androidx.compose.runtime.mutableStateListOf<String>()
+
     /** Ids in the order they had before shuffling (to restore it when shuffle goes off). */
     private val originalOrder = ArrayList<String>()
 
@@ -77,8 +80,19 @@ object MusicPlayer {
         val resolving = ResolvingDataSource.Factory(upstream) { spec ->
             if (spec.uri.scheme == "deezer") {
                 val id = spec.uri.lastPathSegment?.toLongOrNull() ?: throw IOException("bad track")
-                val url = DeezerApi.freshPreviewBlocking(id) ?: throw IOException("no preview")
-                spec.withUri(Uri.parse(url))
+                val track = known["dz:$id"]
+                val full = if (track != null && com.example.superdialer.settings.AppSettings.preferFullSongs) {
+                    AudiusApi.fullStreamUrlBlocking(track)
+                } else {
+                    null
+                }
+                if (full != null) {
+                    handler.post { if (track!!.id !in fullIds) fullIds.add(track.id) }
+                    spec.withUri(Uri.parse(full))
+                } else {
+                    val url = DeezerApi.freshPreviewBlocking(id) ?: throw IOException("no preview")
+                    spec.withUri(Uri.parse(url))
+                }
             } else {
                 spec
             }

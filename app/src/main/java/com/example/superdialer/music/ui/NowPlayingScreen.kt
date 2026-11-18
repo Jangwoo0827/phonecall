@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueueMusic
@@ -134,7 +135,7 @@ fun NowPlayingScreen() {
                 )
             }
         }
-        if (track.isPreview) {
+        if (track.isPreview && track.id !in MusicPlayer.fullIds) {
             val scope = androidx.compose.runtime.rememberCoroutineScope()
             Text(
                 str(R.string.music_preview_tap_full),

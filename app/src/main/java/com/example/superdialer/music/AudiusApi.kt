@@ -137,6 +137,24 @@ object AudiusApi {
     suspend fun search(query: String, limit: Int = 30): List<Track> =
         AudiusJson.tracks(get("/tracks/search?query=${enc(query.trim())}&limit=$limit"))
 
+    private val lookups = HashMap<String, String?>()
+
+    /**
+     * Stream URL of the full version of [track] for the player's loading thread (blocking, at most one search), or null.
+     * Hits and misses are remembered for the session so a song is looked up once.
+     */
+    fun fullStreamUrlBlocking(track: Track): String? {
+        synchronized(lookups) { if (lookups.containsKey(track.id)) return lookups[track.id] }
+        val url = try {
+            val found = AudiusJson.tracks(getBlocking("/tracks/search?query=${enc("${track.title} ${track.artist}")}&limit=10"))
+            AudiusJson.bestMatch(track, found)?.uri
+        } catch (e: IOException) {
+            return null // network trouble: not remembered, so the next try can still succeed
+        }
+        synchronized(lookups) { lookups[track.id] = url }
+        return url
+    }
+
     /**
      * The full-length version of [track], or null when Audius does not have it. The audio is Audius's, but the song keeps
      * the title, artist and cover of the one it replaces (uploads often have long file-name-like titles).

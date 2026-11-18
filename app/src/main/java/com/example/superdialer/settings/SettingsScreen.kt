@@ -218,6 +218,14 @@ fun SettingsScreen(
         }
 
         SettingsGroup(str(R.string.music_settings_title)) {
+            ListItem(
+                colors = transparentListItem(),
+                headlineContent = { Text(str(R.string.music_prefer_full)) },
+                supportingContent = { Text(str(R.string.music_prefer_full_desc)) },
+                trailingContent = {
+                    Switch(checked = AppSettings.preferFullSongs, onCheckedChange = AppSettings::updatePreferFullSongs)
+                },
+            )
             var confirmClear by remember { mutableStateOf(false) }
             Clickable(str(R.string.music_clear_data), str(R.string.music_clear_data_desc)) { confirmClear = true }
             if (confirmClear) {

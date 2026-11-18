@@ -137,12 +137,12 @@
     <string name="music_empty_recent">Songs you play will show up here.</string>
     <string name="music_looking_for_full">Looking for the full song…</string>
     <string name="music_play_full">Play full song</string>
-    <string name="music_full_on_youtube">Full song on YouTube</string>
-    <string name="music_full_help_title">No full version here</string>
-    <string name="music_full_help_text">This song isn\'t available in full on Audius (the free full-length source). You can look for it on YouTube instead.</string>
     <string name="music_full_songs">Full songs</string>
     <string name="music_trending_full">Full songs trending on Audius</string>
     <string name="music_full_note">Full-length songs from independent artists on Audius</string>
     <string name="music_valorant_champions">VALORANT Champions</string>
     <string name="music_preview_tap_full">30-second preview · tap for full song</string>
+    <string name="music_prefer_full">Prefer full songs</string>
+    <string name="music_prefer_full_desc">Look for the full-length version of online songs first and fall back to the 30-second preview only when there is none</string>
+    <string name="music_no_full_version">No full version of this song</string>
 </resources>

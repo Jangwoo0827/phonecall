@@ -137,12 +137,12 @@
     <string name="music_empty_recent">재생한 곡이 여기에 나타나요.</string>
     <string name="music_looking_for_full">전곡을 찾는 중이에요…</string>
     <string name="music_play_full">전곡으로 재생</string>
-    <string name="music_full_on_youtube">YouTube에서 전곡 보기</string>
-    <string name="music_full_help_title">여기엔 전곡이 없어요</string>
-    <string name="music_full_help_text">이 곡은 무료 전곡 음원인 Audius에 없어요. 대신 YouTube에서 찾아볼 수 있어요.</string>
     <string name="music_full_songs">전곡 재생</string>
     <string name="music_trending_full">Audius에서 인기 있는 전곡</string>
     <string name="music_full_note">Audius의 독립 아티스트 전곡 음원</string>
     <string name="music_valorant_champions">발로란트 챔피언스</string>
     <string name="music_preview_tap_full">30초 미리듣기 · 눌러서 전곡 듣기</string>
+    <string name="music_prefer_full">전곡 우선 재생</string>
+    <string name="music_prefer_full_desc">온라인 곡은 전곡 버전을 먼저 찾고, 없을 때만 30초 미리듣기로 재생해요</string>
+    <string name="music_no_full_version">이 곡의 전곡이 없어요</string>
 </resources>
