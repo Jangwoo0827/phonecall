@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +60,7 @@ import com.example.superdialer.i18n.str
 import com.example.superdialer.music.MusicPlayer
 import com.example.superdialer.music.MusicStore
 import com.example.superdialer.music.Track
+import kotlinx.coroutines.launch
 
 /**
  * Everything the Music feature draws above the app: the full player, and the sheets and dialogs that open from songs.
@@ -99,6 +101,8 @@ fun MusicOverlays() {
         ModalBottomSheet(onDismissRequest = { MusicUi.sleepOpen = false }, sheetState = state) { SleepSheet() }
     }
 
+    LaunchedEffect(Unit) { com.example.superdialer.music.MusicPlayer.openLink = { t -> MusicUi.pendingBrowserUrl = t.uri } }
+    if (MusicUi.addLinkOpen) AddLinkDialog()
     MusicUi.createPlaylistWith?.let { initial -> CreatePlaylistDialog(initial) }
     MusicUi.renamePlaylistId?.let { id -> RenamePlaylistDialog(id) }
     MusicUi.deletePlaylistId?.let { id -> DeletePlaylistDialog(id) }
@@ -135,8 +139,10 @@ private fun TrackMenu(track: Track) {
         if (playlistId != null) {
             SheetAction(Icons.Filled.Delete, str(R.string.music_remove_from_playlist)) { MusicStore.removeFromPlaylist(playlistId, track.id); close() }
         }
-        SheetAction(Icons.Filled.SkipNext, str(R.string.music_play_next)) { MusicPlayer.playNext(track); close() }
-        SheetAction(Icons.Filled.QueueMusic, str(R.string.music_add_to_queue)) { MusicPlayer.addToQueue(track); close() }
+        if (!track.isLink) {
+            SheetAction(Icons.Filled.SkipNext, str(R.string.music_play_next)) { MusicPlayer.playNext(track); close() }
+            SheetAction(Icons.Filled.QueueMusic, str(R.string.music_add_to_queue)) { MusicPlayer.addToQueue(track); close() }
+        }
         if (track.artistId > 0) {
             SheetAction(Icons.Filled.Person, str(R.string.music_go_to_artist)) { close(); MusicUi.requestOpen(Dest.Artist(track.artistId)) }
         }
@@ -242,16 +248,26 @@ private fun CreatePlaylistDialog(initial: List<Track>) {
     val context = LocalContext.current
     val suggested = str(R.string.music_my_playlist, MusicStore.playlists.size + 1)
     var name by remember { mutableStateOf(suggested) }
+    var loop by remember { mutableStateOf(false) }
     fun close() { MusicUi.createPlaylistWith = null }
     AlertDialog(
         onDismissRequest = ::close,
         title = { Text(str(R.string.music_create_playlist)) },
         text = {
-            OutlinedTextField(name, { name = it }, singleLine = true, label = { Text(str(R.string.music_playlist_name)) }, shape = RoundedCornerShape(12.dp))
+            Column {
+                OutlinedTextField(name, { name = it }, singleLine = true, label = { Text(str(R.string.music_playlist_name)) }, shape = RoundedCornerShape(12.dp))
+                Row(Modifier.fillMaxWidth().clickable { loop = !loop }.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Checkbox(checked = loop, onCheckedChange = { loop = it })
+                    Column(Modifier.padding(start = 4.dp)) {
+                        Text(str(R.string.music_loop))
+                        Text(str(R.string.music_loop_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
         },
         confirmButton = {
             TextButton(onClick = {
-                val p = MusicStore.createPlaylist(name.ifBlank { suggested }, initial)
+                val p = MusicStore.createPlaylist(name.ifBlank { suggested }, initial, loop)
                 if (initial.isNotEmpty()) toast(context, R.string.music_added_to_playlist, p.name) else MusicUi.open(Dest.UserPlaylist(p.id))
                 close()
             }) { Text(str(R.string.music_create)) }
@@ -284,6 +300,48 @@ private fun DeletePlaylistDialog(id: String) {
         title = { Text(str(R.string.music_delete_playlist)) },
         text = { Text(str(R.string.music_delete_confirm, p.name)) },
         confirmButton = { TextButton(onClick = { MusicStore.deletePlaylist(id); close() }) { Text(str(R.string.music_delete)) } },
+        dismissButton = { TextButton(onClick = ::close) { Text(str(R.string.cancel)) } },
+    )
+}
+
+/** Paste a YouTube link (prefilled from the clipboard when it holds one); the video becomes a link song to put in a playlist. */
+@Composable
+private fun AddLinkDialog() {
+    val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    var text by remember {
+        mutableStateOf(clipboard.getText()?.text?.trim()?.takeIf { com.example.superdialer.music.YoutubeLinks.isVideoLink(it) }.orEmpty())
+    }
+    var busy by remember { mutableStateOf(false) }
+    fun close() { MusicUi.addLinkOpen = false }
+    AlertDialog(
+        onDismissRequest = ::close,
+        title = { Text(str(R.string.music_link_title)) },
+        text = {
+            OutlinedTextField(
+                text, { text = it }, singleLine = true, enabled = !busy,
+                label = { Text(str(R.string.music_link_hint)) }, shape = RoundedCornerShape(12.dp),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !busy && text.isNotBlank(),
+                onClick = {
+                    busy = true
+                    scope.launch {
+                        val song = com.example.superdialer.music.YoutubeLinks.fetch(text)
+                        busy = false
+                        if (song == null) {
+                            toast(context, R.string.music_link_invalid)
+                        } else {
+                            close()
+                            MusicUi.addTracks = listOf(song)
+                        }
+                    }
+                },
+            ) { Text(str(if (busy) R.string.music_link_loading else R.string.music_link_add)) }
+        },
         dismissButton = { TextButton(onClick = ::close) { Text(str(R.string.cancel)) } },
     )
 }

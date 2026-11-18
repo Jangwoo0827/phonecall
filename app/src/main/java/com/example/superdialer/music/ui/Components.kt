@@ -163,7 +163,10 @@ fun TrackRow(
                         contentAlignment = Alignment.Center,
                     ) { Text("E", color = MaterialTheme.colorScheme.surface, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
                 }
-                Text(track.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    if (track.isLink) str(R.string.music_link_song) else track.artist,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+                )
             }
         }
         if (showMenu) {

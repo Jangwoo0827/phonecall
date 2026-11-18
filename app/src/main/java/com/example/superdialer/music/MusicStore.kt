@@ -71,12 +71,12 @@ object MusicCodec {
     }
 
     fun userPlaylist(p: UserPlaylist) = JSONObject().put("id", p.id).put("name", p.name)
-        .put("created", p.created).put("tracks", tracks(p.tracks))
+        .put("created", p.created).put("loop", p.loop).put("tracks", tracks(p.tracks))
 
     fun userPlaylist(o: JSONObject): UserPlaylist? {
         val id = o.optString("id")
         if (id.isEmpty()) return null
-        return UserPlaylist(id, o.optString("name"), tracks(o.optJSONArray("tracks")), o.optLong("created"))
+        return UserPlaylist(id, o.optString("name"), tracks(o.optJSONArray("tracks")), o.optLong("created"), o.optBoolean("loop"))
     }
 
     fun <T> list(a: JSONArray?, parse: (JSONObject) -> T?): List<T> {
@@ -150,8 +150,8 @@ object MusicStore {
 
     // --- own playlists --------------------------------------------------------------------------------------------
 
-    fun createPlaylist(name: String, first: List<Track> = emptyList()): UserPlaylist {
-        val p = UserPlaylist(UUID.randomUUID().toString(), name.trim().ifEmpty { "Playlist" }, first.distinctBy { it.id }, System.currentTimeMillis())
+    fun createPlaylist(name: String, first: List<Track> = emptyList(), loop: Boolean = false): UserPlaylist {
+        val p = UserPlaylist(UUID.randomUUID().toString(), name.trim().ifEmpty { "Playlist" }, first.distinctBy { it.id }, System.currentTimeMillis(), loop)
         playlists.add(0, p)
         save()
         return p
@@ -163,6 +163,13 @@ object MusicStore {
         val i = playlists.indexOfFirst { it.id == id }
         if (i < 0 || name.isBlank()) return
         playlists[i] = playlists[i].copy(name = name.trim())
+        save()
+    }
+
+    fun setPlaylistLoop(id: String, loop: Boolean) {
+        val i = playlists.indexOfFirst { it.id == id }
+        if (i < 0) return
+        playlists[i] = playlists[i].copy(loop = loop)
         save()
     }
 

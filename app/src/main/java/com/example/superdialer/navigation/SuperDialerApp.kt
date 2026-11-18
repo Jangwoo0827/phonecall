@@ -152,6 +152,17 @@ fun SuperDialerApp(
         }
     }
 
+    // A link asked for by the Music tab (a YouTube search or a link song): open it in the browser tab.
+    LaunchedEffect(MusicUi.pendingBrowserUrl, navReady) {
+        val url = MusicUi.pendingBrowserUrl
+        if (navReady && url != null) {
+            browserViewModel.hubSection = 0
+            browserViewModel.openExternal(url)
+            navigateToTab(TopLevelDestination.Hub.route)
+            MusicUi.pendingBrowserUrl = null
+        }
+    }
+
     // A website open in the browser takes the whole screen, so the app's own tab bar steps aside.
     val hideBottomBar = currentRoute == TopLevelDestination.Hub.route && browserViewModel.immersive
 

@@ -145,4 +145,18 @@
     <string name="music_prefer_full">Prefer full songs</string>
     <string name="music_prefer_full_desc">Look for the full-length version of online songs first and fall back to the 30-second preview only when there is none</string>
     <string name="music_no_full_version">No full version of this song</string>
+    <string name="music_add_link">Add YouTube link</string>
+    <string name="music_link_title">Add a song from a link</string>
+    <string name="music_link_hint">Paste a YouTube link</string>
+    <string name="music_link_add">Add</string>
+    <string name="music_link_invalid">That isn\'t a YouTube video link</string>
+    <string name="music_link_loading">Looking up the video…</string>
+    <string name="music_find_on_youtube">Find \"%1$s\" on YouTube</string>
+    <string name="music_find_on_youtube_hint">Opens YouTube in the browser. On a video, menu ⋮ &gt; Add to Music saves it as a link.</string>
+    <string name="music_add_to_music">Add to Music</string>
+    <string name="music_link_song">YouTube link • opens in the browser</string>
+    <string name="music_loop">Repeat forever</string>
+    <string name="music_loop_desc">Plays this playlist over and over</string>
+    <string name="music_loop_on">Repeating forever</string>
+    <string name="music_link_not_queued">Link songs open in the browser; they can\'t be queued</string>
 </resources>

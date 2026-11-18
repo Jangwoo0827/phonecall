@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -74,6 +75,18 @@ fun LibraryScreen(modifier: Modifier = Modifier) {
                 }
                 item {
                     LibraryRow(
+                        title = str(R.string.music_add_link),
+                        subtitle = null,
+                        onClick = { MusicUi.addLinkOpen = true },
+                        cover = {
+                            Box(Modifier.size(56.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(6.dp)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Filled.Link, null)
+                            }
+                        },
+                    )
+                }
+                item {
+                    LibraryRow(
                         title = str(R.string.music_liked_songs),
                         subtitle = songsLabel(MusicStore.liked.size),
                         onClick = { MusicUi.open(Dest.Liked) },
@@ -95,7 +108,7 @@ fun LibraryScreen(modifier: Modifier = Modifier) {
                 items(MusicStore.playlists.toList(), key = { "u${it.id}" }) { p ->
                     LibraryRow(
                         title = p.name,
-                        subtitle = str(R.string.music_playlist_by, songsLabel(p.tracks.size)),
+                        subtitle = str(R.string.music_playlist_by, songsLabel(p.tracks.size)) + if (p.loop) " \u2022 \u221E" else "",
                         onClick = { MusicUi.open(Dest.UserPlaylist(p.id)) },
                         cover = { PlaylistCover(p, 56.dp) },
                     )

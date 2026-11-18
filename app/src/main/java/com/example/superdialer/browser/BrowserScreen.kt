@@ -67,6 +67,7 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import kotlinx.coroutines.launch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -508,6 +509,7 @@ private fun WebTopBar(
                 )
             }
             val context = LocalContext.current
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
             OverflowMenu(
                 onNewTab, onNewPrivateTab, onOpenBookmarks, onOpenHistory, onOpenDownloads, onMenuOpenChange,
                 onShareKakao = {
@@ -516,6 +518,17 @@ private fun WebTopBar(
                 onFind = onFind,
                 desktopMode = tab.desktopMode,
                 onToggleDesktop = onToggleDesktop,
+                onAddToMusic = if (!tab.isPrivate && com.example.superdialer.music.YoutubeLinks.isVideoLink(tab.url)) {
+                    {
+                        scope.launch {
+                            val song = com.example.superdialer.music.YoutubeLinks.fetch(tab.url)
+                            if (song != null) com.example.superdialer.music.ui.MusicUi.addTracks = listOf(song)
+                            else android.widget.Toast.makeText(context, str(R.string.music_link_invalid), android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    null
+                },
             )
         }
     }
@@ -609,6 +622,8 @@ private fun OverflowMenu(
     /** Shown only while a page is open: null hides the item; the flag tells whether desktop mode is on. */
     desktopMode: Boolean = false,
     onToggleDesktop: (() -> Unit)? = null,
+    /** Shown on a YouTube video page: saves the video as a link song of the Music tab. */
+    onAddToMusic: (() -> Unit)? = null,
 ) {
     var open by remember { mutableStateOf(false) }
     LaunchedEffect(open) { onOpenChange(open) }
@@ -631,7 +646,14 @@ private fun OverflowMenu(
                     onClick = { open = false; onToggleDesktop() },
                 )
             }
-            if (onFind != null || onToggleDesktop != null) HorizontalDivider()
+            if (onAddToMusic != null) {
+                DropdownMenuItem(
+                    text = { Text(str(R.string.music_add_to_music)) },
+                    leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                    onClick = { open = false; onAddToMusic() },
+                )
+            }
+            if (onFind != null || onToggleDesktop != null || onAddToMusic != null) HorizontalDivider()
             // Tabs
             DropdownMenuItem(
                 text = { Text(str(R.string.t_new_tab)) },

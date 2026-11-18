@@ -2,7 +2,7 @@ package com.example.superdialer.music
 
 import java.util.Locale
 
-enum class TrackSource { DEEZER, AUDIUS, LOCAL }
+enum class TrackSource { DEEZER, AUDIUS, LOCAL, LINK }
 
 /**
  * One playable song. [id] is "dz:<deezer id>" or "lc:<MediaStore id>" and is what the queue, likes and playlists key on;
@@ -24,6 +24,9 @@ data class Track(
     val link: String? = null,
 ) {
     val isLocal: Boolean get() = source == TrackSource.LOCAL
+
+    /** A saved web link (YouTube): shown in lists, but opened in the browser instead of being played by the player. */
+    val isLink: Boolean get() = source == TrackSource.LINK
 
     /** Online songs from Deezer are 30-second previews; Audius songs and files on the phone play in full. */
     val isPreview: Boolean get() = source == TrackSource.DEEZER
@@ -76,7 +79,8 @@ data class SearchResults(
 }
 
 /** A playlist the user made; lives only on this phone. */
-data class UserPlaylist(val id: String, val name: String, val tracks: List<Track>, val created: Long)
+/** A playlist the user made; [loop] = it plays over and over (repeat all) whenever it is started. */
+data class UserPlaylist(val id: String, val name: String, val tracks: List<Track>, val created: Long, val loop: Boolean = false)
 
 /** "3:07" / "1:02:09". */
 fun formatDuration(totalSeconds: Int): String {

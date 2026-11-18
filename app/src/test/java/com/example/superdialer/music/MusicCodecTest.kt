@@ -22,6 +22,19 @@ class MusicCodecTest {
         assertEquals(p, MusicCodec.userPlaylist(org.json.JSONObject(json)))
     }
 
+    @Test fun theLoopFlagOfAPlaylistSurvives() {
+        val loop = UserPlaylist("id-2", "On repeat", listOf(t), 1L, loop = true)
+        assertTrue(MusicCodec.userPlaylist(org.json.JSONObject(MusicCodec.userPlaylist(loop).toString()))!!.loop)
+        // older saved playlists have no flag: they do not loop
+        val old = org.json.JSONObject("""{"id":"x","name":"n","created":1,"tracks":[]}""")
+        assertEquals(false, MusicCodec.userPlaylist(old)!!.loop)
+    }
+
+    @Test fun linkSongsSurviveASaveAndLoad() {
+        val link = Track("yt:abc", "Title", "Channel", 0, "", 0, "https://i.ytimg.com/x.jpg", 0, "https://www.youtube.com/watch?v=abc", TrackSource.LINK, link = "https://www.youtube.com/watch?v=abc")
+        assertEquals(link, MusicCodec.track(org.json.JSONObject(MusicCodec.track(link).toString())))
+    }
+
     @Test fun libraryItemsSurviveASaveAndLoad() {
         val album = Album(1, "A", "B", 2, null, "1999", 12)
         val artist = Artist(3, "Name", "https://p", 77)

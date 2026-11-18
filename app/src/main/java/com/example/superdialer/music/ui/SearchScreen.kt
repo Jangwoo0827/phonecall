@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -134,6 +135,16 @@ private fun SearchResultsView(query: String, filter: Int, onFilter: (Int) -> Uni
         items(labels.size) { i ->
             FilterChip(selected = filter == i, onClick = { onFilter(i) }, label = { Text(str(labels[i])) })
         }
+    }
+    Column(
+        Modifier.fillMaxWidth().clickable { MusicUi.pendingBrowserUrl = com.example.superdialer.music.YoutubeLinks.searchUrl(query) }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.OpenInNew, null, tint = MaterialTheme.colorScheme.primary)
+            Text(str(R.string.music_find_on_youtube, query), Modifier.padding(start = 12.dp), color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Text(str(R.string.music_find_on_youtube_hint), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
     }
     if (filter == 5) {
         val list = fullSongs.value

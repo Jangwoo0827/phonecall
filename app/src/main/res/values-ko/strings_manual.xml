@@ -145,4 +145,18 @@
     <string name="music_prefer_full">전곡 우선 재생</string>
     <string name="music_prefer_full_desc">온라인 곡은 전곡 버전을 먼저 찾고, 없을 때만 30초 미리듣기로 재생해요</string>
     <string name="music_no_full_version">이 곡의 전곡이 없어요</string>
+    <string name="music_add_link">YouTube 링크 추가</string>
+    <string name="music_link_title">링크로 곡 추가</string>
+    <string name="music_link_hint">YouTube 링크를 붙여 넣으세요</string>
+    <string name="music_link_add">추가</string>
+    <string name="music_link_invalid">YouTube 영상 링크가 아니에요</string>
+    <string name="music_link_loading">영상을 찾는 중이에요…</string>
+    <string name="music_find_on_youtube">YouTube에서 \"%1$s\" 찾기</string>
+    <string name="music_find_on_youtube_hint">브라우저에서 YouTube가 열려요. 영상에서 메뉴 ⋮ &gt; 음악에 추가를 누르면 링크로 저장돼요.</string>
+    <string name="music_add_to_music">음악에 추가</string>
+    <string name="music_link_song">YouTube 링크 • 브라우저에서 열려요</string>
+    <string name="music_loop">계속 반복</string>
+    <string name="music_loop_desc">이 플레이리스트를 끝나면 처음부터 계속 재생해요</string>
+    <string name="music_loop_on">계속 반복 중</string>
+    <string name="music_link_not_queued">링크 곡은 브라우저에서 열려서 대기열에 넣을 수 없어요</string>
 </resources>

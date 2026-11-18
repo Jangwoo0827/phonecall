@@ -55,9 +55,14 @@ object MusicUi {
     /** The "add to playlist" chooser; also used for several songs at once (album / playlist menus). */
     var addTracks by mutableStateOf<List<Track>?>(null)
 
+    /** The "add a YouTube link" dialog, and a page the browser should open (set here, consumed by the app scaffold). */
+    var addLinkOpen by mutableStateOf(false)
+    var pendingBrowserUrl by mutableStateOf<String?>(null)
+
 
     /** Name dialogs: create (with songs to put in it) and rename. */
     var createPlaylistWith by mutableStateOf<List<Track>?>(null)
+    var createPlaylistLoop by mutableStateOf(false)
     var renamePlaylistId by mutableStateOf<String?>(null)
     var deletePlaylistId by mutableStateOf<String?>(null)
 

@@ -62,6 +62,9 @@ object MusicPlayer {
     var sleepEndsAt by mutableLongStateOf(0L); private set
     var sleepAfterTrack by mutableStateOf(false); private set
 
+    /** Opens a link song (a YouTube video) in the browser; set by the UI. */
+    var openLink: (Track) -> Unit = {}
+
     fun init(context: Context) {
         app = context.applicationContext
     }
@@ -214,8 +217,14 @@ object MusicPlayer {
     // --- starting playback -----------------------------------------------------------------------------------------
 
     /** Plays [tracks] from [startIndex]. With [shuffled] the rest is played in random order (the chosen song first). */
-    fun play(tracks: List<Track>, startIndex: Int = 0, shuffled: Boolean = false) {
+    fun play(tracks: List<Track>, startIndex: Int = 0, shuffled: Boolean = false, repeatAll: Boolean = false) {
         if (tracks.isEmpty()) return
+        // A link song cannot be played by the player: tapping one opens it in the browser, the others play without it.
+        val chosen = tracks.getOrNull(startIndex)
+        if (chosen != null && chosen.isLink) return openLink(chosen)
+        val playable = tracks.filter { !it.isLink }
+        if (playable.isEmpty()) return
+        if (playable.size != tracks.size) return play(playable, playable.indexOfFirst { it.id == chosen?.id }.coerceAtLeast(0), shuffled, repeatAll)
         val p = player
         val start = startIndex.coerceIn(0, tracks.lastIndex)
         originalOrder.clear()
@@ -223,6 +232,10 @@ object MusicPlayer {
         p.setMediaItems(tracks.map { item(it) }, start, 0L)
         shuffle = false
         if (shuffled) applyShuffle(true)
+        if (repeatAll) {
+            p.repeatMode = Player.REPEAT_MODE_ALL
+            repeat = Player.REPEAT_MODE_ALL
+        }
         p.prepare()
         p.play()
         ensureService()
@@ -231,12 +244,14 @@ object MusicPlayer {
     }
 
     /** "Shuffle play": a random song first, the rest shuffled. */
-    fun playShuffled(tracks: List<Track>) {
-        if (tracks.isEmpty()) return
-        play(tracks, (tracks.indices).random(), shuffled = true)
+    fun playShuffled(tracks: List<Track>, repeatAll: Boolean = false) {
+        val playable = tracks.filter { !it.isLink }
+        if (playable.isEmpty()) return
+        play(playable, (playable.indices).random(), shuffled = true, repeatAll = repeatAll)
     }
 
     fun playNext(track: Track) {
+        if (track.isLink) return openLink(track)
         val p = player
         if (p.mediaItemCount == 0) return play(listOf(track))
         p.addMediaItem(p.currentMediaItemIndex + 1, item(track))
@@ -245,6 +260,7 @@ object MusicPlayer {
     }
 
     fun addToQueue(track: Track) {
+        if (track.isLink) return openLink(track)
         val p = player
         if (p.mediaItemCount == 0) return play(listOf(track))
         p.addMediaItem(item(track))
@@ -252,7 +268,8 @@ object MusicPlayer {
         Toast.makeText(app, str(R.string.music_added_to_queue), Toast.LENGTH_SHORT).show()
     }
 
-    fun addAllToQueue(tracks: List<Track>) {
+    fun addAllToQueue(all: List<Track>) {
+        val tracks = all.filter { !it.isLink }
         if (tracks.isEmpty()) return
         val p = player
         if (p.mediaItemCount == 0) return play(tracks)

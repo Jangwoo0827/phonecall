@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
@@ -115,6 +116,7 @@ private fun CollectionPage(
     accent: Color? = null,
     emptyText: String? = null,
     playlistId: String? = null,
+    loop: Boolean = false,
     firstTracks: Int = Int.MAX_VALUE,
     extra: LazyListScope.() -> Unit = {},
 ) {
@@ -139,14 +141,14 @@ private fun CollectionPage(
                 Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     actions()
                     Spacer(Modifier.weight(1f))
-                    IconButton(onClick = { MusicPlayer.playShuffled(tracks) }, enabled = tracks.isNotEmpty()) {
+                    IconButton(onClick = { MusicPlayer.playShuffled(tracks, loop) }, enabled = tracks.isNotEmpty()) {
                         Icon(Icons.Filled.Shuffle, str(R.string.music_shuffle_play))
                     }
                     PlayFab(
                         playing = playingHere,
                         onClick = {
                             if (tracks.isEmpty()) return@PlayFab
-                            if (playingHere) MusicPlayer.togglePlay() else MusicPlayer.play(tracks)
+                            if (playingHere) MusicPlayer.togglePlay() else MusicPlayer.play(tracks, repeatAll = loop)
                         },
                     )
                 }
@@ -161,7 +163,7 @@ private fun CollectionPage(
             val t = shown[i]
             TrackRow(
                 t,
-                onClick = { MusicPlayer.play(tracks, tracks.indexOf(t).coerceAtLeast(0)) },
+                onClick = { MusicPlayer.play(tracks, tracks.indexOf(t).coerceAtLeast(0), repeatAll = loop) },
                 number = if (numbered) i + 1 else null,
                 onMenu = { MusicUi.menuPlaylistId = playlistId; MusicUi.menuTrack = t },
             )
@@ -311,15 +313,24 @@ fun UserPlaylistScreen(id: String) {
     CollectionPage(
         cover = { PlaylistCover(playlist, 210.dp, Modifier.clip(RoundedCornerShape(8.dp))) },
         title = playlist.name,
-        meta = { Text(songsLabel(playlist.tracks.size), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium) },
+        meta = {
+            Text(songsLabel(playlist.tracks.size) + if (playlist.loop) " \u2022 " + str(R.string.music_loop_on) else "", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        },
         tracks = playlist.tracks,
         accent = color,
         emptyText = str(R.string.music_empty_playlist),
         playlistId = playlist.id,
+        loop = playlist.loop,
         actions = {
             Box {
                 IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, str(R.string.music_more)) }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(str(R.string.music_loop)) },
+                        trailingIcon = { if (playlist.loop) Icon(Icons.Filled.Check, str(R.string.music_loop_on)) },
+                        onClick = { menu = false; MusicStore.setPlaylistLoop(playlist.id, !playlist.loop) },
+                    )
+                    DropdownMenuItem(text = { Text(str(R.string.music_add_link)) }, onClick = { menu = false; MusicUi.addLinkOpen = true })
                     DropdownMenuItem(text = { Text(str(R.string.music_rename)) }, onClick = { menu = false; MusicUi.renamePlaylistId = playlist.id })
                     DropdownMenuItem(text = { Text(str(R.string.music_delete_playlist)) }, onClick = { menu = false; MusicUi.deletePlaylistId = playlist.id })
                 }
