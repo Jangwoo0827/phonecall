@@ -92,10 +92,10 @@ fun YoutubeNowPlaying() {
             IconButton(onClick = { MusicUi.menuTrack = track }) { Icon(Icons.Filled.MoreVert, str(R.string.music_more), tint = Color.White) }
         }
         Spacer(Modifier.height(8.dp))
-        // The cover's place: a square, with the 16:9 video in the middle of it.
+        // The cover's place: a square showing the top of YouTube's mobile watch page (its bar and the video).
         Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)).background(Color.Black), contentAlignment = Alignment.Center) {
             AndroidView(
-                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
+                modifier = Modifier.fillMaxSize(),
                 factory = { ctx ->
                     YoutubePlayback.attach(ctx)
                     FrameLayout(ctx).apply {

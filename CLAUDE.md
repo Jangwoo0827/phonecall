@@ -407,9 +407,14 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - **반복 플레이리스트**: `UserPlaylist.loop`(만들 때 "계속 반복" 체크, 또는 플레이리스트 ⋮ > 계속 반복으로 켜고 끔). 재생·셔플 재생 때 `MusicPlayer.play(..., repeatAll = true)`로 전체 반복 모드를 켬(끝나면 처음부터). 목록과 페이지에 ∞ / "계속 반복 중" 표시. 옛 저장 데이터는 반복 꺼짐
 - 링크 곡이 섞인 플레이리스트: 재생할 땐 링크 곡을 빼고 나머지를 재생(`MusicPlayer.play`가 걸러냄)
 
-## 음악: 앱 안 YouTube 재생 (v0.14.0, `YoutubePlayback` / `ui/YoutubeNowPlaying`)
-- 링크 곡을 누르면 **YouTube 공식 임베드 플레이어(IFrame API)** 를 숨겨진 곳이 아니라 **재생 화면의 표지 자리**(정사각형 안 16:9)에 보여 줌. JS 브릿지 없이 `evaluateJavascript`로만 조작·상태 읽기(0.5초마다 `__sd` 객체 폴링). 링크 곡만 이 플레이어, 나머지는 ExoPlayer(`MusicPlayer.play`가 링크 곡을 `YoutubePlayback.start`로 보내고, 반대로 ExoPlayer로 재생하면 `YoutubePlayback.stop()`; 둘이 동시에 소리 내지 않음). 계속 반복·다음/이전·탐색·좋아요·최근 재생 동작
-- **YouTube 약관상 백그라운드 재생·영상 숨김 재생은 하지 않음**: 재생 화면이 닫히거나 화면이 꺼지거나 앱을 나가면(`LifecycleResumeEffect`) 일시정지하고 WebView `onPause`. 미니 플레이어의 재생 버튼은 재생 화면을 열어 줌. 화면에 안내 문구 있음
-- 임베드는 앱을 식별하는 출처가 필요해서 `loadDataWithBaseURL("https://com.example.superdialer/")` + `origin` 설정(없으면 오류 152). 다른 호스트로의 이동은 막음(YouTube/Google 계열만). 서드파티 쿠키는 이 WebView에서만 허용
-- 올린 사람이 임베드를 막은 영상은 오류 코드(101/150)를 받아 "브라우저에서 열기" 버튼이 나옴. **시작하지 못하면 8초 뒤(`stalled`) 같은 안내와 버튼이 나옴**
-- **검증 한계**: 에뮬레이터에서 표지 자리에 플레이어가 뜨는 것까지 확인했고, 영상은 시작하지 못했음(embed의 `OperationError: Internal Error` — 에뮬레이터의 GPU/코덱 문제로 보이며 브라우저의 m.youtube.com은 같은 에뮬레이터에서 재생됨). **실기기에서 확인 필요**. Family Link가 YouTube를 막은 폰에서는 임베드도 막힐 수 있고, 그 경우 `stalled` 안내가 나옴
+## 음악: 앱 안 YouTube 재생 (v0.14.1, `YoutubePlayback` / `ui/YoutubeNowPlaying`)
+- 링크 곡을 누르면 **`https://m.youtube.com/watch?v=<id>` 일반 모바일 시청 페이지**를 재생 화면의 **표지 자리**(정사각형, 위쪽 YouTube 바 + 영상)에 보여 줌. 처음엔 공식 임베드(IFrame API)로 만들었지만 에뮬레이터에서 시작하지 못했고(임베드 내부 `OperationError`, 오류 152 → 출처 설정 후엔 내부 오류) 사용자 폰은 Family Link 때문에 youtube.com 임베드가 막힐 수 있다고 해서 **m.youtube.com 페이지 방식으로 교체**(이 앱 브라우저가 이미 여는 바로 그 페이지). 프록시·제3자 사이트·음원 추출을 쓰지 않음(사용자가 제안한 `michael.team/yt` 방식은 Family Link 우회라 거절)
+- 조작: JS 브릿지 없이 `evaluateJavascript`로 페이지의 `<video>`를 직접 읽고 조작(0.5초 폴링: 일시정지/끝남/현재 시간/길이/readyState). 재생·일시정지·탐색(`currentTime`), 끝나면 다음 곡(계속 반복이면 처음부터). 자동 재생이 음소거로 시작해서 재생 중이면 한 번 `muted=false`(`__sdUnmuted`); 페이지 자체의 음소거 아이콘은 그대로 보일 수 있음(실제 소리는 에뮬레이터에선 확인 못 함)
+- 링크 곡만 이 플레이어, 나머지는 ExoPlayer(`MusicPlayer.play`가 링크 곡을 `YoutubePlayback.start`로 보내고, ExoPlayer로 재생하면 `YoutubePlayback.stop()`; 동시에 소리 내지 않음). 같은 WebView는 기본 프로필이라 앱 브라우저와 쿠키(로그인·동의)를 공유
+- **YouTube 약관상 백그라운드 재생·영상 숨김 재생은 하지 않음**: 재생 화면이 닫히거나 화면이 꺼지거나 앱을 나가면(`LifecycleResumeEffect`) 일시정지 + WebView `onPause`. 미니 플레이어의 재생 버튼은 재생 화면을 열어 줌. 화면에 안내 문구 있음. 페이지는 있는 그대로 보여 주고 광고·UI를 가리거나 바꾸지 않음
+- 영상이 10초 안에 안 뜨면(`stalled`) "앱 안에서 영상이 시작되지 않았어요" + "브라우저에서 열기" 버튼. 이동은 YouTube/Google 호스트만 허용(`shouldOverrideUrlLoading`)
+- **검증**: 에뮬레이터에서 표지 자리에 영상이 뜨고 시간이 흐르고(0:10→0:17) 우리 컨트롤로 조작되는 것 확인. 실기기(Family Link 폰)에서 확인 필요
+- **미니 플레이어 X**: 재생을 끝내고(`MusicPlayer.stop()`, 영상도 정지) 바를 없앰. testTag `mini_close`
+
+## 에뮬레이터 주의 (사용자 요청, 2026-11-19)
+- **에뮬레이터에서 앱을 삭제(`adb uninstall`)하거나 `pm clear` 하거나 `connectedDebugAndroidTest`를 돌리지 말 것**: 사용자가 같은 에뮬레이터로 직접 테스트하고, Gradle의 connected 테스트는 끝나면 앱을 지워 권한·데이터가 초기화됨. 설치는 `./gradlew installDebug`(덮어쓰기). UI 테스트는 CI(`ui-tests.yml`)가 푸시마다 돌리고 릴리스를 막아 줌. 새 설치 점검(`pm clear`)이 꼭 필요하면 사용자에게 먼저 물을 것

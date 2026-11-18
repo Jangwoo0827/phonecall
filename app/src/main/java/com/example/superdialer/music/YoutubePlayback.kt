@@ -29,8 +29,6 @@ object YoutubePlayback {
     private lateinit var app: Context
     private val handler = Handler(Looper.getMainLooper())
     private var web: WebView? = null
-    private var pageReady = false
-    private var pendingId: String? = null
 
     /** The link songs being played, in order, and the one that is current. */
     var queue by mutableStateOf<List<Track>>(emptyList()); private set
@@ -81,15 +79,13 @@ object YoutubePlayback {
             // Nothing but YouTube may be shown in this view.
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val host = request.url.host.orEmpty()
-                return !(host == "youtube.com" || host.endsWith(".youtube.com") || host.endsWith(".youtube-nocookie.com") ||
-                    host.endsWith(".ytimg.com") || host.endsWith(".google.com") || host.endsWith(".gstatic.com"))
+                return !(host == "youtube.com" || host.endsWith(".youtube.com") || host.endsWith(".ytimg.com") || host.endsWith(".google.com") || host.endsWith(".gstatic.com") || host.endsWith(".googlevideo.com"))
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                pageReady = false
+                // a new page: the video is not there yet
             }
         }
-        v.loadDataWithBaseURL(ORIGIN + "/", PAGE, "text/html", "utf-8", null)
         web = v
     }
 
@@ -124,22 +120,23 @@ object YoutubePlayback {
         positionMs = 0L
         durationMs = 0L
         MusicStore.addRecent(t)
-        pendingId = idOf(t)
         loadedAt = System.currentTimeMillis()
         stalled = false
+        web?.evaluateJavascript("window.__sdUnmuted=false", null)
+        webView().loadUrl("https://m.youtube.com/watch?v=${idOf(t)}")
         tick()
     }
 
     fun togglePlay() {
-        if (isPlaying) pause() else if (current != null) js("__sd.play()")
+        if (isPlaying) pause() else if (current != null) js(PLAY)
     }
 
     fun pause() {
-        if (web != null && pageReady) js("__sd.pause()")
+        if (web != null) js(PAUSE)
     }
 
     fun seekTo(ms: Long) {
-        js("__sd.seek(${ms / 1000.0})")
+        js("(function(){var v=document.querySelector('video');if(v)v.currentTime=${ms / 1000.0};})()")
         positionMs = ms
     }
 
@@ -165,7 +162,7 @@ object YoutubePlayback {
         queue = emptyList()
         index = -1
         state = -1
-        pendingId = null
+        web?.loadUrl("about:blank")
         handler.removeCallbacks(poll)
     }
 
@@ -173,27 +170,40 @@ object YoutubePlayback {
         web?.evaluateJavascript(code, null)
     }
 
+    /** Reads the page's video: [paused, ended, time, duration, readyState], or null while there is none (yet). */
+    private const val READ = "(function(){var v=document.querySelector('video');if(!v)return null;if(v.muted&&!v.paused&&!window.__sdUnmuted){v.muted=false;window.__sdUnmuted=true;}return [v.paused?1:0,v.ended?1:0,v.currentTime||0,v.duration||0,v.readyState]})()"
+    private const val PLAY = "(function(){var v=document.querySelector('video');if(v){v.muted=false;v.play();}})()"
+    private const val PAUSE = "(function(){var v=document.querySelector('video');if(v)v.pause();})()"
+
     private val poll = object : Runnable {
         override fun run() {
             val v = web
             if (v == null || !active) return
-            v.evaluateJavascript("(function(){return window.__sd?[__sd.ready?1:0,__sd.state,__sd.time,__sd.dur,__sd.err]:null})()") { result ->
-                if (!active || result == null || result == "null") return@evaluateJavascript
-                val a = runCatching { JSONArray(result) }.getOrNull() ?: return@evaluateJavascript
-                pageReady = a.optInt(0) == 1
-                val s = a.optInt(1, -1)
-                if (pageReady) pendingId?.let { id ->
-                    pendingId = null
-                    js("__sd.load('$id')")
+            v.evaluateJavascript(READ) { result ->
+                if (!active) return@evaluateJavascript
+                val a = if (result == null || result == "null") null else runCatching { JSONArray(result) }.getOrNull()
+                if (a == null) {
+                    state = -1
+                    stalled = System.currentTimeMillis() - loadedAt > 10_000
+                    return@evaluateJavascript
+                }
+                val paused = a.optInt(0) == 1
+                val ended = a.optInt(1) == 1
+                val ready = a.optInt(4)
+                val s = when {
+                    ended -> 0
+                    paused -> 2
+                    ready < 3 -> 3
+                    else -> 1
                 }
                 if (s != state) {
                     state = s
                     if (s == 0) next() // ended: the next song, or round again when repeating
                 }
                 positionMs = (a.optDouble(2, 0.0) * 1000).toLong()
-                durationMs = (a.optDouble(3, 0.0) * 1000).toLong()
-                errorCode = a.optInt(4, 0)
-                stalled = state == -1 && System.currentTimeMillis() - loadedAt > 8000
+                val d = a.optDouble(3, 0.0)
+                durationMs = if (d.isNaN() || d.isInfinite()) 0L else (d * 1000).toLong()
+                stalled = false
             }
             handler.postDelayed(this, 500)
         }
@@ -203,27 +213,4 @@ object YoutubePlayback {
         handler.removeCallbacks(poll)
         handler.post(poll)
     }
-
-    /** YouTube wants an embedding app to identify itself with a referrer; this is the app's id as a web address. */
-    private const val ORIGIN = "https://com.example.superdialer"
-
-    private val PAGE = """
-        <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-        <style>html,body{margin:0;height:100%;background:#000;overflow:hidden}#p{position:absolute;left:0;top:0;width:100%;height:100%}</style>
-        </head><body><div id="p"></div><script>
-        var __sd={ready:false,state:-1,time:0,dur:0,err:0};var P;
-        function onYouTubeIframeAPIReady(){
-          P=new YT.Player('p',{width:'100%',height:'100%',
-            playerVars:{playsinline:1,rel:0,fs:0,modestbranding:1,controls:1,autoplay:1,iv_load_policy:3,origin:'https://com.example.superdialer',enablejsapi:1,widget_referrer:'https://com.example.superdialer'},
-            events:{onReady:function(){__sd.ready=true;},
-                    onStateChange:function(e){__sd.state=e.data;},
-                    onError:function(e){__sd.err=e.data;}}});
-        }
-        setInterval(function(){if(P&&P.getCurrentTime){__sd.time=P.getCurrentTime()||0;__sd.dur=P.getDuration()||0;}},400);
-        __sd.load=function(id){__sd.err=0;__sd.state=-1;P.loadVideoById(id);};
-        __sd.play=function(){P.playVideo();};
-        __sd.pause=function(){P.pauseVideo();};
-        __sd.seek=function(s){P.seekTo(s,true);};
-        </script><script src="https://www.youtube.com/iframe_api"></script></body></html>
-    """.trimIndent()
 }

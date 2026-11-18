@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Pause
@@ -68,6 +69,10 @@ fun MiniPlayer(modifier: Modifier = Modifier) {
                         if (video == null && MusicPlayer.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         str(if (video == null && MusicPlayer.isPlaying) R.string.music_pause else R.string.music_play),
                     )
+                }
+                // X: ends playback and removes the bar.
+                IconButton(onClick = { MusicPlayer.stop() }, modifier = Modifier.testTag("mini_close")) {
+                    Icon(Icons.Filled.Close, str(R.string.music_stop_playback), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             val duration = (if (video != null) com.example.superdialer.music.YoutubePlayback.durationMs else MusicPlayer.durationMs).coerceAtLeast(1L)
