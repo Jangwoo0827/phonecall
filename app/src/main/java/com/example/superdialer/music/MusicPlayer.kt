@@ -62,8 +62,6 @@ object MusicPlayer {
     var sleepEndsAt by mutableLongStateOf(0L); private set
     var sleepAfterTrack by mutableStateOf(false); private set
 
-    /** Opens a link song (a YouTube video) in the browser; set by the UI. */
-    var openLink: (Track) -> Unit = {}
 
     fun init(context: Context) {
         app = context.applicationContext
@@ -219,12 +217,16 @@ object MusicPlayer {
     /** Plays [tracks] from [startIndex]. With [shuffled] the rest is played in random order (the chosen song first). */
     fun play(tracks: List<Track>, startIndex: Int = 0, shuffled: Boolean = false, repeatAll: Boolean = false) {
         if (tracks.isEmpty()) return
-        // A link song cannot be played by the player: tapping one opens it in the browser, the others play without it.
+        // A link song is played by YouTube's own embedded player (YoutubePlayback), together with the other link songs of the list.
         val chosen = tracks.getOrNull(startIndex)
-        if (chosen != null && chosen.isLink) return openLink(chosen)
+        if (chosen != null && chosen.isLink) {
+            val links = tracks.filter { it.isLink }
+            return YoutubePlayback.start(links, links.indexOfFirst { it.id == chosen.id }.coerceAtLeast(0), repeatAll)
+        }
         val playable = tracks.filter { !it.isLink }
         if (playable.isEmpty()) return
         if (playable.size != tracks.size) return play(playable, playable.indexOfFirst { it.id == chosen?.id }.coerceAtLeast(0), shuffled, repeatAll)
+        YoutubePlayback.stop()
         val p = player
         val start = startIndex.coerceIn(0, tracks.lastIndex)
         originalOrder.clear()
@@ -251,7 +253,7 @@ object MusicPlayer {
     }
 
     fun playNext(track: Track) {
-        if (track.isLink) return openLink(track)
+        if (track.isLink) return
         val p = player
         if (p.mediaItemCount == 0) return play(listOf(track))
         p.addMediaItem(p.currentMediaItemIndex + 1, item(track))
@@ -260,7 +262,7 @@ object MusicPlayer {
     }
 
     fun addToQueue(track: Track) {
-        if (track.isLink) return openLink(track)
+        if (track.isLink) return
         val p = player
         if (p.mediaItemCount == 0) return play(listOf(track))
         p.addMediaItem(item(track))
@@ -293,6 +295,11 @@ object MusicPlayer {
         p.play()
         refreshQueue()
         syncCurrent()
+    }
+
+    /** A video starts: the music player stops making sound (it keeps its queue). */
+    fun pauseForVideo() {
+        built?.pause()
     }
 
     fun togglePlay() {
@@ -353,6 +360,7 @@ object MusicPlayer {
     }
 
     fun stop() {
+        YoutubePlayback.stop()
         built?.run {
             stop()
             clearMediaItems()

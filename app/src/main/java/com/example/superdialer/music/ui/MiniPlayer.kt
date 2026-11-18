@@ -35,7 +35,8 @@ import com.example.superdialer.music.MusicStore
 /** The bar above the app's tab bar while a song is loaded: tap it to open the full player. */
 @Composable
 fun MiniPlayer(modifier: Modifier = Modifier) {
-    val track = MusicPlayer.current ?: return
+    val video = com.example.superdialer.music.YoutubePlayback.current
+    val track = video ?: MusicPlayer.current ?: return
     val context = LocalContext.current
     Surface(
         modifier = modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp).testTag("mini_player"),
@@ -61,16 +62,18 @@ fun MiniPlayer(modifier: Modifier = Modifier) {
                         tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                IconButton(onClick = { MusicPlayer.togglePlay() }, modifier = Modifier.testTag("mini_play")) {
+                // A video only plays while it is on screen, so its play button opens the full player.
+                IconButton(onClick = { if (video != null) MusicUi.nowPlayingOpen = true else MusicPlayer.togglePlay() }, modifier = Modifier.testTag("mini_play")) {
                     Icon(
-                        if (MusicPlayer.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        str(if (MusicPlayer.isPlaying) R.string.music_pause else R.string.music_play),
+                        if (video == null && MusicPlayer.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        str(if (video == null && MusicPlayer.isPlaying) R.string.music_pause else R.string.music_play),
                     )
                 }
             }
-            val duration = MusicPlayer.durationMs.coerceAtLeast(1L)
+            val duration = (if (video != null) com.example.superdialer.music.YoutubePlayback.durationMs else MusicPlayer.durationMs).coerceAtLeast(1L)
+            val position = if (video != null) com.example.superdialer.music.YoutubePlayback.positionMs else MusicPlayer.positionMs
             LinearProgressIndicator(
-                progress = { (MusicPlayer.positionMs.toFloat() / duration).coerceIn(0f, 1f) },
+                progress = { (position.toFloat() / duration).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().height(2.dp),
                 trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             )

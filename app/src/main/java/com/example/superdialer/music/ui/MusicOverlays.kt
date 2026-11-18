@@ -70,11 +70,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun MusicOverlays() {
     AnimatedVisibility(
-        visible = MusicUi.nowPlayingOpen && MusicPlayer.current != null,
+        visible = MusicUi.nowPlayingOpen && (MusicPlayer.current != null || com.example.superdialer.music.YoutubePlayback.active),
         enter = slideInVertically(tween(280)) { it } + fadeIn(tween(200)),
         exit = slideOutVertically(tween(240)) { it } + fadeOut(tween(200)),
     ) {
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) { NowPlayingScreen() }
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+            if (com.example.superdialer.music.YoutubePlayback.active) YoutubeNowPlaying() else NowPlayingScreen()
+        }
     }
 
     MusicUi.menuTrack?.let { track ->
@@ -101,7 +103,8 @@ fun MusicOverlays() {
         ModalBottomSheet(onDismissRequest = { MusicUi.sleepOpen = false }, sheetState = state) { SleepSheet() }
     }
 
-    LaunchedEffect(Unit) { com.example.superdialer.music.MusicPlayer.openLink = { t -> MusicUi.pendingBrowserUrl = t.uri } }
+    val videoStarts = com.example.superdialer.music.YoutubePlayback.startCount
+    LaunchedEffect(videoStarts) { if (videoStarts > 0) MusicUi.nowPlayingOpen = true }
     if (MusicUi.addLinkOpen) AddLinkDialog()
     MusicUi.createPlaylistWith?.let { initial -> CreatePlaylistDialog(initial) }
     MusicUi.renamePlaylistId?.let { id -> RenamePlaylistDialog(id) }

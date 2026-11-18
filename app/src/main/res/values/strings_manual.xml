@@ -154,9 +154,13 @@
     <string name="music_find_on_youtube">Find \"%1$s\" on YouTube</string>
     <string name="music_find_on_youtube_hint">Opens YouTube in the browser. On a video, menu ⋮ &gt; Add to Music saves it as a link.</string>
     <string name="music_add_to_music">Add to Music</string>
-    <string name="music_link_song">YouTube link • opens in the browser</string>
+    <string name="music_link_song">YouTube • plays in the app</string>
     <string name="music_loop">Repeat forever</string>
     <string name="music_loop_desc">Plays this playlist over and over</string>
     <string name="music_loop_on">Repeating forever</string>
     <string name="music_link_not_queued">Link songs open in the browser; they can\'t be queued</string>
+    <string name="music_yt_cant_embed">The owner of this video doesn\'t allow playing it inside other apps.</string>
+    <string name="music_yt_open_browser">Open in browser</string>
+    <string name="music_yt_foreground_note">YouTube plays only while this screen is open. It pauses when the screen turns off or you leave the app.</string>
+    <string name="music_yt_stalled">The video could not start in the app. You can watch it in the browser.</string>
 </resources>

@@ -28,6 +28,7 @@ class SuperDialerApplication : Application() {
         AppSettings.init(this)
         com.example.superdialer.music.MusicStore.init(this)
         com.example.superdialer.music.MusicPlayer.init(this)
+        com.example.superdialer.music.YoutubePlayback.init(this)
         CrashLog.install(this)
         WhatsNew.check(this)
         RejectMessageStore.init(this)

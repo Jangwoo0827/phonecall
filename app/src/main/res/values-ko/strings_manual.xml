@@ -154,9 +154,13 @@
     <string name="music_find_on_youtube">YouTube에서 \"%1$s\" 찾기</string>
     <string name="music_find_on_youtube_hint">브라우저에서 YouTube가 열려요. 영상에서 메뉴 ⋮ &gt; 음악에 추가를 누르면 링크로 저장돼요.</string>
     <string name="music_add_to_music">음악에 추가</string>
-    <string name="music_link_song">YouTube 링크 • 브라우저에서 열려요</string>
+    <string name="music_link_song">YouTube • 앱 안에서 재생</string>
     <string name="music_loop">계속 반복</string>
     <string name="music_loop_desc">이 플레이리스트를 끝나면 처음부터 계속 재생해요</string>
     <string name="music_loop_on">계속 반복 중</string>
     <string name="music_link_not_queued">링크 곡은 브라우저에서 열려서 대기열에 넣을 수 없어요</string>
+    <string name="music_yt_cant_embed">이 영상은 올린 사람이 다른 앱 안에서의 재생을 막아 두었어요.</string>
+    <string name="music_yt_open_browser">브라우저에서 열기</string>
+    <string name="music_yt_foreground_note">YouTube는 이 화면이 켜져 있을 때만 재생돼요. 화면을 끄거나 앱을 나가면 멈춰요.</string>
+    <string name="music_yt_stalled">앱 안에서 영상이 시작되지 않았어요. 브라우저에서 볼 수 있어요.</string>
 </resources>
