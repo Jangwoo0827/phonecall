@@ -139,13 +139,13 @@ private fun SearchResultsView(query: String, filter: Int, onFilter: (Int) -> Uni
                 Text(str(R.string.music_no_results, query), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
-            ResultsList(r, filter)
+            ResultsList(r, filter, query)
         }
     }
 }
 
 @Composable
-private fun ResultsList(r: SearchResults, filter: Int) {
+private fun ResultsList(r: SearchResults, filter: Int, query: String) {
     LazyColumn(contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)) {
         when (filter) {
             1 -> trackItems(r.tracks, r.tracks.size)
@@ -153,7 +153,7 @@ private fun ResultsList(r: SearchResults, filter: Int) {
             3 -> items(r.artists, key = { "r${it.id}" }) { ArtistRow(it) }
             4 -> items(r.playlists, key = { "p${it.id}" }) { PlaylistRow(it) }
             else -> {
-                r.artists.firstOrNull()?.let { top ->
+                topArtist(r, query)?.let { top ->
                     item {
                         SectionTitle(str(R.string.music_top_result))
                         ArtistRow(top)
@@ -163,9 +163,10 @@ private fun ResultsList(r: SearchResults, filter: Int) {
                     item { SectionTitle(str(R.string.music_filter_songs)) }
                     trackItems(r.tracks, 5)
                 }
-                if (r.artists.size > 1) {
+                val others = r.artists.filter { it.id != topArtist(r, query)?.id }.take(4)
+                if (others.isNotEmpty()) {
                     item { SectionTitle(str(R.string.music_filter_artists)) }
-                    items(r.artists.drop(1).take(4), key = { "r${it.id}" }) { ArtistRow(it) }
+                    items(others, key = { "r${it.id}" }) { ArtistRow(it) }
                 }
                 if (r.albums.isNotEmpty()) {
                     item { SectionTitle(str(R.string.music_filter_albums)) }
@@ -218,4 +219,15 @@ fun PlaylistRow(p: PlaylistInfo, modifier: Modifier = Modifier) {
             Text(str(R.string.music_playlist_by, p.owner.ifEmpty { songsLabel(p.trackCount) }), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+/**
+ * The artist to show as "Top result": the best-known artist whose name is exactly the search, otherwise the artist of the
+ * first song found, otherwise the first artist Deezer lists.
+ */
+internal fun topArtist(r: SearchResults, query: String): Artist? {
+    val q = query.trim()
+    r.artists.filter { it.name.equals(q, ignoreCase = true) }.maxByOrNull { it.fans }?.let { return it }
+    r.tracks.firstOrNull()?.let { t -> r.artists.firstOrNull { it.id == t.artistId }?.let { return it } }
+    return r.artists.maxByOrNull { it.fans }
 }
