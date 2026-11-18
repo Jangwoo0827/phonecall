@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.superdialer.R
 import com.example.superdialer.i18n.str
+import com.example.superdialer.music.AudiusApi
 import com.example.superdialer.music.DeezerApi
 import com.example.superdialer.music.MusicPlayer
 import com.example.superdialer.music.MusicStore
@@ -48,6 +49,8 @@ private fun greeting(): String {
 fun HomeScreen(modifier: Modifier = Modifier) {
     val chart = rememberLoad("chart") { DeezerApi.chart() }
     val genres = rememberLoad("genres") { DeezerApi.genres() }
+    val full = rememberLoad("audius-trending") { AudiusApi.trending(25) }
+    val valorant = rememberLoad("valorant") { com.example.superdialer.music.ValorantChampions.load() }
     LazyColumn(modifier.fillMaxWidth(), state = MusicUi.homeList, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
         item {
             Text(
@@ -65,6 +68,12 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             item {
                 TrackShelf(str(R.string.music_recently_played), recents, onPlay = { MusicPlayer.play(recents, it) })
             }
+        }
+        valorant.value?.takeIf { it.isNotEmpty() }?.let { songs ->
+            item { TrackShelf(str(R.string.music_valorant_champions), songs, onPlay = { MusicPlayer.play(songs, it) }) }
+        }
+        full.value?.takeIf { it.isNotEmpty() }?.let { songs ->
+            item { TrackShelf(str(R.string.music_trending_full), songs, onPlay = { MusicPlayer.play(songs, it) }) }
         }
         item {
             LoadedContent(chart) { c ->

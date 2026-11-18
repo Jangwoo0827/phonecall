@@ -391,3 +391,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 새 글자 키는 `music_*`(strings_manual.xml 두 언어). 설정 > 음악 > "음악 데이터 지우기". 개인정보처리방침(양 언어)에 Deezer 요청·오디오 접근·백그라운드 재생 추가함
 - 테스트: 단위 `DeezerJsonTest`·`MusicCodecTest`, UI `MusicTabTest`(오프라인에서도 통과: 라이브러리만 사용). 에뮬레이터에서 홈 차트 로드·재생(미디어 세션 PLAYING + 알림)·검색·아티스트 페이지·좋아요/팔로우/플레이리스트 만들기·라이브러리 확인함. **실기기 확인 필요**: 잠금화면/알림 컨트롤, 블루투스, 백그라운드 장시간 재생, 삼성 배터리 절약 영향
 - R8: media3·Room·Compose 모두 자체 규칙이 있음. 릴리스 빌드에서 재생이 되는지는 배포 전에 릴리스로 한 번 확인할 것(이번 세션 배포 전 점검 항목)
+
+## 음악: 전곡 재생 / 잠금 화면 / VALORANT 줄 (v0.14.0)
+- **전곡**: Deezer는 30초 미리듣기만 허용 → 무료·키 없는 **Audius 공개 API**(`AudiusApi`/`AudiusJson`, `TrackSource.AUDIUS`)로 전곡 재생. 스트림 주소는 `https://api.audius.co/v1/tracks/<id>/stream?app_name=SuperDialer`(302로 노드에 연결, ExoPlayer가 따라감). 접근 제한(`access.stream=false`)·길이 0인 곡은 제외. 홈 "Audius에서 인기 있는 전곡" 줄, 검색 "전곡 재생" 칩(+전체 보기에 4곡), **30초 곡을 "전곡으로 재생"**(곡 메뉴 또는 재생 화면의 "30초 미리듣기 · 눌러서 전곡 듣기" 배지): `playFullVersion` → `AudiusApi.fullVersionOf`(제목이 같고 가수가 제목/가수에 들어 있는 것만 인정, `bestMatch`) → `MusicPlayer.replaceCurrent`가 같은 자리의 곡을 바꿔 끼움(**제목·가수·표지는 원곡 것을 유지** `asFullVersionOf`). 없으면 "여기엔 전곡이 없어요" 창 + "YouTube에서 전곡 보기"(`openFullOnYoutube`). **한계**: 메이저 곡의 Audius 전곡은 사용자가 올린 사본이라 있을 수도 없을 수도, 삭제될 수도 있음. 완전한 상용 곡 전곡은 유료 스트리밍(스포티파이 등) 없이는 불가
+- `ValorantChampions`(홈 "VALORANT Champions" 줄): Deezer 곡 id 6개(Die For You, Ticking Away, Fire Again, Die For You Zedd/Dabin 리믹스, If The Sun Burns Out Tonight)를 실행 때 `/track/<id>`로 불러옴. 연도별 챔피언스 주제곡이 정확히 무엇인지는 Deezer 자료로 확인하지 못함(Die For You=2021, Ticking Away=2023, If The Sun…=2026은 Deezer 검색 결과의 "Champions" 표기로 확인, 나머지는 같은 아티스트 곡) — 곡을 바꾸려면 `ids`만 고치면 됨
+- **화면이 꺼져도 재생**: 코드 변경 없이 이미 동작(MediaSessionService + 포그라운드 서비스 + `WAKE_MODE_NETWORK`). 에뮬레이터에서 화면을 끈 채 40초 이상 재생·다음 곡 넘어감 확인, 알림은 `category=transport`, `vis=PUBLIC`(잠금 화면에 표시), 채널 이름 "지금 재생 중"(`setChannelName`). 곡이 하나뿐인 대기열은 끝나면 멈춤. 삼성 폰의 배터리 최적화가 백그라운드 재생을 끊으면 설정 > 앱 > SuperDialer > 배터리 > "제한 없음"
+- 테스트 `AudiusJsonTest`

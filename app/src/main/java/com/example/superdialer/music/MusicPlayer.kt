@@ -185,7 +185,7 @@ object MusicPlayer {
                     .setArtworkUri(art?.let { Uri.parse(it) })
                     .build(),
             )
-        if (!track.isLocal) b.setMimeType(MimeTypes.AUDIO_MPEG)
+        if (track.isPreview) b.setMimeType(MimeTypes.AUDIO_MPEG)
         return b.build()
     }
 
@@ -248,6 +248,21 @@ object MusicPlayer {
     }
 
     // --- controls ---------------------------------------------------------------------------------------------------
+
+    /** Swaps the song that is playing for [full] (the same song, full length), keeping the rest of the queue. */
+    fun replaceCurrent(full: Track) {
+        val p = player
+        val i = p.currentMediaItemIndex
+        if (p.mediaItemCount == 0 || i < 0) return play(listOf(full))
+        val old = p.currentMediaItem?.mediaId
+        p.replaceMediaItem(i, item(full))
+        val k = originalOrder.indexOf(old)
+        if (k >= 0) originalOrder[k] = full.id
+        p.seekTo(i, 0L)
+        p.play()
+        refreshQueue()
+        syncCurrent()
+    }
 
     fun togglePlay() {
         val p = player

@@ -52,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -133,12 +134,14 @@ fun NowPlayingScreen() {
                 )
             }
         }
-        if (!track.isLocal) {
+        if (track.isPreview) {
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
             Text(
-                str(R.string.music_preview_note),
-                Modifier.padding(top = 4.dp).background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 2.dp),
-                color = Color.White.copy(alpha = 0.85f),
-                style = MaterialTheme.typography.labelSmall,
+                str(R.string.music_preview_tap_full),
+                Modifier.padding(top = 4.dp).clip(RoundedCornerShape(10.dp)).clickable { playFullVersion(context, scope, track) }
+                    .background(Color.White.copy(alpha = 0.15f)).padding(horizontal = 10.dp, vertical = 4.dp),
+                color = Color.White.copy(alpha = 0.9f),
+                style = MaterialTheme.typography.labelMedium,
             )
         }
         Spacer(Modifier.height(8.dp))

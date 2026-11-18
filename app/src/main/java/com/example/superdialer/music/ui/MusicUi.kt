@@ -14,6 +14,7 @@ import com.example.superdialer.R
 import com.example.superdialer.i18n.str
 import com.example.superdialer.music.MusicStore
 import com.example.superdialer.music.Track
+import kotlinx.coroutines.launch
 
 /** A screen pushed on top of the Music tab's Home / Search / Library. */
 sealed interface Dest {
@@ -54,6 +55,9 @@ object MusicUi {
     /** The "add to playlist" chooser; also used for several songs at once (album / playlist menus). */
     var addTracks by mutableStateOf<List<Track>?>(null)
 
+    /** A song that has no full version on Audius: a dialog offers the YouTube search instead. */
+    var fullHelpTrack by mutableStateOf<Track?>(null)
+
     /** Name dialogs: create (with songs to put in it) and rename. */
     var createPlaylistWith by mutableStateOf<List<Track>?>(null)
     var renamePlaylistId by mutableStateOf<String?>(null)
@@ -93,7 +97,8 @@ fun toggleLike(context: Context, track: Track) {
 
 /** Shares a link to the song's Deezer page (or just its name for a file on the phone). */
 fun shareTrack(context: Context, track: Track) {
-    val text = if (track.isLocal) "${track.title} - ${track.artist}" else "${track.title} - ${track.artist}\nhttps://www.deezer.com/track/${track.deezerId}"
+    val link = track.link ?: if (track.source == com.example.superdialer.music.TrackSource.DEEZER) "https://www.deezer.com/track/${track.deezerId}" else null
+    val text = "${track.title} - ${track.artist}" + (link?.let { "\n$it" } ?: "")
     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
     runCatching { context.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
@@ -104,4 +109,23 @@ fun openInSpotify(context: Context, track: Track) {
     val app = Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:$q")).setPackage("com.spotify.music").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     val web = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com/search/$q")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     runCatching { context.startActivity(app) }.recoverCatching { context.startActivity(web) }
+}
+
+/** Opens the song's full version on YouTube (the YouTube app when installed, otherwise the web page). */
+fun openFullOnYoutube(context: Context, track: Track) {
+    val q = Uri.encode("${track.title} ${track.artist}")
+    val web = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=$q")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(web) }
+}
+
+/**
+ * Plays the full-length version of a 30-second preview: looks the song up on Audius (full songs) and, when it is there,
+ * replaces the current song with it. When Audius does not have it, a dialog offers the YouTube search instead.
+ */
+fun playFullVersion(context: Context, scope: kotlinx.coroutines.CoroutineScope, track: Track) {
+    toast(context, R.string.music_looking_for_full)
+    scope.launch {
+        val full = runCatching { com.example.superdialer.music.AudiusApi.fullVersionOf(track) }.getOrNull()
+        if (full != null) com.example.superdialer.music.MusicPlayer.replaceCurrent(full) else MusicUi.fullHelpTrack = track
+    }
 }

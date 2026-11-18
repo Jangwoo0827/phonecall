@@ -12,7 +12,7 @@ object MusicCodec {
     fun track(t: Track) = JSONObject()
         .put("id", t.id).put("title", t.title).put("artist", t.artist).put("artistId", t.artistId)
         .put("album", t.album).put("albumId", t.albumId).put("art", t.artUrl ?: JSONObject.NULL)
-        .put("dur", t.durationSec).put("uri", t.uri).put("src", t.source.name).put("x", t.explicit)
+        .put("dur", t.durationSec).put("uri", t.uri).put("src", t.source.name).put("x", t.explicit).put("link", t.link ?: JSONObject.NULL)
 
     fun track(o: JSONObject): Track? {
         val id = o.optString("id")
@@ -29,6 +29,7 @@ object MusicCodec {
             uri = o.optString("uri"),
             source = runCatching { TrackSource.valueOf(o.optString("src")) }.getOrDefault(TrackSource.DEEZER),
             explicit = o.optBoolean("x"),
+            link = if (o.isNull("link")) null else o.optString("link").ifEmpty { null },
         )
     }
 

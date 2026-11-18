@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Person
@@ -98,6 +99,17 @@ fun MusicOverlays() {
         ModalBottomSheet(onDismissRequest = { MusicUi.sleepOpen = false }, sheetState = state) { SleepSheet() }
     }
 
+    MusicUi.fullHelpTrack?.let { t ->
+        val context = LocalContext.current
+        AlertDialog(
+            onDismissRequest = { MusicUi.fullHelpTrack = null },
+            title = { Text(str(R.string.music_full_help_title)) },
+            text = { Text(str(R.string.music_full_help_text)) },
+            confirmButton = { TextButton(onClick = { openFullOnYoutube(context, t); MusicUi.fullHelpTrack = null }) { Text(str(R.string.music_full_on_youtube)) } },
+            dismissButton = { TextButton(onClick = { MusicUi.fullHelpTrack = null }) { Text(str(R.string.cancel)) } },
+        )
+    }
+
     MusicUi.createPlaylistWith?.let { initial -> CreatePlaylistDialog(initial) }
     MusicUi.renamePlaylistId?.let { id -> RenamePlaylistDialog(id) }
     MusicUi.deletePlaylistId?.let { id -> DeletePlaylistDialog(id) }
@@ -114,6 +126,7 @@ private fun SheetAction(icon: ImageVector, text: String, onClick: () -> Unit) {
 @Composable
 private fun TrackMenu(track: Track) {
     val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val playlistId = MusicUi.menuPlaylistId
     fun close() { MusicUi.menuTrack = null; MusicUi.menuPlaylistId = null }
     Column(Modifier.padding(bottom = 24.dp)) {
@@ -140,6 +153,10 @@ private fun TrackMenu(track: Track) {
         }
         if (!track.isLocal && track.albumId > 0) {
             SheetAction(Icons.Filled.Album, str(R.string.music_go_to_album)) { close(); MusicUi.requestOpen(Dest.Album(track.albumId)) }
+        }
+        if (track.isPreview) {
+            SheetAction(Icons.Filled.GraphicEq, str(R.string.music_play_full)) { close(); playFullVersion(context, scope, track) }
+            SheetAction(Icons.Filled.OpenInNew, str(R.string.music_full_on_youtube)) { openFullOnYoutube(context, track); close() }
         }
         SheetAction(Icons.Filled.Share, str(R.string.music_share)) { shareTrack(context, track); close() }
         SheetAction(Icons.Filled.OpenInNew, str(R.string.music_open_in_spotify)) { openInSpotify(context, track); close() }

@@ -2,7 +2,7 @@ package com.example.superdialer.music
 
 import java.util.Locale
 
-enum class TrackSource { DEEZER, LOCAL }
+enum class TrackSource { DEEZER, AUDIUS, LOCAL }
 
 /**
  * One playable song. [id] is "dz:<deezer id>" or "lc:<MediaStore id>" and is what the queue, likes and playlists key on;
@@ -20,9 +20,14 @@ data class Track(
     val uri: String,
     val source: TrackSource,
     val explicit: Boolean = false,
+    /** A web page of the song (shared instead of a Deezer link), when the source has one. */
+    val link: String? = null,
 ) {
     val isLocal: Boolean get() = source == TrackSource.LOCAL
-    val deezerId: Long get() = if (isLocal) 0L else id.removePrefix("dz:").toLongOrNull() ?: 0L
+
+    /** Online songs from Deezer are 30-second previews; Audius songs and files on the phone play in full. */
+    val isPreview: Boolean get() = source == TrackSource.DEEZER
+    val deezerId: Long get() = if (source == TrackSource.DEEZER) id.removePrefix("dz:").toLongOrNull() ?: 0L else 0L
 }
 
 data class Album(

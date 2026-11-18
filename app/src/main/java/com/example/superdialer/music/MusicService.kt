@@ -29,7 +29,7 @@ class MusicService : MediaSessionService() {
         session = s
         addSession(s)
         setMediaNotificationProvider(
-            DefaultMediaNotificationProvider.Builder(this).build().also { it.setSmallIcon(R.drawable.ic_stat_music) },
+            DefaultMediaNotificationProvider.Builder(this).setChannelName(R.string.music_now_playing).build().also { it.setSmallIcon(R.drawable.ic_stat_music) },
         )
     }
 

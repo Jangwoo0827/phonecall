@@ -48,6 +48,7 @@ import com.example.superdialer.R
 import com.example.superdialer.i18n.str
 import com.example.superdialer.music.Album
 import com.example.superdialer.music.Artist
+import com.example.superdialer.music.AudiusApi
 import com.example.superdialer.music.DeezerApi
 import com.example.superdialer.music.MusicPlayer
 import com.example.superdialer.music.MusicStore
@@ -127,11 +128,26 @@ private fun BrowseSearch(onPick: (String) -> Unit) {
 @Composable
 private fun SearchResultsView(query: String, filter: Int, onFilter: (Int) -> Unit) {
     val results = rememberLoad(query) { DeezerApi.search(query) }
-    val labels = listOf(R.string.music_filter_all, R.string.music_filter_songs, R.string.music_filter_albums, R.string.music_filter_artists, R.string.music_filter_playlists)
+    val fullSongs = rememberLoad("au$query") { runCatching { AudiusApi.search(query, 25) }.getOrDefault(emptyList()) }
+    val labels = listOf(R.string.music_filter_all, R.string.music_filter_songs, R.string.music_filter_albums, R.string.music_filter_artists, R.string.music_filter_playlists, R.string.music_full_songs)
     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(labels.size) { i ->
             FilterChip(selected = filter == i, onClick = { onFilter(i) }, label = { Text(str(labels[i])) })
         }
+    }
+    if (filter == 5) {
+        val list = fullSongs.value
+        when {
+            list == null -> LoadingBox()
+            list.isEmpty() -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.TopCenter) {
+                Text(str(R.string.music_no_results, query), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            else -> LazyColumn(contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp)) {
+                item { Text(str(R.string.music_full_note), Modifier.padding(horizontal = 16.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall) }
+                trackItems(list, list.size)
+            }
+        }
+        return
     }
     LoadedContent(results) { r ->
         if (r.isEmpty) {
@@ -139,13 +155,13 @@ private fun SearchResultsView(query: String, filter: Int, onFilter: (Int) -> Uni
                 Text(str(R.string.music_no_results, query), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
-            ResultsList(r, filter, query)
+            ResultsList(r, filter, query, fullSongs.value.orEmpty())
         }
     }
 }
 
 @Composable
-private fun ResultsList(r: SearchResults, filter: Int, query: String) {
+private fun ResultsList(r: SearchResults, filter: Int, query: String, full: List<Track>) {
     LazyColumn(contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)) {
         when (filter) {
             1 -> trackItems(r.tracks, r.tracks.size)
@@ -162,6 +178,10 @@ private fun ResultsList(r: SearchResults, filter: Int, query: String) {
                 if (r.tracks.isNotEmpty()) {
                     item { SectionTitle(str(R.string.music_filter_songs)) }
                     trackItems(r.tracks, 5)
+                }
+                if (full.isNotEmpty()) {
+                    item { SectionTitle(str(R.string.music_full_songs)) }
+                    trackItems(full, 4)
                 }
                 val others = r.artists.filter { it.id != topArtist(r, query)?.id }.take(4)
                 if (others.isNotEmpty()) {
