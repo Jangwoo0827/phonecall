@@ -84,6 +84,9 @@ class WebAudioService : Service() {
     private var artUrl = ""
     private var art: Bitmap? = null
     private var started = false
+    private var shownKey = ""
+    private var syncedAt = 0L
+    private var syncedPos = 0L
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -101,7 +104,20 @@ class WebAudioService : Service() {
                             handler.post { if (url == artUrl) { art = bmp; publish() } }
                         }
                     }
-                    publish()
+                    // Touch the media session / notification only when something really changed (the lock screen
+                    // rebuilds its player on every update, which made it flicker and drop touches), or when the
+                    // position jumped (a seek); otherwise the system keeps counting the time by itself.
+                    val key = "$title|$artist|$playing|${durationMs / 1000}"
+                    val now = android.os.SystemClock.elapsedRealtime()
+                    val expected = syncedPos + if (playing) now - syncedAt else 0L
+                    if (key != shownKey) {
+                        shownKey = key
+                        syncedAt = now; syncedPos = positionMs
+                        publish()
+                    } else if (kotlin.math.abs(positionMs - expected) > 2500) {
+                        syncedAt = now; syncedPos = positionMs
+                        publishState()
+                    }
                 }
                 if (started) handler.postDelayed(this, 1000)
             }
@@ -130,7 +146,7 @@ class WebAudioService : Service() {
                     override fun onPause() = SpotifyWeb.control("pause")
                     override fun onSkipToNext() = SpotifyWeb.control("next")
                     override fun onSkipToPrevious() = SpotifyWeb.control("prev")
-                    override fun onSeekTo(pos: Long) { positionMs = pos; SpotifyWeb.control("seek:" + pos / 1000.0); publish() }
+                    override fun onSeekTo(pos: Long) { positionMs = pos; SpotifyWeb.control("seek:" + pos / 1000.0); syncedAt = android.os.SystemClock.elapsedRealtime(); syncedPos = pos; publishState() }
                     override fun onStop() { startService(Intent(this@WebAudioService, WebAudioService::class.java).setAction(ACTION_STOP)) }
                 })
                 isActive = true
@@ -192,6 +208,12 @@ class WebAudioService : Service() {
                 }
                 .build(),
         )
+        publishState()
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, build())
+    }
+
+    private fun publishState() {
+        val s = session ?: return
         s.setPlaybackState(
             PlaybackState.Builder()
                 .setActions(
@@ -205,7 +227,6 @@ class WebAudioService : Service() {
                 )
                 .build(),
         )
-        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, build())
     }
 
     override fun onDestroy() {
