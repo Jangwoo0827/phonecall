@@ -130,6 +130,7 @@ class WebAudioService : Service() {
                     override fun onPause() = SpotifyWeb.control("pause")
                     override fun onSkipToNext() = SpotifyWeb.control("next")
                     override fun onSkipToPrevious() = SpotifyWeb.control("prev")
+                    override fun onSeekTo(pos: Long) { positionMs = pos; SpotifyWeb.control("seek:" + pos / 1000.0); publish() }
                     override fun onStop() { startService(Intent(this@WebAudioService, WebAudioService::class.java).setAction(ACTION_STOP)) }
                 })
                 isActive = true
@@ -181,14 +182,22 @@ class WebAudioService : Service() {
                 .putString(MediaMetadata.METADATA_KEY_TITLE, title)
                 .putString(MediaMetadata.METADATA_KEY_ARTIST, artist)
                 .putLong(MediaMetadata.METADATA_KEY_DURATION, durationMs)
-                .apply { art?.let { putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, it) } }
+                .putString(MediaMetadata.METADATA_KEY_ALBUM, "Spotify")
+                .apply {
+                    art?.let {
+                        putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, it)
+                        putBitmap(MediaMetadata.METADATA_KEY_ART, it)
+                        putBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON, it)
+                    }
+                }
                 .build(),
         )
         s.setPlaybackState(
             PlaybackState.Builder()
                 .setActions(
                     PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or
-                        PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS or PlaybackState.ACTION_STOP,
+                        PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS or PlaybackState.ACTION_STOP or
+                        PlaybackState.ACTION_SEEK_TO,
                 )
                 .setState(
                     if (playing) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED,

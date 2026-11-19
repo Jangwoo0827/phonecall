@@ -118,7 +118,10 @@ object SpotifyWeb {
 
     /** play / pause / next / prev, done on the page itself (its audio element or its own buttons). */
     fun control(what: String) {
-        val js = when (what) {
+        val js = if (what.startsWith("seek:")) {
+            val sec = what.removePrefix("seek:").toDoubleOrNull() ?: return
+            "var a=document.querySelector('audio,video');if(a)a.currentTime=$sec"
+        } else when (what) {
             "play" -> "var a=document.querySelector('audio,video');if(a)a.play()"
             "pause" -> "var a=document.querySelector('audio,video');if(a)a.pause()"
             "next" -> "var b=document.querySelector('[data-testid=\"control-button-skip-forward\"],[aria-label=\"Next\"]');if(b)b.click()"
