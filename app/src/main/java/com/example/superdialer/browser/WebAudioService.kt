@@ -162,7 +162,7 @@ class WebAudioService : Service() {
                     override fun onSkipToNext() = SpotifyWeb.control("next")
                     override fun onSkipToPrevious() = SpotifyWeb.control("prev")
                     override fun onSeekTo(pos: Long) { positionMs = pos; SpotifyWeb.control("seek:" + pos / 1000.0); syncedAt = android.os.SystemClock.elapsedRealtime(); syncedPos = pos; publishState() }
-                    override fun onStop() { startService(Intent(this@WebAudioService, WebAudioService::class.java).setAction(ACTION_STOP)) }
+                    override fun onStop() = SpotifyWeb.control("pause")
                 })
                 isActive = true
             }
