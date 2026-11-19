@@ -1,9 +1,6 @@
 package com.example.superdialer.navigation
 
 import com.example.superdialer.kakao.KakaoRoomScreen
-import com.example.superdialer.music.ui.MiniPlayer
-import com.example.superdialer.music.ui.MusicOverlays
-import com.example.superdialer.music.ui.MusicUi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -141,29 +138,6 @@ fun SuperDialerApp(
         }
     }
 
-    // A page of the Music tab asked for from elsewhere (the full player, a notification): switch to Apps > Music and open it.
-    LaunchedEffect(MusicUi.pendingDest, navReady) {
-        val dest = MusicUi.pendingDest
-        if (navReady && dest != null) {
-            browserViewModel.hubSection = 2
-            navigateToTab(TopLevelDestination.Hub.route)
-            MusicUi.open(dest)
-            MusicUi.pendingDest = null
-        }
-    }
-
-    // A link asked for by the Music tab (a YouTube search or a link song): open it in the browser tab.
-    LaunchedEffect(MusicUi.pendingBrowserUrl, navReady) {
-        val url = MusicUi.pendingBrowserUrl
-        if (navReady && url != null) {
-            browserViewModel.hubSection = 0
-            browserViewModel.openExternal(url, MusicUi.pendingBrowserDesktop)
-            navigateToTab(TopLevelDestination.Hub.route)
-            MusicUi.pendingBrowserUrl = null
-            MusicUi.pendingBrowserDesktop = false
-        }
-    }
-
     // A website open in the browser takes the whole screen, so the app's own tab bar steps aside.
     val hideBottomBar = currentRoute == TopLevelDestination.Hub.route && browserViewModel.immersive
 
@@ -174,7 +148,7 @@ fun SuperDialerApp(
                 visible = !hideBottomBar,
                 enter = slideInVertically(tween(260)) { it } + fadeIn(tween(260)),
                 exit = slideOutVertically(tween(220)) { it } + fadeOut(tween(220)),
-            ) { Column { MiniPlayer(); NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+            ) { Column { NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
                 TopLevelDestination.entries.forEach { destination ->
                     // Sub-screens such as "contacts/{id}" keep their tab highlighted.
                     val selected = currentRoute == destination.route ||
@@ -323,6 +297,5 @@ fun SuperDialerApp(
             composable(TopLevelDestination.Hub.route) { WebGamesScreen(browserViewModel) }
         }
     }
-        MusicOverlays()
     }
 }

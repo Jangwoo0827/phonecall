@@ -26,9 +26,6 @@ class SuperDialerApplication : Application() {
             com.example.superdialer.i18n.AppLanguage.fromKey(getSharedPreferences("app_settings", MODE_PRIVATE).getString("language", null)),
         )
         AppSettings.init(this)
-        com.example.superdialer.music.MusicStore.init(this)
-        com.example.superdialer.music.MusicPlayer.init(this)
-        com.example.superdialer.music.YoutubePlayback.init(this)
         com.example.superdialer.music.SpotifyWeb.init(this)
         CrashLog.install(this)
         WhatsNew.check(this)

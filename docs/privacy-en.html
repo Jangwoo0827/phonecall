@@ -72,9 +72,8 @@
     <tr><th>Service</th><th>Role</th></tr>
     <tr><td>Supabase (server: Seoul region)</td><td>Sign-in, storing synced data and the leaderboard</td></tr>
     <tr><td>Google sign-in</td><td>Only when you tap "Continue with Google". Only the basic profile (email, name) is requested</td></tr>
-    <tr><td>Audius (Music tab)</td><td>For "Full songs" in the Music tab (Audius's free full-length music), your search words, a song id and your IP address are sent to get song details and the audio. No account or contact information is sent</td></tr>
-    <tr><td>Deezer (Music tab)</td><td>Fetches the charts, search results, albums, artists and 30-second previews shown in the Music tab. A request contains your search words, the id of the album / artist / song you open, and your IP address; no account or contact information is sent. Liked songs, playlists and play history stay on this phone</td></tr>
     <tr><td>GitHub</td><td>Checking for new versions and downloading the APK (requests go to the public release addresses; your IP address is passed on as with any web request)</td></tr>
+    <tr><td>Spotify (Music tab)</td><td>The Music tab shows Spotify's official web player (open.spotify.com). Signing in and playback happen between you and Spotify; the app stores no password or listening history, and Spotify's privacy policy applies</td></tr>
     <tr><td>Websites you open</td><td>Sites opened in the built-in browser follow their own policies. Link icons are fetched from the site itself (no third-party icon service is used)</td></tr>
     <tr><td>Draw together (<code>jangwoo0827.github.io/onlinedraw</code>)</td><td>A separate web app reached from one of the start-page links. People with the same room link share a drawing; an anonymous sign-in and the drawing data are stored in Firebase (Google). It is not linked to this app's account</td></tr>
   </table>
@@ -92,9 +91,8 @@
     <li>Location (precise/approximate): only when a website in the built-in browser asks and you allow it. Websites can ask for the camera, microphone and location only on secure (https) pages, and the app does not collect or store this information</li>
     <li>Notification access (optional): only when you turn on the KakaoTalk notification inbox above. You must allow it yourself in the system settings and can turn it off at any time. Notifications of apps other than KakaoTalk are not processed</li>
     <li>Notifications and full-screen notifications: incoming and missed calls, new version alerts</li>
-    <li>Internet: the built-in browser, account sync, update checks, the Music tab</li>
-    <li>Music and audio access (optional): only when you open "On this device" in the Music tab to play the music files on your phone. The files never leave the phone</li>
-    <li>Background playback (foreground service): used while music plays, to show the notification and the lock-screen controls</li>
+    <li>Internet: the built-in browser, account sync, update checks, the Music tab (Spotify's web player)</li>
+    <li>Background playback (foreground service): shows a notification so the app keeps running while the Spotify web player in the Music tab plays</li>
     <li>Install packages: when you download and install a new version inside the app (if you allowed it)</li>
   </ul>
   <p>Every permission is asked for the first time you use the matching feature, and the rest of the app keeps working if you refuse.</p>

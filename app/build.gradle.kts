@@ -74,8 +74,6 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.webkit)
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.session)
     testImplementation(libs.junit)
     testImplementation("org.json:json:20240303")
     debugImplementation(libs.androidx.compose.ui.tooling)

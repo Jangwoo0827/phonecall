@@ -382,42 +382,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - **멈춤의 진짜 원인**: WebView가 전체화면 뷰로 바꿔 끼우는 동안 페이지가 약 0.2초 "hidden"이 됨(`visibilitychange` + `document.hidden`) → YouTube가 그걸 보고 영상을 비움/멈춤. 해결: 전체화면 진입·종료 순간(`BrowserViewModel.shieldVisibility`)에 JS로 `visibilitychange`를 삼키고 `document.hidden/visibilityState`를 1.5초 동안 `false/visible`로 속임. 실제로 앱이 가려질 때(`webView.onPause`)는 영향 없음
 - 확인: 에뮬레이터에서 m.youtube.com 영상 + 로컬 `<video>` 페이지로 진입(가로 전환·재생 유지)·종료(세로 복귀·재생 유지). 디버깅 방법: `webView.evaluateJavascript`로 `console.log`를 심으면 logcat `chromium: [INFO:CONSOLE` 로 보임
 
-## 앱 탭 + 음악 (v0.14.0, music/)
-- 하단 탭 "웹·게임"이 **"앱"**(`TopLevelDestination.Hub`, 문자열 `t_web_games`="앱"/"Apps")으로 바뀌고 위쪽 전환 바가 브라우저/게임/**음악** 3칸(`hub/WebGamesScreen`, `BrowserViewModel.hubSection` 0/1/2). 런처 바로가기·알림용 `MainActivity.SHORTCUT_MUSIC`. UI 테스트는 탭 이름 "앱"
-- **스포티파이 정식 연동은 불가**: 스포티파이 API/SDK는 개발자 계정·심사·프리미엄 계정이 필요하고 오디오를 다른 앱이 재생하는 것을 허용하지 않음. 그래서 **Deezer 공개 API(`DeezerApi`, 키·계정 없음)** 의 카탈로그 + **30초 미리듣기**를 쓰고, 폰의 음악 파일(`LocalMusic`, MediaStore, READ_MEDIA_AUDIO)은 전곡 재생. 곡 메뉴의 "Spotify에서 검색"은 스포티파이 앱/웹에서 검색 화면을 열 뿐
-- 구조: `Models`(Track/Album/Artist/PlaylistInfo/…), `DeezerJson`(순수 파서, 테스트 `DeezerJsonTest`), `DeezerApi`(HttpURLConnection, 10분 메모리 캐시, 재시도 1회, 코루틴), `MusicStore`(내 라이브러리: 좋아요·플레이리스트·저장한 앨범/플레이리스트·팔로우 아티스트·최근 재생·최근 검색, SharedPreferences `music_library`, Compose 목록; 직렬화 `MusicCodec` 테스트 `MusicCodecTest`; 이 폰에만 저장·계정 동기화 안 함), `MusicPlayer`(media3 ExoPlayer 단일 인스턴스 + 화면용 Compose 상태; 대기열=플레이어 목록; 셔플은 남은 곡을 직접 재배열(`applyShuffle`)해서 "다음에 재생/대기열 추가"가 화면과 일치; 수면 타이머), `MusicService`(MediaSessionService, 알림·잠금화면·헤드셋 버튼, `foregroundServiceType=mediaPlayback`)
-- **미리듣기 링크는 만료**되므로 곡은 `deezer://track/<id>`만 들고 있고, `ResolvingDataSource`가 재생 직전에 `/track/<id>`로 새 링크를 받아 바꿔 끼움(`freshPreviewBlocking`, 20분 캐시). 미리듣기 없는 곡은 목록에서 제외. 재생 실패 시 토스트 + 다음 곡으로
-- UI(`music/ui/`): `MusicScreen`(홈/검색/내 라이브러리 칩 + 푸시되는 `Dest` 화면: 앨범·아티스트·Deezer 플레이리스트·내 플레이리스트·장르·좋아요·이 기기), `MusicUi`(탭·푸시 스택·시트/대화상자 상태·검색/목록 스크롤 상태를 화면 밖에 보관해 돌아와도 유지), `MiniPlayer`(앱 하단 탭 바 위, 재생 중에만), `NowPlayingScreen`(커버 색을 평균내 배경 그라데이션 `rememberArtColor`, 아래로 끌어 닫기), `MusicOverlays`(앱 루트에서 재생 화면·곡 메뉴·플레이리스트 추가·대기열·수면 타이머·만들기/이름 바꾸기/삭제 창 — 어느 탭에서든 동작), `Artwork`(외부 이미지 라이브러리 없이 다운로드 + LruCache + `cacheDir/music_art` 디스크 캐시, 로컬 곡은 `loadThumbnail`)
-- 새 글자 키는 `music_*`(strings_manual.xml 두 언어). 설정 > 음악 > "음악 데이터 지우기". 개인정보처리방침(양 언어)에 Deezer 요청·오디오 접근·백그라운드 재생 추가함
-- 테스트: 단위 `DeezerJsonTest`·`MusicCodecTest`, UI `MusicTabTest`(오프라인에서도 통과: 라이브러리만 사용). 에뮬레이터에서 홈 차트 로드·재생(미디어 세션 PLAYING + 알림)·검색·아티스트 페이지·좋아요/팔로우/플레이리스트 만들기·라이브러리 확인함. **실기기 확인 필요**: 잠금화면/알림 컨트롤, 블루투스, 백그라운드 장시간 재생, 삼성 배터리 절약 영향
-- R8: media3·Room·Compose 모두 자체 규칙이 있음. 릴리스 빌드에서 재생이 되는지는 배포 전에 릴리스로 한 번 확인할 것(이번 세션 배포 전 점검 항목)
-
-## 음악: 전곡 재생 / 잠금 화면 / VALORANT 줄 (v0.14.0)
-- **전곡**: Deezer는 30초 미리듣기만 허용 → 무료·키 없는 **Audius 공개 API**(`AudiusApi`/`AudiusJson`, `TrackSource.AUDIUS`)로 전곡 재생. 스트림 주소는 `https://api.audius.co/v1/tracks/<id>/stream?app_name=SuperDialer`(302로 노드에 연결, ExoPlayer가 따라감). 접근 제한(`access.stream=false`)·길이 0인 곡은 제외. 홈 "Audius에서 인기 있는 전곡" 줄, 검색 "전곡 재생" 칩(+전체 보기에 4곡), **30초 곡을 "전곡으로 재생"**(곡 메뉴 또는 재생 화면의 "30초 미리듣기 · 눌러서 전곡 듣기" 배지): `playFullVersion` → `AudiusApi.fullVersionOf`(제목이 같고 가수가 제목/가수에 들어 있는 것만 인정, `bestMatch`) → `MusicPlayer.replaceCurrent`가 같은 자리의 곡을 바꿔 끼움(**제목·가수·표지는 원곡 것을 유지** `asFullVersionOf`). 없으면 "여기엔 전곡이 없어요" 창 + "YouTube에서 전곡 보기"(`openFullOnYoutube`). **한계**: 메이저 곡의 Audius 전곡은 사용자가 올린 사본이라 있을 수도 없을 수도, 삭제될 수도 있음. 완전한 상용 곡 전곡은 유료 스트리밍(스포티파이 등) 없이는 불가
-- `ValorantChampions`(홈 "VALORANT Champions" 줄): Deezer 곡 id 6개(Die For You, Ticking Away, Fire Again, Die For You Zedd/Dabin 리믹스, If The Sun Burns Out Tonight)를 실행 때 `/track/<id>`로 불러옴. 연도별 챔피언스 주제곡이 정확히 무엇인지는 Deezer 자료로 확인하지 못함(Die For You=2021, Ticking Away=2023, If The Sun…=2026은 Deezer 검색 결과의 "Champions" 표기로 확인, 나머지는 같은 아티스트 곡) — 곡을 바꾸려면 `ids`만 고치면 됨
-- **화면이 꺼져도 재생**: 코드 변경 없이 이미 동작(MediaSessionService + 포그라운드 서비스 + `WAKE_MODE_NETWORK`). 에뮬레이터에서 화면을 끈 채 40초 이상 재생·다음 곡 넘어감 확인, 알림은 `category=transport`, `vis=PUBLIC`(잠금 화면에 표시), 채널 이름 "지금 재생 중"(`setChannelName`). 곡이 하나뿐인 대기열은 끝나면 멈춤. 삼성 폰의 배터리 최적화가 백그라운드 재생을 끊으면 설정 > 앱 > SuperDialer > 배터리 > "제한 없음"
-- 테스트 `AudiusJsonTest`
-
-## 음악: 전곡 우선 / YouTube Music (v0.14.0)
-- **전곡 우선**(설정 > 음악 > "전곡 우선 재생", `AppSettings.preferFullSongs`, 기본 켜짐): Deezer 곡을 재생할 때 `MusicPlayer`의 `ResolvingDataSource`가 Audius에서 같은 곡의 전곡(`AudiusApi.fullStreamUrlBlocking`, 곡당 1번 검색하고 결과·실패를 세션 동안 기억, 네트워크 오류는 기억 안 함)을 먼저 찾고 **없을 때만 30초 미리듣기**로 재생. 로딩 스레드에서 처리라 곡이 다시 시작되지 않음. 전곡으로 재생 중인 곡 id는 `MusicPlayer.fullIds`(Compose 목록)에 들어가 "30초 미리듣기" 배지·"전곡으로 재생" 메뉴가 숨겨짐. 에뮬레이터에서 VALORANT "Die For You"를 한 번 눌러 3:38 전곡 재생 확인
-- **YouTube Music 연결은 뺐음**(사용자 결정): 우리 플레이어 안에서 재생할 수 없어서(공식 API 없음, 스트림 추출은 약관 위반) 곡 메뉴·재생 화면·안내 창의 YouTube Music 이동을 모두 제거. Audius에 전곡이 없는 곡은 30초 미리듣기로 재생되고, 배지/메뉴의 "전곡으로 재생"을 누르면 "이 곡의 전곡이 없어요"라고 알려 줌
-
-## 음악: YouTube 링크 곡 / 반복 플레이리스트 (v0.14.0)
-- **링크 곡**(`TrackSource.LINK`, `YoutubeLinks`): YouTube 영상 링크를 곡으로 저장. 영상 id는 watch / youtu.be / shorts / embed / music.youtube.com 링크에서 뽑고(`videoId`, 11자 id만 인정, 테스트 `YoutubeLinksTest`), 제목·채널은 공개 oEmbed(`https://www.youtube.com/oembed`, 키 없음)에서, 표지는 `i.ytimg.com`. 추가 경로 3개: ① 내 라이브러리 "YouTube 링크 추가"(클립보드에 YouTube 링크가 있으면 미리 채움) ② 검색 화면 위쪽 "YouTube에서 '검색어' 찾기"(브라우저의 `m.youtube.com/results`) → 영상 페이지에서 브라우저 ⋮ > **"음악에 추가"**(`BrowserScreen.OverflowMenu.onAddToMusic`, 일반 탭의 영상 주소에서만 보임) ③ 내 플레이리스트 ⋮ > "YouTube 링크 추가". 링크 곡은 곡 메뉴의 대기열 항목이 없고 **눌러도 우리 플레이어가 아니라 브라우저(YouTube 공식 플레이어)로 열림**(`MusicPlayer.openLink` → `MusicUi.pendingBrowserUrl` → `SuperDialerApp`이 브라우저 탭으로 이동). 플레이어 안에서 YouTube 음원을 재생·추출하지 않는 것은 약관 때문(ViMusic/OuterTune 같은 앱이 하는 방식은 YouTube 약관 위반이라 이 앱에는 넣지 않음)
-- **반복 플레이리스트**: `UserPlaylist.loop`(만들 때 "계속 반복" 체크, 또는 플레이리스트 ⋮ > 계속 반복으로 켜고 끔). 재생·셔플 재생 때 `MusicPlayer.play(..., repeatAll = true)`로 전체 반복 모드를 켬(끝나면 처음부터). 목록과 페이지에 ∞ / "계속 반복 중" 표시. 옛 저장 데이터는 반복 꺼짐
-- 링크 곡이 섞인 플레이리스트: 재생할 땐 링크 곡을 빼고 나머지를 재생(`MusicPlayer.play`가 걸러냄)
-
-## 음악: 앱 안 YouTube 재생 (v0.14.1, `YoutubePlayback` / `ui/YoutubeNowPlaying`)
-- 링크 곡을 누르면 **`https://m.youtube.com/watch?v=<id>` 일반 모바일 시청 페이지**를 재생 화면의 **표지 자리**(정사각형, 위쪽 YouTube 바 + 영상)에 보여 줌. 처음엔 공식 임베드(IFrame API)로 만들었지만 에뮬레이터에서 시작하지 못했고(임베드 내부 `OperationError`, 오류 152 → 출처 설정 후엔 내부 오류) 사용자 폰은 Family Link 때문에 youtube.com 임베드가 막힐 수 있다고 해서 **m.youtube.com 페이지 방식으로 교체**(이 앱 브라우저가 이미 여는 바로 그 페이지). 프록시·제3자 사이트·음원 추출을 쓰지 않음(사용자가 제안한 `michael.team/yt` 방식은 Family Link 우회라 거절)
-- 조작: JS 브릿지 없이 `evaluateJavascript`로 페이지의 `<video>`를 직접 읽고 조작(0.5초 폴링: 일시정지/끝남/현재 시간/길이/readyState). 재생·일시정지·탐색(`currentTime`), 끝나면 다음 곡(계속 반복이면 처음부터). 자동 재생이 음소거로 시작해서 재생 중이면 한 번 `muted=false`(`__sdUnmuted`); 페이지 자체의 음소거 아이콘은 그대로 보일 수 있음(실제 소리는 에뮬레이터에선 확인 못 함)
-- 링크 곡만 이 플레이어, 나머지는 ExoPlayer(`MusicPlayer.play`가 링크 곡을 `YoutubePlayback.start`로 보내고, ExoPlayer로 재생하면 `YoutubePlayback.stop()`; 동시에 소리 내지 않음). 같은 WebView는 기본 프로필이라 앱 브라우저와 쿠키(로그인·동의)를 공유
-- **YouTube 약관상 백그라운드 재생·영상 숨김 재생은 하지 않음**: 재생 화면이 닫히거나 화면이 꺼지거나 앱을 나가면(`LifecycleResumeEffect`) 일시정지 + WebView `onPause`. 미니 플레이어의 재생 버튼은 재생 화면을 열어 줌. 화면에 안내 문구 있음. 페이지는 있는 그대로 보여 주고 광고·UI를 가리거나 바꾸지 않음
-- 영상이 10초 안에 안 뜨면(`stalled`) "앱 안에서 영상이 시작되지 않았어요" + "브라우저에서 열기" 버튼. 이동은 YouTube/Google 호스트만 허용(`shouldOverrideUrlLoading`)
-- **검증**: 에뮬레이터에서 표지 자리에 영상이 뜨고 시간이 흐르고(0:10→0:17) 우리 컨트롤로 조작되는 것 확인. 실기기(Family Link 폰)에서 확인 필요
-- **미니 플레이어 X**: 재생을 끝내고(`MusicPlayer.stop()`, 영상도 정지) 바를 없앰. testTag `mini_close`
-
-## 에뮬레이터 주의 (사용자 요청, 2026-11-19)
-- **에뮬레이터에서 앱을 삭제(`adb uninstall`)하거나 `pm clear` 하거나 `connectedDebugAndroidTest`를 돌리지 말 것**: 사용자가 같은 에뮬레이터로 직접 테스트하고, Gradle의 connected 테스트는 끝나면 앱을 지워 권한·데이터가 초기화됨. 설치는 `./gradlew installDebug`(덮어쓰기). UI 테스트는 CI(`ui-tests.yml`)가 푸시마다 돌리고 릴리스를 막아 줌. 새 설치 점검(`pm clear`)이 꼭 필요하면 사용자에게 먼저 물을 것
+## 앱 탭 (v0.14.0~)
+- 하단 탭 "웹·게임"이 **"앱"**(`TopLevelDestination.Hub`, 문자열 `t_web_games`="앱"/"Apps")이고 위쪽 전환 바가 브라우저/게임/**음악** 3칸(`hub/WebGamesScreen`, `BrowserViewModel.hubSection` 0/1/2). 런처 바로가기용 `MainActivity.SHORTCUT_MUSIC`. UI 테스트는 탭 이름 "앱"
+- (v0.16.0에서 Deezer/Audius/YouTube 링크 음악 플레이어, 라이브러리·플레이리스트, media3, 음악 설정·권한을 모두 삭제함 — 기록은 git 이력 참고. 음악 탭은 아래 Spotify 웹 플레이어 하나)
 
 ## 음악: Spotify 웹 플레이어 (v0.15.x)
 - 음악 홈 맨 위 "Spotify web player" 줄 → 앱 브라우저에 `https://open.spotify.com/`를 새 탭으로 엶(`MusicUi.pendingBrowserUrl` → `SuperDialerApp` → `BrowserViewModel.openExternal`). 사용자가 폰 Chrome에서는 **PC 모드 없이 로그인만 해도 전곡 재생·백그라운드 재생**이 된다고 확인해서 **폰용 일반 페이지로 연다**(처음엔 PC 모드+축소로 만들었는데 불필요해서 뺌; `newDesktopTab`/`openExternal(desktop=true)`/`FIT_DESKTOP`은 남아 있고 PC 모드로 연 스포티파이 페이지에서만 쓰임). 스포티파이 웹 플레이어는 무료 계정으로도 광고를 들으며 전곡 재생이 되는 **공식 웹 서비스**를 사용자가 직접 로그인해서 쓰는 것(우리 플레이어에 음원을 가져오지 않음, 비밀번호는 앱이 다루지 않음)
@@ -429,4 +396,4 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 음악 탭 = Spotify 웹 플레이어 (v0.16.0, 사용자 결정)
 - 앱 탭의 "음악" 섹션이 **Spotify 웹 플레이어(open.spotify.com) 하나**로 바뀜(`music/SpotifyWeb` = 앱 수준 싱글톤 WebView, `music/ui/SpotifyScreen`, `MusicScreen`은 뒤로가기=페이지 기록 + 이 화면만). Chrome 모바일 UA, DRM(PROTECTED_MEDIA_ID)은 `https://open.spotify.com`만, 이동은 스포티파이·로그인 제공자 호스트만 허용. 칩/탭을 바꾸거나 앱을 나가도 같은 WebView라 재생이 이어짐
 - 백그라운드 유지: `WebAudioKeepAlive`가 **여러 출처**(`"browser"`=브라우저의 스포티파이 탭, `"music-tab"`)를 세고 하나라도 있으면 포그라운드 서비스 유지. 알림 "정지" = 모든 웹 플레이어 pause + 전부 해제
-- 예전 Deezer/Audius/YouTube 링크 음악 화면(`music/ui/*`, `MusicPlayer` 등)은 코드에 남아 있지만 **UI에서 닿지 않음**(지워도 됨). 그래서 `MusicTabTest`(칩 기반 UI 테스트)는 삭제함. 에뮬레이터에서 스포티파이 모바일 홈이 탭 안에 열리고 ♪ 알림이 뜨는 것까지 확인, 로그인·DRM 재생·백그라운드는 실기기 확인 필요
+- 예전 Deezer/Audius/YouTube 링크 음악 코드는 삭제함(`MusicTabTest`도). 에뮬레이터에서 스포티파이 모바일 홈이 탭 안에 열리고 ♪ 알림이 뜨는 것까지 확인, 로그인·DRM 재생·백그라운드는 실기기 확인 필요
