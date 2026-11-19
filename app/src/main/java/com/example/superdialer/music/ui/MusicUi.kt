@@ -58,6 +58,7 @@ object MusicUi {
     /** The "add a YouTube link" dialog, and a page the browser should open (set here, consumed by the app scaffold). */
     var addLinkOpen by mutableStateOf(false)
     var pendingBrowserUrl by mutableStateOf<String?>(null)
+    var pendingBrowserDesktop by mutableStateOf(false)
 
 
     /** Name dialogs: create (with songs to put in it) and rename. */

@@ -111,7 +111,8 @@ fun BrowserScreen(viewModel: BrowserViewModel, modifier: Modifier = Modifier) {
     LaunchedEffect(Unit) { viewModel.ensureTab() }
     // Links opened from other apps arrive here as a new tab.
     LaunchedEffect(viewModel.externalUrl) {
-        viewModel.consumeExternal()?.let { viewModel.newTab(it) }
+        val desktop = viewModel.externalDesktop
+        viewModel.consumeExternal()?.let { if (desktop) viewModel.newDesktopTab(it) else viewModel.newTab(it) }
     }
 
     var panel by rememberSaveable { mutableStateOf(Panel.None) }

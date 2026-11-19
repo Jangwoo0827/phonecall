@@ -163,4 +163,6 @@
     <string name="music_yt_open_browser">Open in browser</string>
     <string name="music_yt_foreground_note">YouTube plays only while this screen is open. It pauses when the screen turns off or you leave the app.</string>
     <string name="music_yt_stalled">The video could not start in the app. You can watch it in the browser.</string>
+    <string name="music_spotify_web">Spotify web player</string>
+    <string name="music_spotify_web_desc">Opens open.spotify.com in PC mode. Sign in with your own account.</string>
 </resources>

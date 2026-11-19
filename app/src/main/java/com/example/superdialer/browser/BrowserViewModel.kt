@@ -364,6 +364,15 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private val defaultUserAgent: String by lazy { WebSettings.getDefaultUserAgent(getApplication<Application>()) }
 
     /** Switches the tab between the mobile and the desktop version of sites and reloads the page. */
+    /** Opens [url] in a new tab already in PC mode (a site that only works as its desktop page, such as Spotify's web player). */
+    fun newDesktopTab(url: String): BrowserTab {
+        val tab = newTab()
+        tab.desktopMode = true
+        webViewFor(tab).settings.userAgentString = UserAgents.desktop(defaultUserAgent)
+        load(url)
+        return tab
+    }
+
     fun setDesktopMode(tab: BrowserTab, on: Boolean) {
         tab.desktopMode = on
         val view = webViewFor(tab)
@@ -457,9 +466,14 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     fun goHome() = exitToStart()
 
-    fun openExternal(url: String) {
+    fun openExternal(url: String, desktop: Boolean = false) {
+        externalDesktop = desktop
         externalUrl = url
     }
+
+    /** Whether the link waiting in [externalUrl] should open in PC mode. */
+    var externalDesktop = false
+        private set
 
     fun consumeExternal(): String? = externalUrl.also { externalUrl = null }
 
@@ -648,9 +662,13 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                 tab.loading = true
                 url?.let { tab.url = it }
                 syncNavigation(tab, view)
+                // Spotify's web player is a desktop page: lay it out at a desktop width and let the phone scale the whole page down to fit
+                // (pinch to zoom in). Only the viewport is set; the page itself is not changed.
+                if (tab.desktopMode && url?.startsWith(SPOTIFY_ORIGIN) == true) view.evaluateJavascript(FIT_DESKTOP, null)
             }
 
             override fun onPageFinished(view: WebView, url: String?) {
+                if (tab.desktopMode && url?.startsWith(SPOTIFY_ORIGIN) == true) view.evaluateJavascript(FIT_DESKTOP, null)
                 if (!tab.isPrivate) ChecklistLink.onPageFinished(view, url, tab)
                 tab.loading = false
                 tab.title = view.title.orEmpty()
@@ -683,6 +701,11 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
             override fun onPermissionRequest(request: PermissionRequest) {
                 val origin = SitePermissions.normalizeOrigin(request.origin.toString())
+                // Spotify's own web player needs protected-media (DRM) playback to play music; allowed for that one site only.
+                if (origin == SPOTIFY_ORIGIN && request.resources.all { it == PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID }) {
+                    request.grant(request.resources)
+                    return
+                }
                 val wanted = request.resources.mapNotNull {
                     when (it) {
                         PermissionRequest.RESOURCE_VIDEO_CAPTURE -> SitePermission.Camera
@@ -860,3 +883,9 @@ internal fun WebView.detachFromActivity() {
     val wrapper = this.context as? android.content.MutableContextWrapper ?: return
     wrapper.baseContext = wrapper.applicationContext
 }
+
+private const val SPOTIFY_ORIGIN = "https://open.spotify.com"
+
+/** Sets the page's viewport to a desktop width so the WebView scales the page down to the screen. */
+private const val FIT_DESKTOP =
+    "(function(){var m=document.querySelector('meta[name=viewport]');if(!m){m=document.createElement('meta');m.name='viewport';document.head.appendChild(m);}m.content='width=1100,initial-scale=0.01,user-scalable=yes';})()"

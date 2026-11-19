@@ -163,4 +163,6 @@
     <string name="music_yt_open_browser">브라우저에서 열기</string>
     <string name="music_yt_foreground_note">YouTube는 이 화면이 켜져 있을 때만 재생돼요. 화면을 끄거나 앱을 나가면 멈춰요.</string>
     <string name="music_yt_stalled">앱 안에서 영상이 시작되지 않았어요. 브라우저에서 볼 수 있어요.</string>
+    <string name="music_spotify_web">Spotify 웹 플레이어</string>
+    <string name="music_spotify_web_desc">PC 모드로 open.spotify.com을 열어요. 본인 계정으로 로그인하세요.</string>
 </resources>

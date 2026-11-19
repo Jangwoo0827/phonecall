@@ -157,9 +157,10 @@ fun SuperDialerApp(
         val url = MusicUi.pendingBrowserUrl
         if (navReady && url != null) {
             browserViewModel.hubSection = 0
-            browserViewModel.openExternal(url)
+            browserViewModel.openExternal(url, MusicUi.pendingBrowserDesktop)
             navigateToTab(TopLevelDestination.Hub.route)
             MusicUi.pendingBrowserUrl = null
+            MusicUi.pendingBrowserDesktop = false
         }
     }
 

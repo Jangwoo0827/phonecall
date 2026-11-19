@@ -1,6 +1,13 @@
 package com.example.superdialer.music.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -59,6 +66,23 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
             )
+        }
+        item {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clickable {
+                    MusicUi.pendingBrowserDesktop = true
+                    MusicUi.pendingBrowserUrl = "https://open.spotify.com/"
+                },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(40.dp).background(Color(0xFF1DB954), CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.MusicNote, null, tint = Color.Black)
+                }
+                Column(Modifier.padding(start = 12.dp)) {
+                    Text(str(R.string.music_spotify_web), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                    Text(str(R.string.music_spotify_web_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
         val recents = MusicStore.recents.toList()
         if (recents.isNotEmpty()) {

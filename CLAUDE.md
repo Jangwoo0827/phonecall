@@ -418,3 +418,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## 에뮬레이터 주의 (사용자 요청, 2026-11-19)
 - **에뮬레이터에서 앱을 삭제(`adb uninstall`)하거나 `pm clear` 하거나 `connectedDebugAndroidTest`를 돌리지 말 것**: 사용자가 같은 에뮬레이터로 직접 테스트하고, Gradle의 connected 테스트는 끝나면 앱을 지워 권한·데이터가 초기화됨. 설치는 `./gradlew installDebug`(덮어쓰기). UI 테스트는 CI(`ui-tests.yml`)가 푸시마다 돌리고 릴리스를 막아 줌. 새 설치 점검(`pm clear`)이 꼭 필요하면 사용자에게 먼저 물을 것
+
+## 음악: Spotify 웹 플레이어 (v0.15.0)
+- 음악 홈 맨 위 "Spotify web player" 줄 → 앱 브라우저에 `https://open.spotify.com/`를 **PC 모드**(`BrowserViewModel.newDesktopTab`, `openExternal(url, desktop=true)`, `MusicUi.pendingBrowserDesktop`)로 새 탭에 엶. 스포티파이 웹 플레이어는 무료 계정으로도 광고를 들으며 전곡 재생이 되는 **공식 웹 서비스**를 사용자가 직접 로그인해서 쓰는 것(우리 플레이어에 음원을 가져오지 않음, 비밀번호는 앱이 다루지 않음)
+- **DRM(Widevine) 허용은 `https://open.spotify.com` 한 곳만**(`onPermissionRequest`: 요청한 자원이 `RESOURCE_PROTECTED_MEDIA_ID`뿐일 때). 다른 사이트의 DRM·MIDI 요청은 계속 거부
+- "폰에 맞게 조정"은 **보이는 크기만**: 스포티파이 PC 페이지일 때 `onPageStarted/Finished`에서 `<meta viewport>`를 `width=1100`으로 지정(`FIT_DESKTOP`)해서 WebView가 페이지 전체를 화면 폭에 맞게 축소(핀치로 확대). 광고 숨기기·건너뛰기 제한 해제 같은 **서비스 동작 변경은 하지 않음**. 레이아웃을 폰용으로 다시 짜는 CSS는 로그인 화면을 못 봐서 아직 안 함(해시 클래스라 취약하기도 함)
+- 한계: 화면을 끄거나 앱을 나가면 폰에서는 웹 플레이어도 멈춤(YouTube와 같음). 로그인·DRM 재생·광고·무료 계정 제한은 **에뮬레이터에서 확인 못 함**(로그인 전 홈 화면이 축소돼 전부 보이는 것까지만 확인). 실기기 확인 필요
