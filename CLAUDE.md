@@ -397,3 +397,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 앱 탭의 "음악" 섹션이 **Spotify 웹 플레이어(open.spotify.com) 하나**로 바뀜(`music/SpotifyWeb` = 앱 수준 싱글톤 WebView, `music/ui/SpotifyScreen`, `MusicScreen`은 뒤로가기=페이지 기록 + 이 화면만). Chrome 모바일 UA, DRM(PROTECTED_MEDIA_ID)은 `https://open.spotify.com`만, 이동은 스포티파이·로그인 제공자 호스트만 허용. 칩/탭을 바꾸거나 앱을 나가도 같은 WebView라 재생이 이어짐
 - 백그라운드 유지: `WebAudioKeepAlive`가 **여러 출처**(`"browser"`=브라우저의 스포티파이 탭, `"music-tab"`)를 세고 하나라도 있으면 포그라운드 서비스 유지. 알림 "정지" = 모든 웹 플레이어 pause + 전부 해제
 - 예전 Deezer/Audius/YouTube 링크 음악 코드는 삭제함(`MusicTabTest`도). 에뮬레이터에서 스포티파이 모바일 홈이 탭 안에 열리고 ♪ 알림이 뜨는 것까지 확인, 로그인·DRM 재생·백그라운드는 실기기 확인 필요
+
+## 잠금 화면 미디어 컨트롤 (v0.16.2, browser/WebAudioService)
+- 처음엔 "웹 플레이어 재생 중" 일반 알림뿐이라 잠금 화면 하단 플레이어가 안 떴음. WebView는 페이지의 `navigator.mediaSession`을 안드로이드 미디어 세션으로 올려 주지 않으므로, `WebAudioService`가 **직접 `MediaSession` + `Notification.MediaStyle`(category transport, 잠금 화면 공개)** 을 만들고 1초마다 `SpotifyWeb.readState`(페이지의 `navigator.mediaSession.metadata` 제목·가수·표지 + `<audio>` 재생 여부·위치)로 갱신. 버튼(이전/재생·일시정지/다음/정지)과 헤드셋·잠금 화면 버튼은 `SpotifyWeb.control`이 페이지의 `<audio>`를 `play/pause`하거나 스포티파이 자체 버튼(`data-testid=control-button-skip-forward/back`, aria-label Next/Previous)을 눌러 처리
+- 에뮬레이터에서 세션 등록(`dumpsys media_session`에 `SuperDialerWeb` active, 미디어 버튼 세션)과 알림(transport, PUBLIC, 버튼 4개)까지 확인. **로그인·실제 곡 재생이 없어 곡 정보 표시와 다음/이전 버튼 동작(스포티파이 페이지 구조에 의존)은 실기기 확인 필요**

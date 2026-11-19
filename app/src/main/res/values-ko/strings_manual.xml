@@ -20,4 +20,8 @@
     <string name="music_web_player_running">웹 플레이어 재생 중</string>
     <string name="music_web_player_running_text">Spotify가 백그라운드에서 계속 재생돼요. 눌러서 열기.</string>
     <string name="music_web_player_stop">정지</string>
+    <string name="music_web_player_prev">이전</string>
+    <string name="music_web_player_play">재생</string>
+    <string name="music_web_player_pause">일시정지</string>
+    <string name="music_web_player_next">다음</string>
 </resources>

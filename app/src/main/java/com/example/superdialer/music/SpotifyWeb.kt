@@ -92,6 +92,42 @@ object SpotifyWeb {
         web?.goBack()
     }
 
+    /** What the page's media session / audio element say right now (for the lock-screen player). */
+    class PlayerState(val title: String, val artist: String, val artUrl: String, val playing: Boolean, val positionSec: Double, val durationSec: Double)
+
+    private const val READ_JS = "(function(){var m=navigator.mediaSession&&navigator.mediaSession.metadata;var a=document.querySelector('audio,video');" +
+        "return JSON.stringify({t:m?m.title:'',a:m?m.artist:'',i:(m&&m.artwork&&m.artwork.length)?m.artwork[m.artwork.length-1].src:''," +
+        "p:a?!a.paused:false,pos:a?a.currentTime:0,dur:(a&&isFinite(a.duration))?a.duration:0})})()"
+
+    fun readState(callback: (PlayerState?) -> Unit) {
+        val v = web
+        if (v == null) { callback(null); return }
+        v.evaluateJavascript(READ_JS) { raw ->
+            val s = runCatching {
+                val json = org.json.JSONObject(org.json.JSONTokener(raw).nextValue() as String)
+                val art = json.optString("i")
+                PlayerState(
+                    json.optString("t"), json.optString("a"),
+                    if (art.startsWith("https://")) art else "",
+                    json.optBoolean("p"), json.optDouble("pos", 0.0), json.optDouble("dur", 0.0),
+                )
+            }.getOrNull()
+            callback(s)
+        }
+    }
+
+    /** play / pause / next / prev, done on the page itself (its audio element or its own buttons). */
+    fun control(what: String) {
+        val js = when (what) {
+            "play" -> "var a=document.querySelector('audio,video');if(a)a.play()"
+            "pause" -> "var a=document.querySelector('audio,video');if(a)a.pause()"
+            "next" -> "var b=document.querySelector('[data-testid=\"control-button-skip-forward\"],[aria-label=\"Next\"]');if(b)b.click()"
+            "prev" -> "var b=document.querySelector('[data-testid=\"control-button-skip-back\"],[aria-label=\"Previous\"]');if(b)b.click()"
+            else -> return
+        }
+        web?.post { web?.evaluateJavascript(js, null) }
+    }
+
     /** Pauses the page's audio (the notification's Stop button, or clearing the music data). */
     fun pause() {
         web?.evaluateJavascript("document.querySelectorAll('audio,video').forEach(function(e){e.pause()})", null)

@@ -20,4 +20,8 @@
     <string name="music_web_player_running">Web player playing</string>
     <string name="music_web_player_running_text">Spotify keeps playing in the background. Tap to open.</string>
     <string name="music_web_player_stop">Stop</string>
+    <string name="music_web_player_prev">Previous</string>
+    <string name="music_web_player_play">Play</string>
+    <string name="music_web_player_pause">Pause</string>
+    <string name="music_web_player_next">Next</string>
 </resources>
