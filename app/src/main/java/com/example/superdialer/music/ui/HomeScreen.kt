@@ -70,7 +70,6 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         item {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clickable {
-                    MusicUi.pendingBrowserDesktop = true
                     MusicUi.pendingBrowserUrl = "https://open.spotify.com/"
                 },
                 verticalAlignment = Alignment.CenterVertically,

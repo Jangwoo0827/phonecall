@@ -175,6 +175,12 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
 
+        <!-- Keeps Spotify's web player playing in the background (browser/WebAudioService.kt). -->
+        <service
+            android:name=".browser.WebAudioService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
         <service
             android:name=".kakao.KakaoNotificationService"
             android:exported="true"

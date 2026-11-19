@@ -212,6 +212,17 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         if (tabs.any { it.id == id }) selectedId = id
     }
 
+    /** Starts or stops the background keep-alive for Spotify's web player depending on whether such a tab is open. */
+    private fun syncWebAudio() {
+        val open = tabs.any { !it.isPrivate && WebAudioKeepAlive.isMusicUrl(it.url) }
+        WebAudioKeepAlive.pauseAll = {
+            tabs.filter { WebAudioKeepAlive.isMusicUrl(it.url) }.forEach { t ->
+                webViews[t.id]?.evaluateJavascript("document.querySelectorAll('audio,video').forEach(function(e){e.pause()})", null)
+            }
+        }
+        WebAudioKeepAlive.update(getApplication(), open)
+    }
+
     fun closeTab(id: Int) {
         val index = tabs.indexOfFirst { it.id == id }
         if (index < 0) return
@@ -229,6 +240,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             }
         }
         ensureNormalTab()
+        syncWebAudio()
     }
 
     /** Closes every private tab (true) or every normal tab (false); the normal ones are replaced by one empty tab. */
@@ -240,6 +252,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         if (private) wipePrivateProfile()
         ensureNormalTab()
         if (tabs.none { it.id == selectedId }) selectedId = tabs.first { !it.isPrivate }.id
+        syncWebAudio()
     }
 
     /** The browser always keeps at least one normal tab, even while only private ones are open. */
@@ -423,11 +436,21 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Navigation ---------------------------------------------------------------------------
 
+    /** Picks the user agent for [url]: PC mode keeps its desktop one, Spotify gets Chrome's, everything else the default. */
+    private fun applySiteUserAgent(tab: BrowserTab, view: WebView, url: String?) {
+        if (tab.desktopMode) return
+        val host = runCatching { android.net.Uri.parse(url).host }.getOrNull()
+        val wanted = if (UserAgents.needsChromeIdentity(host)) UserAgents.chromeMobile(defaultUserAgent) else null
+        if (view.settings.userAgentString != (wanted ?: defaultUserAgent)) view.settings.userAgentString = wanted
+    }
+
     fun load(input: String) {
         val url = UrlResolver.resolve(input, com.example.superdialer.settings.AppSettings.searchEngine) ?: return
         val tab = selected ?: return
         tab.isStart = false
-        webViewFor(tab).loadUrl(url)
+        val view = webViewFor(tab)
+        applySiteUserAgent(tab, view, url)
+        view.loadUrl(url)
     }
 
     /** Leaves the website and returns to the start page (the X button / back at the first page). */
@@ -678,11 +701,14 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
             override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
                 url?.let { tab.url = it }
+                syncWebAudio()
                 syncNavigation(tab, view)
             }
 
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
-                !handleLink(request.url)
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                if (request.isForMainFrame) applySiteUserAgent(tab, view, request.url.toString())
+                return !handleLink(request.url)
+            }
         }
 
         webView.webChromeClient = object : WebChromeClient() {

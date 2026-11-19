@@ -769,7 +769,8 @@ private fun WebViewHost(
 
     LifecycleResumeEffect(webView) {
         webView.onResume()
-        onPauseOrDispose { webView.onPause() }
+        // Spotify's web player keeps playing in the background (see WebAudioKeepAlive); every other page is paused.
+        onPauseOrDispose { if (!WebAudioKeepAlive.isMusicUrl(tab.url) || tab.isPrivate) webView.onPause() }
     }
 
     AndroidView(

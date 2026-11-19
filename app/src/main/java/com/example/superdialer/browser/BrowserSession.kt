@@ -26,7 +26,12 @@ object BrowserSession {
 
     private var viewModel: BrowserViewModel? = null
     private val handler = Handler(Looper.getMainLooper())
-    private val expire = Runnable { release() }
+    private val expire: Runnable = object : Runnable {
+        override fun run() {
+            // Spotify's web player keeps the browser alive; look again later instead of releasing it.
+            if (WebAudioKeepAlive.active) handler.postDelayed(this, KEEP_ALIVE_MS) else release()
+        }
+    }
 
     /** The live instance, if any (null once expired). */
     fun peek(): BrowserViewModel? = viewModel
