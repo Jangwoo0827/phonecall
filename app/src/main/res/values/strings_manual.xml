@@ -164,8 +164,9 @@
     <string name="music_yt_foreground_note">YouTube plays only while this screen is open. It pauses when the screen turns off or you leave the app.</string>
     <string name="music_yt_stalled">The video could not start in the app. You can watch it in the browser.</string>
     <string name="music_spotify_web">Spotify web player</string>
-    <string name="music_spotify_web_desc">Opens open.spotify.com in the browser. Sign in with your own account.</string>
+    <string name="music_spotify_web_desc">Spotify\'s web player, right here. Sign in with your own account.</string>
     <string name="music_web_player_running">Web player playing</string>
     <string name="music_web_player_running_text">Spotify keeps playing in the background. Tap to open.</string>
     <string name="music_web_player_stop">Stop</string>
+    <string name="music_tab_spotify">Spotify</string>
 </resources>

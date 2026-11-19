@@ -425,3 +425,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - **DRM(Widevine) 허용은 `https://open.spotify.com` 한 곳만**(`onPermissionRequest`: 요청한 자원이 `RESOURCE_PROTECTED_MEDIA_ID`뿐일 때). 다른 사이트의 DRM·MIDI 요청은 계속 거부. 광고 숨기기 같은 서비스 동작 변경은 하지 않음
 - **백그라운드 재생**(`browser/WebAudioService`, `WebAudioKeepAlive`): 비공개가 아닌 탭 중 `open.spotify.com`이 있으면 ① 앱을 나가도 그 페이지를 `onPause` 하지 않고(`WebViewHost`의 `LifecycleResumeEffect`) ② `BrowserSession`의 3분 해제 타이머가 `release()` 하지 않고(재생 중이면 3분 뒤 다시 확인) ③ 포그라운드 서비스(`foregroundServiceType=mediaPlayback`, 알림 "웹 플레이어 재생 중" + "정지" 버튼 = 페이지의 `audio/video`를 `pause()`)로 앱이 살아 있게 함. 탭을 닫거나 다른 주소로 가면 서비스 종료(`syncWebAudio`, `doUpdateVisitedHistory`/`closeTab`/`closeAllTabs`에서). **YouTube 같은 영상 사이트에는 적용 안 함**(화면에 안 보이면 멈춤 유지)
 - 한계: **로그인·DRM 재생·실제 백그라운드 재생은 에뮬레이터에서 확인 못 함**(로그인을 못 함; 알림 아이콘이 뜨는 것과 페이지가 열리는 것까지만 확인). 삼성 폰의 절전이 앱을 끊으면 설정 > 앱 > SuperDialer > 배터리 > "제한 없음". 무료 계정은 광고·건너뛰기 제한이 있을 수 있음
+
+## 음악 탭 = Spotify 웹 플레이어 (v0.16.0, 사용자 결정)
+- 앱 탭의 "음악" 섹션이 **Spotify 웹 플레이어(open.spotify.com) 하나**로 바뀜(`music/SpotifyWeb` = 앱 수준 싱글톤 WebView, `music/ui/SpotifyScreen`, `MusicScreen`은 뒤로가기=페이지 기록 + 이 화면만). Chrome 모바일 UA, DRM(PROTECTED_MEDIA_ID)은 `https://open.spotify.com`만, 이동은 스포티파이·로그인 제공자 호스트만 허용. 칩/탭을 바꾸거나 앱을 나가도 같은 WebView라 재생이 이어짐
+- 백그라운드 유지: `WebAudioKeepAlive`가 **여러 출처**(`"browser"`=브라우저의 스포티파이 탭, `"music-tab"`)를 세고 하나라도 있으면 포그라운드 서비스 유지. 알림 "정지" = 모든 웹 플레이어 pause + 전부 해제
+- 예전 Deezer/Audius/YouTube 링크 음악 화면(`music/ui/*`, `MusicPlayer` 등)은 코드에 남아 있지만 **UI에서 닿지 않음**(지워도 됨). 그래서 `MusicTabTest`(칩 기반 UI 테스트)는 삭제함. 에뮬레이터에서 스포티파이 모바일 홈이 탭 안에 열리고 ♪ 알림이 뜨는 것까지 확인, 로그인·DRM 재생·백그라운드는 실기기 확인 필요

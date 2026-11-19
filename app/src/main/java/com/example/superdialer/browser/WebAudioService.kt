@@ -26,24 +26,39 @@ import com.example.superdialer.i18n.str
 object WebAudioKeepAlive {
     private const val HOST = "https://open.spotify.com"
 
-    /** True while a normal (non-private) tab shows the web player; the browser then skips pausing and releasing it. */
+    private val sources = HashSet<String>()
+
+    /** True while some page (a browser tab or the Music tab's player) is a web player that must keep playing. */
     @Volatile
     var active = false
         private set
 
-    /** Pauses the audio of the web player tabs (set by the browser view model). */
+    /** Pauses the audio of every web player (set by the browser view model and the Music tab). */
     var pauseAll: () -> Unit = {}
 
     fun isMusicUrl(url: String?) = url != null && url.startsWith(HOST)
 
-    fun update(context: Context, shouldRun: Boolean) {
-        if (shouldRun == active) return
-        active = shouldRun
+    /** [source] says whether it needs the keep-alive; the service runs while any source does. */
+    fun update(context: Context, source: String, needed: Boolean) {
+        val changed = synchronized(sources) { if (needed) sources.add(source) else sources.remove(source) }
+        if (!changed) return
+        val want = synchronized(sources) { sources.isNotEmpty() }
+        if (want == active) return
+        active = want
         val app = context.applicationContext
-        if (shouldRun) {
+        if (want) {
             runCatching { ContextCompat.startForegroundService(app, Intent(app, WebAudioService::class.java)) }
         } else {
             app.stopService(Intent(app, WebAudioService::class.java))
+        }
+    }
+
+    /** The Stop button: forget every source. */
+    fun clear(context: Context) {
+        synchronized(sources) { sources.clear() }
+        if (active) {
+            active = false
+            context.applicationContext.stopService(Intent(context.applicationContext, WebAudioService::class.java))
         }
     }
 }
@@ -54,7 +69,7 @@ class WebAudioService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
             WebAudioKeepAlive.pauseAll()
-            WebAudioKeepAlive.update(this, false)
+            WebAudioKeepAlive.clear(this)
             stopSelf()
             return START_NOT_STICKY
         }

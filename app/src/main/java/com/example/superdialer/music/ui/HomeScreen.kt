@@ -69,9 +69,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         }
         item {
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clickable {
-                    MusicUi.pendingBrowserUrl = "https://open.spotify.com/"
-                },
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clickable { MusicUi.tab = 3 },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(Modifier.size(40.dp).background(Color(0xFF1DB954), CircleShape), contentAlignment = Alignment.Center) {

@@ -216,11 +216,12 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private fun syncWebAudio() {
         val open = tabs.any { !it.isPrivate && WebAudioKeepAlive.isMusicUrl(it.url) }
         WebAudioKeepAlive.pauseAll = {
+            com.example.superdialer.music.SpotifyWeb.pause()
             tabs.filter { WebAudioKeepAlive.isMusicUrl(it.url) }.forEach { t ->
                 webViews[t.id]?.evaluateJavascript("document.querySelectorAll('audio,video').forEach(function(e){e.pause()})", null)
             }
         }
-        WebAudioKeepAlive.update(getApplication(), open)
+        WebAudioKeepAlive.update(getApplication(), "browser", open)
     }
 
     fun closeTab(id: Int) {
