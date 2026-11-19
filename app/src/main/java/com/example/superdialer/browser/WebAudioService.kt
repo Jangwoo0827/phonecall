@@ -84,6 +84,7 @@ class WebAudioService : Service() {
     private var artUrl = ""
     private var art: Bitmap? = null
     private var started = false
+    private var artFails = 0
     private var shownKey = ""
     private var syncedAt = 0L
     private var syncedPos = 0L
@@ -100,8 +101,12 @@ class WebAudioService : Service() {
                         artUrl = s.artUrl
                         val url = s.artUrl
                         thread {
-                            val bmp = runCatching { URL(url).openStream().use { BitmapFactory.decodeStream(it) } }.getOrNull()
-                            handler.post { if (url == artUrl) { art = bmp; publish() } }
+                            val bmp = runCatching { download(url) }.getOrNull()
+                            handler.post {
+                                if (url != artUrl) return@post
+                                if (bmp != null) { art = bmp; publish() }
+                                else if (++artFails < 3) artUrl = "" // try again on the next poll
+                            }
                         }
                     }
                     // Touch the media session / notification only when something really changed (the lock screen
@@ -122,6 +127,16 @@ class WebAudioService : Service() {
                 if (started) handler.postDelayed(this, 1000)
             }
         }
+    }
+
+    /** The cover, scaled down: a full-size bitmap is too big to hand to the lock screen (Binder limit). */
+    private fun download(url: String): Bitmap? {
+        val c = URL(url).openConnection() as java.net.HttpURLConnection
+        c.connectTimeout = 8000; c.readTimeout = 8000
+        val src = c.inputStream.use { BitmapFactory.decodeStream(it) } ?: return null
+        val max = 512
+        val scale = max.toFloat() / maxOf(src.width, src.height)
+        return if (scale < 1f) Bitmap.createScaledBitmap(src, (src.width * scale).toInt(), (src.height * scale).toInt(), true) else src
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

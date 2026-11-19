@@ -96,7 +96,9 @@ object SpotifyWeb {
     class PlayerState(val title: String, val artist: String, val artUrl: String, val playing: Boolean, val positionSec: Double, val durationSec: Double)
 
     private const val READ_JS = "(function(){var m=navigator.mediaSession&&navigator.mediaSession.metadata;var a=document.querySelector('audio,video');" +
-        "return JSON.stringify({t:m?m.title:'',a:m?m.artist:'',i:(m&&m.artwork&&m.artwork.length)?m.artwork[m.artwork.length-1].src:''," +
+        "return JSON.stringify({t:m?m.title:'',a:m?m.artist:'',i:(function(){var u=(m&&m.artwork&&m.artwork.length)?m.artwork[m.artwork.length-1].src:'';" +
+        "if(!u){var im=document.querySelector('[data-testid=\"cover-art-image\"],[data-testid=\"now-playing-widget\"] img,img[src*=\"i.scdn.co/image\"]');u=im?(im.currentSrc||im.src):'';}" +
+        "try{return u?new URL(u,location.href).href:''}catch(e){return ''}})()," +
         "p:a?!a.paused:false,pos:a?a.currentTime:0,dur:(a&&isFinite(a.duration))?a.duration:0})})()"
 
     fun readState(callback: (PlayerState?) -> Unit) {
