@@ -38,6 +38,9 @@ abstract class AppTestBase {
         Manifest.permission.READ_SMS,
         Manifest.permission.SEND_SMS,
         Manifest.permission.POST_NOTIFICATIONS,
+        // The Map section asks for the location when it is first opened; no system dialog may cover the tests.
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
     )
 
     @get:Rule(order = 1)

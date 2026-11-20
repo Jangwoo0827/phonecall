@@ -47,6 +47,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -99,14 +100,19 @@ fun MapScreen(modifier: Modifier = Modifier) {
         if (result.values.any { it }) next?.invoke() else Toast.makeText(context, str(R.string.map_err_noloc), Toast.LENGTH_LONG).show()
     }
 
-    /** Finds the phone's position (asking for permission first), shows it on the map, and continues with it. */
-    fun withLocation(centerOnMe: Boolean, then: (LatLng) -> Unit) {
+    /**
+     * Finds the phone's position (asking for permission first), shows it on the map, and continues with it.
+     * [quiet] is for the automatic look on opening: no message if there is no fix.
+     */
+    fun withLocation(centerOnMe: Boolean, quiet: Boolean = false, then: (LatLng) -> Unit) {
         val go = {
             scope.launch {
                 val here = MyLocation.current(context)
                 if (here == null) {
-                    val text = if (MyLocation.isSwitchedOn(context)) R.string.map_err_noloc else R.string.map_location_off
-                    Toast.makeText(context, str(text), Toast.LENGTH_LONG).show()
+                    if (!quiet) {
+                        val text = if (MyLocation.isSwitchedOn(context)) R.string.map_err_noloc else R.string.map_location_off
+                        Toast.makeText(context, str(text), Toast.LENGTH_LONG).show()
+                    }
                 } else {
                     MapModel.me = here
                     MapWeb.showMe(here.lat, here.lng)
@@ -121,6 +127,17 @@ fun MapScreen(modifier: Modifier = Modifier) {
         } else {
             afterPermission = go
             permission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        }
+    }
+
+    // Opening the map: ask for the location permission once (a map without "where am I" is half a map), and with it show
+    // where the phone is. Denying is respected: the location button and the route buttons ask again when they are used.
+    LaunchedEffect(Unit) {
+        if (MyLocation.hasPermission(context)) {
+            if (MapModel.me == null) withLocation(centerOnMe = MapModel.selected == null, quiet = true) {}
+        } else if (!MapModel.askedLocationOnOpen) {
+            MapModel.askedLocationOnOpen = true
+            withLocation(centerOnMe = MapModel.selected == null, quiet = true) {}
         }
     }
 

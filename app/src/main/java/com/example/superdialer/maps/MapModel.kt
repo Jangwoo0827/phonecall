@@ -70,6 +70,13 @@ object MapModel {
         }
     }
 
+    /** Whether the Map screen already asked for the location permission by itself (it does that once, when first opened). */
+    var askedLocationOnOpen: Boolean
+        get() = prefs?.getBoolean("asked_location", false) ?: true
+        set(value) {
+            prefs?.edit()?.putBoolean("asked_location", value)?.apply()
+        }
+
     // --- Search ---------------------------------------------------------------------------------
 
     fun onQueryChange(text: String) {

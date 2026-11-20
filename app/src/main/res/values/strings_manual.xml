@@ -76,4 +76,6 @@
     <string name="map_transit_left">Transit searches today: %1$d / %2$d</string>
     <string name="map_pick_point">Dropped pin</string>
     <string name="map_close">Close</string>
+    <string name="map_permission_location">Location (map)</string>
+    <string name="map_permission_reason">Shows where you are on the map and starts routes from there. Only used while the map is open.</string>
 </resources>

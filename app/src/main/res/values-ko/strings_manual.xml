@@ -76,4 +76,6 @@
     <string name="map_transit_left">오늘 대중교통 검색: %1$d / %2$d회</string>
     <string name="map_pick_point">선택한 위치</string>
     <string name="map_close">닫기</string>
+    <string name="map_permission_location">위치 (지도)</string>
+    <string name="map_permission_reason">지도에서 내 위치를 보여 주고 거기서 출발하는 길을 찾아요. 지도를 쓰는 동안에만 사용해요.</string>
 </resources>

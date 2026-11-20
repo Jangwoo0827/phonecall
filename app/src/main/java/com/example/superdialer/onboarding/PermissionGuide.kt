@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,6 +62,10 @@ object CorePermissions {
         PermissionInfo(
             str(R.string.t_texts), str(R.string.t_shows_the_texts_exchanged_with_a),
             Icons.Filled.Sms, listOf(Manifest.permission.READ_SMS),
+        ),
+        PermissionInfo(
+            str(R.string.t_location), str(R.string.map_permission_reason),
+            Icons.Filled.LocationOn, listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
         ),
     )
 

@@ -224,6 +224,7 @@ fun SettingsScreen(
             PermissionRow(context, str(R.string.shortcut_contacts), Manifest.permission.READ_CONTACTS)
             PermissionRow(context, str(R.string.t_edit_contacts_favorites), Manifest.permission.WRITE_CONTACTS)
             PermissionRow(context, str(R.string.t_read_texts_messages_in_contacts_and), Manifest.permission.READ_SMS)
+            PermissionRow(context, str(R.string.map_permission_location), Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 PermissionRow(context, str(R.string.t_notifications), Manifest.permission.POST_NOTIFICATIONS)
             }
@@ -304,8 +305,8 @@ private fun Clickable(title: String, subtitle: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun PermissionRow(context: Context, label: String, permission: String) {
-    val granted = context.hasPermission(permission)
+private fun PermissionRow(context: Context, label: String, permission: String, alsoAccepted: String? = null) {
+    val granted = context.hasPermission(permission) || (alsoAccepted != null && context.hasPermission(alsoAccepted))
     ListItem(
         colors = transparentListItem(),
         modifier = Modifier.clickable { context.openAppSettings() },
