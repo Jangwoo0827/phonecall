@@ -10,6 +10,9 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.example.superdialer.browser.UserAgents
@@ -58,6 +61,10 @@ try{var op=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=funct
     private fun handlerJs(action: String, fallback: String) =
         "if(!(function(){var S=window.__sdMS;var h=S&&S.handlers&&S.handlers['$action'];if(!h)return false;try{h({action:'$action'});return true}catch(e){return false}})()){$fallback}"
 
+    /** Whether the page has history to go back to. Compose state, so the back handler follows it. */
+    var canGoBackNow by mutableStateOf(false)
+        private set
+
     fun init(context: Context) {
         app = context.applicationContext
     }
@@ -98,6 +105,10 @@ try{var op=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=funct
             }
         }
         v.webViewClient = object : WebViewClient() {
+            override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+                canGoBackNow = view.canGoBack()
+            }
+
             // Spotify, its sign-in providers and its content hosts; anything else is not opened here.
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val host = request.url.host.orEmpty()

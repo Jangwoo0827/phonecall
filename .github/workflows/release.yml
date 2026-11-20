@@ -70,6 +70,8 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          # T map app key for the Map section (a GitHub secret; empty means the Map section shows a "no key" notice)
+          TMAP_APP_KEY: ${{ secrets.TMAP_APP_KEY }}
         run: |
           # v1.2.3 -> versionName 1.2.3; the run number keeps versionCode increasing so updates install over each other.
           export VERSION_NAME="${GITHUB_REF_NAME#v}"

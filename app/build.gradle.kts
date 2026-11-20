@@ -17,6 +17,13 @@ android {
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = System.getenv("VERSION_NAME") ?: "0.1.0"
         testInstrumentationRunner = "com.example.superdialer.SuperDialerTestRunner"
+        // T map (SK open API) app key for the Map section. From the TMAP_APP_KEY environment variable (CI) or, locally, a
+        // TMAP_APP_KEY=... line in local.properties (git-ignored). Never committed. Without it the Map section shows a notice.
+        val tmapKey = System.getenv("TMAP_APP_KEY")?.trim()?.takeIf { it.isNotEmpty() }
+            ?: rootProject.file("local.properties").takeIf { it.exists() }?.readLines()
+                ?.firstOrNull { it.startsWith("TMAP_APP_KEY=") }?.removePrefix("TMAP_APP_KEY=")?.trim()
+            ?: ""
+        buildConfigField("String", "TMAP_APP_KEY", "\"$tmapKey\"")
     }
 
     // Release signing comes from the environment (GitHub Secrets in CI). Without KEYSTORE_FILE no signing
@@ -65,6 +72,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

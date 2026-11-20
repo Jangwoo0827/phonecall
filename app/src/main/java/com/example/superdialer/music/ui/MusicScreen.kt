@@ -29,7 +29,7 @@ import com.example.superdialer.music.SpotifyWeb
  */
 @Composable
 fun MusicScreen(modifier: Modifier = Modifier) {
-    BackHandler(enabled = SpotifyWeb.canGoBack()) { SpotifyWeb.goBack() }
+    BackHandler(enabled = SpotifyWeb.canGoBackNow) { SpotifyWeb.goBack() }
     Column(modifier.fillMaxSize()) {
         if (WebAudioKeepAlive.active) {
             Row(

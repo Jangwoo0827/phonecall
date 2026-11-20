@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #e9ecef; }
+  .me { width: 18px; height: 18px; border-radius: 50%; background: #2a7cff; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(42,124,255,.25), 0 1px 4px rgba(0,0,0,.4); }
+  .pin { width: 26px; height: 26px; border-radius: 50% 50% 50% 0; background: #e5322d; transform: rotate(-45deg); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.45); }
+  .stop { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid #555; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+// The app (Kotlin) drives this page with SD.* calls (evaluateJavascript) and listens to console.log("SDEV|{json}").
+// There is no JavaScript bridge: the page cannot call into the app.
+var params = new URLSearchParams(location.search);
+var KEY = params.get('k') || '';
+var map = null, meMarker = null, pinMarker = null, routeObjects = [], stopMarkers = [], lastBounds = null, resizeTimer = null;
+
+function send(o) { try { console.log('SDEV|' + JSON.stringify(o)); } catch (e) {} }
+
+function ll(a) { return new Tmapv3.LatLng(a[0], a[1]); }
+
+var SD = {
+  center: function (lat, lng, zoom) {
+    if (!map) return;
+    map.setCenter(new Tmapv3.LatLng(lat, lng));
+    if (zoom) map.setZoom(zoom);
+  },
+  me: function (lat, lng) {
+    if (!map) return;
+    if (meMarker) meMarker.setMap(null);
+    meMarker = new Tmapv3.Marker({ position: new Tmapv3.LatLng(lat, lng), iconHTML: '<div class="me"></div>', map: map });
+  },
+  pin: function (lat, lng) {
+    if (!map) return;
+    if (pinMarker) pinMarker.setMap(null);
+    pinMarker = new Tmapv3.Marker({ position: new Tmapv3.LatLng(lat, lng), iconHTML: '<div class="pin"></div>', map: map });
+  },
+  clearPin: function () { if (pinMarker) { pinMarker.setMap(null); pinMarker = null; } },
+  clearRoute: function () {
+    routeObjects.forEach(function (o) { try { o.setMap(null); } catch (e) {} });
+    stopMarkers.forEach(function (o) { try { o.setMap(null); } catch (e) {} });
+    routeObjects = []; stopMarkers = []; lastBounds = null;
+  },
+  fit: function () {
+    if (!map || !lastBounds) return;
+    // The search bar floats over the top of the map, so the route keeps clear of it (padding per side, in CSS pixels).
+    try { map.fitBounds(lastBounds, { top: 110, bottom: 50, left: 40, right: 40 }); } catch (e) { send({ warn: 'fitBounds failed: ' + e.message }); }
+  },
+  // legs: [{c: "#RRGGBB", w: weight, p: [[lat,lng],...]}]; stops: [[lat,lng],...] (where the rider changes vehicle)
+  route: function (legs, stops) {
+    if (!map) return;
+    SD.clearRoute();
+    var minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+    legs.forEach(function (leg) {
+      if (!leg.p || leg.p.length < 2) return;
+      leg.p.forEach(function (q) {
+        minLat = Math.min(minLat, q[0]); maxLat = Math.max(maxLat, q[0]);
+        minLng = Math.min(minLng, q[1]); maxLng = Math.max(maxLng, q[1]);
+      });
+      routeObjects.push(new Tmapv3.Polyline({ path: leg.p.map(ll), strokeColor: leg.c, strokeWeight: leg.w || 7, map: map }));
+    });
+    (stops || []).forEach(function (q) {
+      stopMarkers.push(new Tmapv3.Marker({ position: ll(q), iconHTML: '<div class="stop"></div>', map: map }));
+    });
+    if (minLat <= maxLat) {
+      try {
+        lastBounds = new Tmapv3.LatLngBounds(new Tmapv3.LatLng(minLat, minLng), new Tmapv3.LatLng(maxLat, maxLng));
+        SD.fit();
+      } catch (e) {
+        send({ warn: 'bounds failed: ' + e.message });
+        map.setCenter(new Tmapv3.LatLng((minLat + maxLat) / 2, (minLng + maxLng) / 2));
+      }
+    }
+  }
+};
+
+function init() {
+  try {
+    map = new Tmapv3.Map('map', { center: new Tmapv3.LatLng(37.5665, 126.9780), zoom: 14, width: '100%', height: '100%' });
+    try {
+      map.on('Click', function (e) {
+        var p = e && e.data && (e.data.lngLat || e.data.lonLat || e.data.latLng);
+        if (p) send({ click: [p.lat !== undefined ? p.lat : p._lat, p.lng !== undefined ? p.lng : (p.lon !== undefined ? p.lon : p._lng)] });
+      });
+    } catch (e) { send({ warn: 'no click events: ' + e.message }); }
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        try { map.resize(); } catch (e) {}
+        SD.fit();
+      }, 200);
+    });
+    send({ ready: true });
+  } catch (e) {
+    send({ error: 'init: ' + e.message });
+  }
+}
+
+if (!KEY) {
+  send({ error: 'no-key' });
+} else {
+  // T map's loader writes further <script> tags itself, which only works for a script that is part of the page while it is
+  // being parsed, so it is written here instead of being added later.
+  document.write('<script src="https://apis.openapi.sk.com/tmap/vectorjs?version=1&appKey=' + encodeURIComponent(KEY) + '"><\/script>');
+  window.addEventListener('load', function () {
+    if (window.Tmapv3) init(); else send({ error: 'sdk-load-failed' });
+  });
+}
+</script>
+</body>
+</html>

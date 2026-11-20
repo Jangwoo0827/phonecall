@@ -25,8 +25,11 @@ class NotesScreenTest : AppTestBase() {
 
     private fun openNotes() {
         tab("앱")
-        waitFor(hasText("메모"))
-        compose.onNode(hasText("메모")).performClick()
+        // Notes is not one of the three tabs in the top row; it is in the drawer under the arrow.
+        waitFor(hasTag("hub_expand"))
+        compose.onNodeWithTag("hub_expand").performClick()
+        waitFor(hasTag("hub_tile_3"))
+        compose.onNodeWithTag("hub_tile_3").performClick()
         waitFor(hasTag("notes_new"))
     }
 

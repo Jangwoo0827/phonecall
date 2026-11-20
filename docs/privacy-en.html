@@ -73,6 +73,7 @@
     <tr><td>Supabase (server: Seoul region)</td><td>Sign-in, storing synced data and the leaderboard</td></tr>
     <tr><td>Google sign-in</td><td>Only when you tap "Continue with Google". Only the basic profile (email, name) is requested</td></tr>
     <tr><td>GitHub</td><td>Checking for new versions and downloading the APK (requests go to the public release addresses; your IP address is passed on as with any web request)</td></tr>
+    <tr><td>T map (Map section)</td><td>The Map section of the Apps tab uses SK Telecom's T map (SK open API) to show the map, search places and find routes (car, walking, public transport). Your search words and the start and end coordinates go to T map's servers. Your position is read from the phone only when you press the location button or ask for a route; the app does not store it or send it to any server of its own. Only a page bundled in the app opens in the map view, no other site. The app contains a free app key for personal developers that can be extracted from the app file, and T map blocks calls over its daily limit (nothing is charged).</td><td>SK Telecom (<a href="https://privacy.sktelecom.com/view.do?ctg=policy&amp;name=policy">policy</a>)</td></tr>
     <tr><td>Spotify (Music tab)</td><td>The Music tab shows Spotify's official web player (open.spotify.com). Signing in and playback happen between you and Spotify; the app stores no password or listening history, and Spotify's privacy policy applies</td></tr>
     <tr><td>Websites you open</td><td>Sites opened in the built-in browser follow their own policies. Link icons are fetched from the site itself (no third-party icon service is used)</td></tr>
     <tr><td>Draw together (<code>jangwoo0827.github.io/onlinedraw</code>)</td><td>A separate web app reached from one of the start-page links. People with the same room link share a drawing; an anonymous sign-in and the drawing data are stored in Firebase (Google). It is not linked to this app's account</td></tr>
@@ -88,10 +89,10 @@
     <li>Reading/writing the call log, reading/writing contacts, reading/sending texts: the features in 2 above</li>
     <li>Microphone: only when you press the record button, or when a website asks and you allow it</li>
     <li>Camera: when you place or answer a video call (to send your picture to the other person; the app does not store the video), and when a website in the built-in browser asks and you allow it</li>
-    <li>Location (precise/approximate): only when a website in the built-in browser asks and you allow it. Websites can ask for the camera, microphone and location only on secure (https) pages, and the app does not collect or store this information</li>
+    <li>Location (precise/approximate): when a website in the built-in browser asks and you allow it, and in the Map section only when you press the location button or ask for a route. Websites can ask for the camera, microphone and location only on secure (https) pages, and the app does not collect or store this information</li>
     <li>Notification access (optional): only when you turn on the KakaoTalk notification inbox above. You must allow it yourself in the system settings and can turn it off at any time. Notifications of apps other than KakaoTalk are not processed</li>
     <li>Notifications and full-screen notifications: incoming and missed calls, new version alerts</li>
-    <li>Internet: the built-in browser, account sync, update checks, the Music tab (Spotify's web player)</li>
+    <li>Internet: the built-in browser, account sync, update checks, the Music tab (Spotify's web player), the Map section (T map)</li>
     <li>Background playback (foreground service): shows a notification so the app keeps running while the Spotify web player in the Music tab plays</li>
     <li>Install packages: when you download and install a new version inside the app (if you allowed it)</li>
   </ul>

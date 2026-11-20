@@ -59,6 +59,7 @@ object BrowserSession {
         viewModel?.release()
         viewModel = null
         GameSession.release()
+        com.example.superdialer.maps.MapWeb.release()
     }
 
     private fun save(app: Application, vm: BrowserViewModel) {
@@ -88,7 +89,7 @@ object BrowserSession {
         saved.forEach { vm.restoreTab(it) }
         vm.tabs.getOrNull(prefs.getInt(KEY_SELECTED, -1))?.let { vm.selectTab(it.id) }
         if (fresh) {
-            vm.hubSection = prefs.getInt(KEY_SECTION, 0)
+            vm.hubSection = prefs.getInt(KEY_SECTION, 0).coerceIn(0, 4)
             prefs.getString(KEY_GAME, null)?.ifEmpty { null }?.let { GameSession.playingId = it }
         }
     }
