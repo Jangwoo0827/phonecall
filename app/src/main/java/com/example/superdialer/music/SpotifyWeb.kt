@@ -27,6 +27,7 @@ object SpotifyWeb {
 
     private lateinit var app: Context
     private var web: WebView? = null
+    private var keepOn = true
 
     fun init(context: Context) {
         app = context.applicationContext
@@ -45,6 +46,14 @@ object SpotifyWeb {
         }
         CookieManager.getInstance().setAcceptThirdPartyCookies(v, true) // sign-in pages set cookies across spotify domains
         v.setBackgroundColor(android.graphics.Color.BLACK)
+        // After the notification player was removed, touching the page (to play something) brings it back.
+        v.setOnTouchListener { _, e ->
+            if (e.action == android.view.MotionEvent.ACTION_DOWN && !keepOn) {
+                keepOn = true
+                WebAudioKeepAlive.update(app, SOURCE, true)
+            }
+            false
+        }
         v.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest) {
                 // Only Spotify's own page may play protected (DRM) media; nothing else (camera, microphone, ...) is granted.
@@ -65,7 +74,7 @@ object SpotifyWeb {
             }
 
             override fun onPageFinished(view: WebView, url: String?) {
-                WebAudioKeepAlive.update(app, SOURCE, true)
+                if (keepOn) WebAudioKeepAlive.update(app, SOURCE, true)
             }
         }
         web = v
@@ -86,6 +95,13 @@ object SpotifyWeb {
         (web?.context as? MutableContextWrapper)?.baseContext = app
     }
 
+    /** The in-app "remove notification" button: pauses the page and removes the notification player (and the keep-alive). */
+    fun dismissNotification() {
+        keepOn = false
+        pause()
+        WebAudioKeepAlive.clear(app)
+    }
+
     fun canGoBack(): Boolean = web?.canGoBack() == true
 
     fun goBack() {
@@ -100,13 +116,14 @@ object SpotifyWeb {
 var m=navigator.mediaSession&&navigator.mediaSession.metadata;
 var a=document.querySelector('audio,video');
 var t=m?(m.title||''):'';var ar=m?(m.artist||''):'';
-if(!t){var d=document.title||'';var i=d.indexOf(' • ');if(i>0){t=d.slice(0,i);ar=d.slice(i+3);}}
+if(!t){var d=document.title||'';var i=d.indexOf(' • ');if(i>0){var t2=d.slice(0,i).trim(),a2=d.slice(i+3).trim();if(t2&&a2&&t2!=='Spotify'&&a2.indexOf('Spotify')!==0){t=t2;ar=a2;}}}
 var u=(m&&m.artwork&&m.artwork.length)?m.artwork[m.artwork.length-1].src:'';
 if(!u&&t){var tl=t.toLowerCase();var imgs=document.querySelectorAll('img');
 for(var k=0;k<imgs.length&&!u;k++){var im=imgs[k];var al=(im.alt||'').toLowerCase();
 var box=im.closest('[aria-label],[data-testid]');
 var lab=box?((box.getAttribute('aria-label')||'')+' '+(box.getAttribute('data-testid')||'')).toLowerCase():'';
 if((al&&al.indexOf(tl)>=0)||lab.indexOf(tl)>=0||/now-playing|nowplaying|cover-art/.test(lab)){u=im.currentSrc||im.src;}}}
+if(!u&&t){var im2=document.querySelectorAll('img');for(var q=0;q<im2.length&&!u;q++){var r=im2[q].getBoundingClientRect();if(r.width>=24&&r.width<=96&&r.bottom>window.innerHeight*0.6&&r.top<window.innerHeight&&/scdn|spotifycdn|image/.test(im2[q].src)){u=im2[q].currentSrc||im2[q].src;}}}
 try{u=u?new URL(u,location.href).href:''}catch(e){u=''}
 return JSON.stringify({t:t,a:ar,i:u,p:a?!a.paused:false,pos:a?a.currentTime:0,dur:(a&&isFinite(a.duration))?a.duration:0});
 })()

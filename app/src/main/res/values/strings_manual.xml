@@ -24,4 +24,6 @@
     <string name="music_web_player_play">Play</string>
     <string name="music_web_player_pause">Pause</string>
     <string name="music_web_player_next">Next</string>
+    <string name="music_notif_on">Notification player is on</string>
+    <string name="music_notif_dismiss">Remove notification</string>
 </resources>

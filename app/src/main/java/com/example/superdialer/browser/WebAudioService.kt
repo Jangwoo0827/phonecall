@@ -16,6 +16,9 @@ import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import com.example.superdialer.MainActivity
 import com.example.superdialer.R
@@ -39,8 +42,7 @@ object WebAudioKeepAlive {
     private val sources = HashSet<String>()
 
     /** True while some page (a browser tab or the Music tab's player) is a web player that must keep playing. */
-    @Volatile
-    var active = false
+    var active by mutableStateOf(false)
         private set
 
     /** Pauses the audio of every web player (set by the browser view model and the Music tab). */
@@ -95,7 +97,12 @@ class WebAudioService : Service() {
         override fun run() {
             SpotifyWeb.readState { s ->
                 if (s != null) {
-                    title = s.title; artist = s.artist; playing = s.playing
+                    // Keep the last good song: the page reports nothing at times (loading, other pages), which must not blank the player.
+                    if (s.title.isNotEmpty() && (s.title != title || s.artist != artist)) {
+                        title = s.title; artist = s.artist
+                        art = null; artUrl = ""; artFails = 0 // never show the previous song's cover
+                    }
+                    playing = s.playing
                     positionMs = (s.positionSec * 1000).toLong(); durationMs = (s.durationSec * 1000).toLong()
                     if (s.artUrl.isNotEmpty() && s.artUrl != artUrl) {
                         artUrl = s.artUrl
@@ -141,7 +148,9 @@ class WebAudioService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
+            ACTION_REPOST -> { if (started) publish(); return START_NOT_STICKY }
             ACTION_STOP -> {
+                SpotifyWeb.pause()
                 WebAudioKeepAlive.pauseAll()
                 WebAudioKeepAlive.clear(this)
                 stopSelf()
@@ -192,6 +201,13 @@ class WebAudioService : Service() {
             .setContentIntent(open)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            // Swiping the notification away (or the lock-screen card) only brings it back; the app's own button removes it.
+            .setDeleteIntent(
+                PendingIntent.getService(
+                    this, 5, Intent(this, WebAudioService::class.java).setAction(ACTION_REPOST),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                ),
+            )
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setCategory(Notification.CATEGORY_TRANSPORT)
             .addAction(action(1, str(R.string.music_web_player_prev), android.R.drawable.ic_media_previous, ACTION_PREV))
@@ -255,6 +271,7 @@ class WebAudioService : Service() {
     private companion object {
         const val CHANNEL = "web_audio"
         const val NOTIFICATION_ID = 3001
+        const val ACTION_REPOST = "com.example.superdialer.WEB_AUDIO_REPOST"
         const val ACTION_STOP = "com.example.superdialer.WEB_AUDIO_STOP"
         const val ACTION_PLAY_PAUSE = "com.example.superdialer.WEB_AUDIO_PLAY_PAUSE"
         const val ACTION_NEXT = "com.example.superdialer.WEB_AUDIO_NEXT"

@@ -24,4 +24,6 @@
     <string name="music_web_player_play">재생</string>
     <string name="music_web_player_pause">일시정지</string>
     <string name="music_web_player_next">다음</string>
+    <string name="music_notif_on">알림 플레이어 켜짐</string>
+    <string name="music_notif_dismiss">알림 없애기</string>
 </resources>
