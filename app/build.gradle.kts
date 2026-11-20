@@ -34,6 +34,13 @@ android {
     }
 
     buildTypes {
+        // `./gradlew assembleDebug -PphoneDebug` builds a copy that installs NEXT TO the real app (other package name and
+        // label, own data) so it can be tried on the phone over USB cable without touching the installed release.
+        debug {
+            if (project.hasProperty("phoneDebug")) {
+                applicationIdSuffix = ".dev"
+            }
+        }
         release {
             signingConfig = signingConfigs.findByName("release")
             // R8: shrinks code and resources and renames classes (rules in proguard-rules.pro). Only the release build is
@@ -45,6 +52,9 @@ android {
                 "proguard-rules.pro"
             )
         }
+    }
+    if (project.hasProperty("phoneDebug")) {
+        sourceSets.getByName("debug").res.srcDir("src/phonedebug/res") // the "SuperDialer Dev" name
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
