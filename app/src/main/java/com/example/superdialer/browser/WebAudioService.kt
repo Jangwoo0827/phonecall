@@ -137,10 +137,15 @@ class WebAudioService : Service() {
     }
 
     /** The cover, scaled down: a full-size bitmap is too big to hand to the lock screen (Binder limit). */
-    private fun download(url: String): Bitmap? {
+    private fun fetch(url: String): Bitmap? {
         val c = URL(url).openConnection() as java.net.HttpURLConnection
         c.connectTimeout = 8000; c.readTimeout = 8000
-        val src = c.inputStream.use { BitmapFactory.decodeStream(it) } ?: return null
+        return c.inputStream.use { BitmapFactory.decodeStream(it) }
+    }
+
+    private fun download(url: String): Bitmap? {
+        // The bar shows the 300px cover; Spotify's CDN also has the 640px one under the same id (used for the big lock-screen cover).
+        val src = runCatching { fetch(url.replace("ab67616d00001e02", "ab67616d0000b273")) }.getOrNull() ?: fetch(url) ?: return null
         val max = 512
         val scale = max.toFloat() / maxOf(src.width, src.height)
         return if (scale < 1f) Bitmap.createScaledBitmap(src, (src.width * scale).toInt(), (src.height * scale).toInt(), true) else src
@@ -149,6 +154,8 @@ class WebAudioService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_REPOST -> { if (started) publish(); return START_NOT_STICKY }
+            ACTION_NEXT -> { SpotifyWeb.control("next"); return START_NOT_STICKY }
+            ACTION_PREV -> { SpotifyWeb.control("prev"); return START_NOT_STICKY }
             ACTION_STOP -> {
                 SpotifyWeb.pause()
                 WebAudioKeepAlive.pauseAll()
@@ -157,8 +164,6 @@ class WebAudioService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_PLAY_PAUSE -> { SpotifyWeb.control(if (playing) "pause" else "play"); return START_NOT_STICKY }
-            ACTION_NEXT -> { SpotifyWeb.control("next"); return START_NOT_STICKY }
-            ACTION_PREV -> { SpotifyWeb.control("prev"); return START_NOT_STICKY }
         }
         if (!started) {
             started = true
@@ -271,10 +276,10 @@ class WebAudioService : Service() {
     private companion object {
         const val CHANNEL = "web_audio"
         const val NOTIFICATION_ID = 3001
+        const val ACTION_NEXT = "com.example.superdialer.WEB_AUDIO_NEXT"
+        const val ACTION_PREV = "com.example.superdialer.WEB_AUDIO_PREV"
         const val ACTION_REPOST = "com.example.superdialer.WEB_AUDIO_REPOST"
         const val ACTION_STOP = "com.example.superdialer.WEB_AUDIO_STOP"
         const val ACTION_PLAY_PAUSE = "com.example.superdialer.WEB_AUDIO_PLAY_PAUSE"
-        const val ACTION_NEXT = "com.example.superdialer.WEB_AUDIO_NEXT"
-        const val ACTION_PREV = "com.example.superdialer.WEB_AUDIO_PREV"
     }
 }
