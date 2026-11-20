@@ -26,4 +26,23 @@
     <string name="music_web_player_next">다음</string>
     <string name="music_notif_on">알림 플레이어 켜짐</string>
     <string name="music_notif_dismiss">알림 없애기</string>
+    <string name="notes_title">메모</string>
+    <string name="notes_mine">내 메모</string>
+    <string name="notes_calls">통화 메모</string>
+    <string name="notes_contacts">연락처 메모</string>
+    <string name="notes_search">메모 검색</string>
+    <string name="notes_empty">아직 메모가 없어요. +를 눌러 써 보세요.</string>
+    <string name="notes_empty_calls">아직 통화 메모가 없어요. 통화 중이나 통화 후에 추가할 수 있어요.</string>
+    <string name="notes_empty_contacts">아직 연락처 메모가 없어요. 연락처 상세 화면에서 추가할 수 있어요.</string>
+    <string name="notes_no_match">일치하는 메모가 없어요.</string>
+    <string name="notes_new">새 메모</string>
+    <string name="notes_hint">내용을 입력하세요…</string>
+    <string name="notes_back">뒤로</string>
+    <string name="notes_pin">맨 위에 고정</string>
+    <string name="notes_unpin">고정 해제</string>
+    <string name="notes_pinned">고정됨</string>
+    <string name="notes_share">공유</string>
+    <string name="notes_delete">삭제</string>
+    <string name="notes_delete_title">이 메모를 삭제할까요?</string>
+    <string name="notes_delete_text">삭제하면 되돌릴 수 없어요.</string>
 </resources>

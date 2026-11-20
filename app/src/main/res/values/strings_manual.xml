@@ -26,4 +26,23 @@
     <string name="music_web_player_next">Next</string>
     <string name="music_notif_on">Notification player is on</string>
     <string name="music_notif_dismiss">Remove notification</string>
+    <string name="notes_title">Notes</string>
+    <string name="notes_mine">My notes</string>
+    <string name="notes_calls">Call memos</string>
+    <string name="notes_contacts">Contact memos</string>
+    <string name="notes_search">Search notes</string>
+    <string name="notes_empty">No notes yet. Tap + to write one.</string>
+    <string name="notes_empty_calls">No call memos yet. Add one during or after a call.</string>
+    <string name="notes_empty_contacts">No contact memos yet. Add one on a contact\'s page.</string>
+    <string name="notes_no_match">Nothing matches.</string>
+    <string name="notes_new">New note</string>
+    <string name="notes_hint">Write something…</string>
+    <string name="notes_back">Back</string>
+    <string name="notes_pin">Pin to top</string>
+    <string name="notes_unpin">Unpin</string>
+    <string name="notes_pinned">Pinned</string>
+    <string name="notes_share">Share</string>
+    <string name="notes_delete">Delete</string>
+    <string name="notes_delete_title">Delete this note?</string>
+    <string name="notes_delete_text">This can\'t be undone.</string>
 </resources>

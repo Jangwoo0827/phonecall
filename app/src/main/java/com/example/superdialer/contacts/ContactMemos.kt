@@ -28,6 +28,9 @@ object ContactMemos {
         memos.putAll(decode(appContext!!.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null)))
     }
 
+    /** Every memo as (number key, text), for the Notes section's overview. */
+    fun all(): List<Pair<String, String>> = memos.map { it.key to it.value }
+
     /** The memo of a contact with these phone [numbers] (raw, as stored in the contact), or "" if there is none. */
     fun forNumbers(numbers: List<String>): String = find(memos, numbers.map { numberKey(it) })
 

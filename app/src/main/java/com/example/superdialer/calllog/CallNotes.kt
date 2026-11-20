@@ -29,6 +29,9 @@ object CallNotes {
         notes.addAll(decode(appContext!!.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null)))
     }
 
+    /** Every memo, newest first (for the Notes section's overview). */
+    fun all(): List<CallNote> = notes.sortedByDescending { it.atMillis }
+
     fun noteFor(entry: CallLogEntry): CallNote? =
         notes.firstOrNull { matches(it, numberKey(entry.number), entry.dateMillis, entry.durationSeconds) }
 
